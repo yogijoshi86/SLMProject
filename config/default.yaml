@@ -19,11 +19,11 @@ data:
   max_samples: null
 
 model:
-  name: allenai/wildguard   # ungated 7B Mistral SLM guardrail
-  # Switch to KoalaAI/Text-Moderation (fast CPU) or meta-llama/Llama-Guard-3-8B (gated).
+  name: meta-llama/Llama-Guard-3-8B
+  # Alternatives: allenai/wildguard (ungated 7B), KoalaAI/Text-Moderation (fast CPU)
   dtype: float16            # use int8 on a free T4 to fit within 15 GB
   device_map: auto
-  max_new_tokens: 32
+  max_new_tokens: 20
   hidden_layer: -1          # terminal-token hidden state, final layer
 
 extraction:

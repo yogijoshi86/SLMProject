@@ -133,17 +133,24 @@ def nb_extract():
         md("""
 # Phase 1 — Extract UNSAFE Embeddings (Days 1–5)
 
-Loads ToxicChat, runs **WildGuard** (`allenai/wildguard` — Mistral-7B SLM, ungated),
-and saves terminal hidden states (dim=4096) for every prompt flagged **harmful**.
+Loads ToxicChat, runs **Llama-Guard-3-8B** (int8, ~9 GB on a free T4),
+and saves terminal hidden states (dim=4096) for every prompt flagged **UNSAFE**.
 
-No HuggingFace token or license approval needed.
-Uses int8 quantization to fit within a free T4's 15 GB VRAM.
+> **GPU required.** Runtime → Change runtime type → T4 GPU.
+> **HF token required.** Paste a token with access to `meta-llama/Llama-Guard-3-8B`.
 """),
-        md("### Step 0 — get the repo onto this runtime\n\nEither set `GITHUB_URL` (recommended) or use the Drive fallback. Run once per session."),
+        md("### Step 0 — get the repo onto this runtime\n\nRun once per session; pulls latest if the repo already exists."),
         code(CLONE),
         code(LOCATE),
         code(INSTALL),
         code(GPU_CHECK),
+        md("### Hugging Face auth"),
+        code('''
+import os, getpass
+# Token from https://huggingface.co/settings/tokens (read access).
+# Accept the license at https://huggingface.co/meta-llama/Llama-Guard-3-8B first.
+os.environ["HF_TOKEN"] = getpass.getpass("HuggingFace token: ")
+'''),
         code(CONFIG_CELL),
         md("### Load prompts"),
         code('''
@@ -277,14 +284,19 @@ def nb_audit():
         md("""
 # Phase 3 — Real-Time Audit Pipeline (Days 11–15)
 
-End-to-end: prompt → WildGuard decision → nearest prototype (cosine) → reasoning-LLM
-justification. Needs an **explainer API key** (OpenAI or Anthropic). No HF token required.
+End-to-end: prompt → Llama-Guard-3-8B decision → nearest prototype (cosine) → reasoning-LLM
+justification. Needs a **HF token** (for the guard) and an **explainer API key**.
 """),
         md("### Step 0 — get the repo onto this runtime"),
         code(CLONE),
         code(LOCATE),
         code(INSTALL),
         code(GPU_CHECK),
+        md("### Hugging Face auth"),
+        code('''
+import os, getpass
+os.environ["HF_TOKEN"] = getpass.getpass("HuggingFace token: ")
+'''),
         md("### Explainer API key"),
         code('''
 import os, getpass

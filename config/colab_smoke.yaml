@@ -19,14 +19,14 @@ data:
   max_samples: 500          # cap for a minutes-not-hours smoke run
 
 model:
-  name: allenai/wildguard   # ungated 7B Mistral SLM guardrail — no HF token needed
-  dtype: int8               # int8 fits ~7 GB on a free T4 (float16 needs ~14 GB, tight)
+  name: meta-llama/Llama-Guard-3-8B
+  dtype: int8               # int8 fits ~9 GB on a free T4 (float16 needs ~16 GB, OOMs)
   device_map: auto
-  max_new_tokens: 32
+  max_new_tokens: 20
   hidden_layer: -1
 
 extraction:
-  batch_size: 8             # generative 7B — keep conservative for T4
+  batch_size: 4             # conservative for T4 memory headroom
 
 clustering:
   k_min: 3
