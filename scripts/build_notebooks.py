@@ -61,7 +61,8 @@ GITHUB_URL = "https://github.com/yogijoshi86/SLMProject.git"
 TARGET = Path("/content/SLMProject")
 
 if TARGET.is_dir() and (TARGET / "src" / "guardrail_audit").is_dir():
-    print("Repo already present:", TARGET)
+    print("Repo already present — pulling latest…")
+    subprocess.run(["git", "-C", str(TARGET), "pull", "--ff-only"], check=True)
 
 elif GITHUB_URL:
     print("Cloning from GitHub…")
