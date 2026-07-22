@@ -145,8 +145,11 @@ every prompt the guard flags **UNSAFE**.
         code(GPU_CHECK),
         md("### Hugging Face auth (gated model)"),
         code('''
-from huggingface_hub import notebook_login
-notebook_login()   # paste a token with access to the Llama-Guard repo
+import os, getpass
+
+# Paste a token from https://huggingface.co/settings/tokens (read access).
+# You must also accept the license at https://huggingface.co/meta-llama/Llama-Guard-3-8B first.
+os.environ["HF_TOKEN"] = getpass.getpass("HuggingFace token: ")
 '''),
         code(CONFIG_CELL),
         md("### Load prompts"),
@@ -295,9 +298,10 @@ import os, getpass
 if not os.environ.get("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("OPENAI_API_KEY: ")
 '''),
+        md("### Hugging Face auth"),
         code('''
-from huggingface_hub import notebook_login
-notebook_login()
+import os, getpass
+os.environ["HF_TOKEN"] = getpass.getpass("HuggingFace token: ")
 '''),
         code(CONFIG_CELL),
         md("### Assemble the pipeline"),
