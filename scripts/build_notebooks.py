@@ -132,11 +132,11 @@ def nb_extract():
         md("""
 # Phase 1 — Extract UNSAFE Embeddings (Days 1–5)
 
-Loads ToxicChat, runs **KoalaAI/Text-Moderation** (DeBERTa, ~180 MB, ungated),
-and saves CLS hidden states for every prompt flagged **UNSAFE**.
+Loads ToxicChat, runs **WildGuard** (`allenai/wildguard` — Mistral-7B SLM, ungated),
+and saves terminal hidden states (dim=4096) for every prompt flagged **harmful**.
 
 No HuggingFace token or license approval needed.
-GPU speeds things up but CPU works too — the model is tiny.
+Uses int8 quantization to fit within a free T4's 15 GB VRAM.
 """),
         md("### Step 0 — get the repo onto this runtime\n\nEither set `GITHUB_URL` (recommended) or use the Drive fallback. Run once per session."),
         code(CLONE),
@@ -276,7 +276,7 @@ def nb_audit():
         md("""
 # Phase 3 — Real-Time Audit Pipeline (Days 11–15)
 
-End-to-end: prompt → KoalaAI/Text-Moderation decision → nearest prototype (cosine) → reasoning-LLM
+End-to-end: prompt → WildGuard decision → nearest prototype (cosine) → reasoning-LLM
 justification. Needs an **explainer API key** (OpenAI or Anthropic). No HF token required.
 """),
         md("### Step 0 — get the repo onto this runtime"),

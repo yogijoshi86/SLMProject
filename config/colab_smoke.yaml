@@ -19,13 +19,14 @@ data:
   max_samples: 500          # cap for a minutes-not-hours smoke run
 
 model:
-  name: KoalaAI/Text-Moderation  # ungated, ~180 MB DeBERTa encoder — no HF token needed
-  dtype: float16
+  name: allenai/wildguard   # ungated 7B Mistral SLM guardrail — no HF token needed
+  dtype: int8               # int8 fits ~7 GB on a free T4 (float16 needs ~14 GB, tight)
   device_map: auto
+  max_new_tokens: 32
   hidden_layer: -1
 
 extraction:
-  batch_size: 32            # DeBERTa is tiny vs Llama-Guard; large batches are fine
+  batch_size: 8             # generative 7B — keep conservative for T4
 
 clustering:
   k_min: 3

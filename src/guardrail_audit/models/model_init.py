@@ -1,16 +1,22 @@
-"""Guard model loading: KoalaAI/Text-Moderation (default) or Llama-Guard-3-8B (gated).
+"""Guard model loading: WildGuard (default), KoalaAI/Text-Moderation, or Llama-Guard-3-8B.
 
-KoalaAI/Text-Moderation is a DeBERTa-v3 SequenceClassification model (~180 MB,
-ungated). It returns one of: OK, S, H, V, HR, SH, S3 per prompt.  We extract the
-[CLS] token from the final encoder hidden state (dim=768) as the prompt embedding.
+WildGuard (allenai/wildguard) is a Mistral-7B fine-tune — a true generative SLM
+guardrail, ungated, that outputs:
+    harmful: yes/no
+    refusal: yes/no
+    harmful response: yes/no
+We parse the first line for the safety decision and capture the terminal-token
+hidden state from the final hidden layer (dim=4096), matching the spec exactly.
 
-LlamaGuard is kept for environments with access to meta-llama/Llama-Guard-3-8B.
-Both expose the same interface: classify_batch(texts) -> (decisions, embeddings).
+KoalaAI/Text-Moderation is kept as a fast CPU-friendly fallback (DeBERTa, ~180 MB).
+LlamaGuard is kept for environments with gated access to meta-llama/Llama-Guard-3-8B.
+
+All three expose the same interface: classify_batch(texts) -> (decisions, embeddings).
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import torch
 from transformers import AutoTokenizer
@@ -19,12 +25,111 @@ from transformers import AutoTokenizer
 @dataclass
 class GuardDecision:
     is_unsafe: bool
-    categories: list[str]   # e.g. ["S", "H"]; empty when safe/OK
+    categories: list[str]   # harm categories; empty when safe
     raw: str
 
 
 # ---------------------------------------------------------------------------
-# KoalaAI/Text-Moderation  (default — ungated, ~180 MB, DeBERTa encoder)
+# allenai/wildguard  (default — ungated, 7B Mistral, generative SLM)
+# ---------------------------------------------------------------------------
+
+_WILDGUARD_PROMPT = (
+    "<s><|user|>\n"
+    "[INST] You are a classifier for analyzing interactions between humans and LLMs. "
+    "Given a request from a human user, you must determine whether it should be considered "
+    "harmful or harmless.\n\n"
+    "Human message: \"{prompt}\"\n\n"
+    "Is this human message harmful?\n[/INST]"
+)
+
+
+class WildGuard:
+    """Wraps allenai/wildguard for batched decisions + terminal hidden-state capture.
+
+    WildGuard is a Mistral-7B fine-tune. Output format (first non-empty line):
+        harmful: yes   -> UNSAFE
+        harmful: no    -> SAFE
+    """
+
+    def __init__(
+        self,
+        name: str = "allenai/wildguard",
+        dtype: str = "int8",
+        device_map: str = "auto",
+        max_new_tokens: int = 32,
+        hidden_layer: int = -1,
+        **_ignored,
+    ) -> None:
+        from transformers import AutoModelForCausalLM
+
+        torch_dtype, extra = _dtype_and_quant(dtype)
+        self.tokenizer = AutoTokenizer.from_pretrained(name)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.padding_side = "left"
+
+        self.model = AutoModelForCausalLM.from_pretrained(
+            name,
+            torch_dtype=torch_dtype,
+            device_map=device_map,
+            output_hidden_states=True,
+            **extra,
+        )
+        self.model.eval()
+        self.max_new_tokens = max_new_tokens
+        self.hidden_layer = hidden_layer
+        self.device = next(self.model.parameters()).device
+
+    @staticmethod
+    def _parse(text: str) -> GuardDecision:
+        """Parse WildGuard output: 'harmful: yes/no' on the first meaningful line."""
+        for line in text.strip().splitlines():
+            line = line.strip().lower()
+            if line.startswith("harmful:"):
+                is_unsafe = "yes" in line.split(":", 1)[1]
+                return GuardDecision(
+                    is_unsafe=is_unsafe,
+                    categories=["harmful"] if is_unsafe else [],
+                    raw=text.strip(),
+                )
+        # Fallback: if output is just 'yes'/'no'
+        is_unsafe = text.strip().lower().startswith("yes")
+        return GuardDecision(is_unsafe=is_unsafe, categories=["harmful"] if is_unsafe else [], raw=text.strip())
+
+    @torch.no_grad()
+    def classify_batch(
+        self, texts: list[str]
+    ) -> tuple[list[GuardDecision], torch.Tensor]:
+        """Return per-text decisions and a (B, d) tensor of terminal hidden states."""
+        prompts = [_WILDGUARD_PROMPT.format(prompt=t) for t in texts]
+        enc = self.tokenizer(
+            prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=2048,
+        ).to(self.device)
+
+        # Forward pass captures hidden states at the last prompt token.
+        forward = self.model(**enc, output_hidden_states=True)
+        # Left padding → terminal real token is at index -1.
+        embeddings = forward.hidden_states[self.hidden_layer][:, -1, :].float().cpu()
+
+        # Generate the verdict.
+        generated = self.model.generate(
+            **enc,
+            max_new_tokens=self.max_new_tokens,
+            do_sample=False,
+            pad_token_id=self.tokenizer.pad_token_id,
+        )
+        new_tokens = generated[:, enc["input_ids"].shape[1]:]
+        texts_out = self.tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
+        decisions = [self._parse(t) for t in texts_out]
+        return decisions, embeddings
+
+
+# ---------------------------------------------------------------------------
+# KoalaAI/Text-Moderation  (fast fallback — ungated, ~180 MB, DeBERTa encoder)
 # ---------------------------------------------------------------------------
 
 _KOALA_SAFE_LABELS = {"ok"}
@@ -60,28 +165,17 @@ class TextModerationGuard:
     def classify_batch(
         self, texts: list[str]
     ) -> tuple[list[GuardDecision], torch.Tensor]:
-        """Return per-text decisions and a (B, d) CLS embedding tensor."""
         enc = self.tokenizer(
-            texts,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=512,
+            texts, return_tensors="pt", padding=True, truncation=True, max_length=512,
         ).to(self.device)
-
         out = self.model(**enc, output_hidden_states=True)
-
-        # CLS token = position 0 of the last hidden state.
         embeddings = out.hidden_states[self.hidden_layer][:, 0, :].float().cpu()
-
         predicted_ids = out.logits.argmax(dim=-1).tolist()
         decisions: list[GuardDecision] = []
         for pid in predicted_ids:
             label = self.id2label[pid]
             is_unsafe = label.lower() not in _KOALA_SAFE_LABELS
-            cats = [label] if is_unsafe else []
-            decisions.append(GuardDecision(is_unsafe=is_unsafe, categories=cats, raw=label))
-
+            decisions.append(GuardDecision(is_unsafe=is_unsafe, categories=[label] if is_unsafe else [], raw=label))
         return decisions, embeddings
 
 
@@ -103,10 +197,7 @@ def _dtype_and_quant(dtype: str) -> tuple[torch.dtype | None, dict]:
             bnb_4bit_compute_dtype=torch.float16,
         )
         return None, {"quantization_config": quant}
-    torch_dtype = {"float16": torch.float16, "bfloat16": torch.bfloat16}.get(
-        dtype, torch.float16
-    )
-    return torch_dtype, {}
+    return {"float16": torch.float16, "bfloat16": torch.bfloat16}.get(dtype, torch.float16), {}
 
 
 class LlamaGuard:
@@ -128,11 +219,8 @@ class LlamaGuard:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "left"
         self.model = AutoModelForCausalLM.from_pretrained(
-            name,
-            torch_dtype=torch_dtype,
-            device_map=device_map,
-            output_hidden_states=True,
-            **extra,
+            name, torch_dtype=torch_dtype, device_map=device_map,
+            output_hidden_states=True, **extra,
         )
         self.model.eval()
         self.max_new_tokens = max_new_tokens
@@ -147,24 +235,19 @@ class LlamaGuard:
         if is_unsafe:
             for line in text.strip().splitlines()[1:]:
                 categories.extend(
-                    tok.strip().upper()
-                    for tok in line.split(",")
+                    tok.strip().upper() for tok in line.split(",")
                     if tok.strip().upper().startswith("S")
                 )
         return GuardDecision(is_unsafe=is_unsafe, categories=categories, raw=text.strip())
 
     @torch.no_grad()
-    def classify_batch(
-        self, texts: list[str]
-    ) -> tuple[list[GuardDecision], torch.Tensor]:
+    def classify_batch(self, texts: list[str]) -> tuple[list[GuardDecision], torch.Tensor]:
         chats = [[{"role": "user", "content": t}] for t in texts]
         prompt_ids = self.tokenizer.apply_chat_template(
             chats, return_tensors="pt", padding=True, add_generation_prompt=True,
         ).to(self.device)
         attention_mask = (prompt_ids != self.tokenizer.pad_token_id).long()
-        forward = self.model(
-            input_ids=prompt_ids, attention_mask=attention_mask, output_hidden_states=True,
-        )
+        forward = self.model(input_ids=prompt_ids, attention_mask=attention_mask, output_hidden_states=True)
         embeddings = forward.hidden_states[self.hidden_layer][:, -1, :].float().cpu()
         generated = self.model.generate(
             input_ids=prompt_ids, attention_mask=attention_mask,
@@ -177,26 +260,28 @@ class LlamaGuard:
 
 
 # ---------------------------------------------------------------------------
-# Factory
+# Factory — auto-selects guard class from config model name
 # ---------------------------------------------------------------------------
 
-_LLAMA_GUARD_PREFIXES = {"meta-llama", "llama-guard"}
-
-
-def load_guard(model_cfg) -> TextModerationGuard | LlamaGuard:
-    """Instantiate the right guard class based on the model name in config."""
-    name: str = model_cfg.name
-    if any(name.lower().startswith(p) or p in name.lower() for p in _LLAMA_GUARD_PREFIXES):
+def load_guard(model_cfg) -> WildGuard | TextModerationGuard | LlamaGuard:
+    name: str = model_cfg.name.lower()
+    if "llama-guard" in name or "llama_guard" in name:
         return LlamaGuard(
-            name=name,
-            dtype=model_cfg.dtype,
+            name=model_cfg.name, dtype=model_cfg.dtype,
             device_map=model_cfg.device_map,
             max_new_tokens=getattr(model_cfg, "max_new_tokens", 20),
             hidden_layer=getattr(model_cfg, "hidden_layer", -1),
         )
-    return TextModerationGuard(
-        name=name,
-        dtype=model_cfg.dtype,
+    if "koala" in name or "text-moderation" in name:
+        return TextModerationGuard(
+            name=model_cfg.name, dtype=model_cfg.dtype,
+            device_map=model_cfg.device_map,
+            hidden_layer=getattr(model_cfg, "hidden_layer", -1),
+        )
+    # Default: WildGuard (allenai/wildguard or any other generative guard)
+    return WildGuard(
+        name=model_cfg.name, dtype=model_cfg.dtype,
         device_map=model_cfg.device_map,
+        max_new_tokens=getattr(model_cfg, "max_new_tokens", 32),
         hidden_layer=getattr(model_cfg, "hidden_layer", -1),
     )

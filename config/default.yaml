@@ -19,11 +19,12 @@ data:
   max_samples: null
 
 model:
-  name: KoalaAI/Text-Moderation  # ungated, ~180 MB DeBERTa encoder
-  # Switch to meta-llama/Llama-Guard-3-8B if you have gated access.
-  dtype: float16
+  name: allenai/wildguard   # ungated 7B Mistral SLM guardrail
+  # Switch to KoalaAI/Text-Moderation (fast CPU) or meta-llama/Llama-Guard-3-8B (gated).
+  dtype: float16            # use int8 on a free T4 to fit within 15 GB
   device_map: auto
-  hidden_layer: -1        # which hidden_states layer to extract (CLS token)
+  max_new_tokens: 32
+  hidden_layer: -1          # terminal-token hidden state, final layer
 
 extraction:
   batch_size: 8           # keep low to avoid OOM per risk register
