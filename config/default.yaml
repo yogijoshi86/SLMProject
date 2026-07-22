@@ -1,0 +1,53 @@
+# Prototype-Driven Guardrail Auditing — default configuration.
+# Every script reads this file; override any key with --set a.b=value on the CLI.
+
+seed: 42
+
+paths:
+  artifacts_dir: artifacts
+  embeddings: artifacts/unsafe_embeddings.pt
+  taxonomy: artifacts/prototypes_taxonomy.json
+  benchmark: artifacts/benchmark_test_set.json
+  eval_logs: artifacts/eval_logs.csv
+
+data:
+  dataset_name: lmsys/toxic-chat
+  dataset_config: toxicchat0124
+  split: train
+  text_column: user_input
+  # Cap for quick smoke runs; null = full dataset.
+  max_samples: null
+
+model:
+  name: meta-llama/Llama-Guard-3-8B
+  # One of: float16, bfloat16, int8, int4
+  dtype: float16
+  device_map: auto
+  max_new_tokens: 20
+  # Category taxonomy Llama-Guard-3 emits on the second line when unsafe.
+  hidden_layer: -1        # which hidden_states layer to extract (terminal token)
+
+extraction:
+  batch_size: 8           # keep low to avoid OOM per risk register
+  max_length: 2048
+
+clustering:
+  k_min: 3
+  k_max: 15               # capped effectively at 10 by silhouette per risk register
+  k_cap: 10
+  n_init: 10
+  top_exemplars: 5
+
+explainer:
+  provider: openai        # openai | anthropic
+  openai_model: gpt-4o
+  anthropic_model: claude-3-5-sonnet-20241022
+  temperature: 0.2
+  # OOD fallback: below this cosine similarity, do not attribute to a prototype.
+  ood_similarity_floor: 0.35
+  latency_budget_seconds: 1.5
+
+evaluation:
+  n_false_positives: 15
+  n_false_negatives: 15
+  n_participants: 6
