@@ -19,15 +19,13 @@ data:
   max_samples: 500          # cap for a minutes-not-hours smoke run
 
 model:
-  name: meta-llama/Llama-Guard-3-8B
-  dtype: int8               # fp16 8B OOMs on a 15 GB T4; int8 fits (~9 GB)
+  name: KoalaAI/Text-Moderation  # ungated, ~180 MB DeBERTa encoder — no HF token needed
+  dtype: float16
   device_map: auto
-  max_new_tokens: 20
   hidden_layer: -1
 
 extraction:
-  batch_size: 4             # conservative for T4 memory headroom
-  max_length: 2048
+  batch_size: 32            # DeBERTa is tiny vs Llama-Guard; large batches are fine
 
 clustering:
   k_min: 3

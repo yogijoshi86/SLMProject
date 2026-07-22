@@ -132,25 +132,17 @@ def nb_extract():
         md("""
 # Phase 1 — Extract UNSAFE Embeddings (Days 1–5)
 
-Loads ToxicChat, runs **Llama-Guard-3-8B**, and saves terminal hidden states for
-every prompt the guard flags **UNSAFE**.
+Loads ToxicChat, runs **KoalaAI/Text-Moderation** (DeBERTa, ~180 MB, ungated),
+and saves CLS hidden states for every prompt flagged **UNSAFE**.
 
-> **GPU required.** Free T4 works with `int8` (set in `colab_smoke.yaml`). fp16 8B will OOM on 15 GB.
-> **Gated model:** accept the license at https://huggingface.co/meta-llama/Llama-Guard-3-8B first.
+No HuggingFace token or license approval needed.
+GPU speeds things up but CPU works too — the model is tiny.
 """),
         md("### Step 0 — get the repo onto this runtime\n\nEither set `GITHUB_URL` (recommended) or use the Drive fallback. Run once per session."),
         code(CLONE),
         code(LOCATE),
         code(INSTALL),
         code(GPU_CHECK),
-        md("### Hugging Face auth (gated model)"),
-        code('''
-import os, getpass
-
-# Paste a token from https://huggingface.co/settings/tokens (read access).
-# You must also accept the license at https://huggingface.co/meta-llama/Llama-Guard-3-8B first.
-os.environ["HF_TOKEN"] = getpass.getpass("HuggingFace token: ")
-'''),
         code(CONFIG_CELL),
         md("### Load prompts"),
         code('''
@@ -284,8 +276,8 @@ def nb_audit():
         md("""
 # Phase 3 — Real-Time Audit Pipeline (Days 11–15)
 
-End-to-end: prompt → Llama-Guard decision → nearest prototype (cosine) → reasoning-LLM
-justification. **Needs GPU** (for the guard) **and** an explainer API key.
+End-to-end: prompt → KoalaAI/Text-Moderation decision → nearest prototype (cosine) → reasoning-LLM
+justification. Needs an **explainer API key** (OpenAI or Anthropic). No HF token required.
 """),
         md("### Step 0 — get the repo onto this runtime"),
         code(CLONE),
@@ -297,11 +289,6 @@ justification. **Needs GPU** (for the guard) **and** an explainer API key.
 import os, getpass
 if not os.environ.get("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("OPENAI_API_KEY: ")
-'''),
-        md("### Hugging Face auth"),
-        code('''
-import os, getpass
-os.environ["HF_TOKEN"] = getpass.getpass("HuggingFace token: ")
 '''),
         code(CONFIG_CELL),
         md("### Assemble the pipeline"),

@@ -19,13 +19,11 @@ data:
   max_samples: null
 
 model:
-  name: meta-llama/Llama-Guard-3-8B
-  # One of: float16, bfloat16, int8, int4
+  name: KoalaAI/Text-Moderation  # ungated, ~180 MB DeBERTa encoder
+  # Switch to meta-llama/Llama-Guard-3-8B if you have gated access.
   dtype: float16
   device_map: auto
-  max_new_tokens: 20
-  # Category taxonomy Llama-Guard-3 emits on the second line when unsafe.
-  hidden_layer: -1        # which hidden_states layer to extract (terminal token)
+  hidden_layer: -1        # which hidden_states layer to extract (CLS token)
 
 extraction:
   batch_size: 8           # keep low to avoid OOM per risk register
