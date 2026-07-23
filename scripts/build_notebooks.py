@@ -101,8 +101,9 @@ print("Repo root:", REPO_ROOT)
 '''
 
 INSTALL = r'''
-# Install the project + GPU/model/explainer extras (skip if already installed).
-%pip install -q -e ".[quant,explainer,dev]"
+# Install the project + GPU/model/explainer extras.
+# transformers>=4.43 is required for Llama-Guard-3-8B (Llama-3 rope_scaling format).
+%pip install -q -e ".[quant,explainer,dev]" "transformers>=4.43.0"
 '''
 
 GPU_CHECK = r'''
