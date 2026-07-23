@@ -106,6 +106,14 @@ INSTALL = r'''
 %pip install -q -e ".[quant,explainer,dev]" "transformers>=4.43.0"
 '''
 
+RESTART = r'''
+# Restart the runtime so the upgraded transformers is loaded fresh.
+# After restart, re-run from the HF auth cell downwards (CLONE/LOCATE/INSTALL are done).
+import os
+print("Restarting runtime to pick up upgraded packages...")
+os.kill(os.getpid(), 9)
+'''
+
 GPU_CHECK = r'''
 import torch
 assert torch.cuda.is_available(), (
@@ -144,6 +152,7 @@ and saves terminal hidden states (dim=4096) for every prompt flagged **UNSAFE**.
         code(CLONE),
         code(LOCATE),
         code(INSTALL),
+        code(RESTART),
         code(GPU_CHECK),
         md("### Hugging Face auth"),
         code('''
@@ -213,6 +222,7 @@ silhouette, and writes the prototype taxonomy. **CPU-only — no GPU needed.**
         code(CLONE),
         code(LOCATE),
         code(INSTALL),
+        code(RESTART),
         code(CONFIG_CELL),
         md("### Build prototypes (sweep + silhouette + exemplars)"),
         code('''
@@ -297,6 +307,7 @@ justification. Needs a **HF token** (for the guard) and an **explainer API key**
         code(CLONE),
         code(LOCATE),
         code(INSTALL),
+        code(RESTART),
         code(GPU_CHECK),
         md("### Hugging Face auth"),
         code('''
@@ -369,6 +380,7 @@ Expects `artifacts/eval_logs.csv` with columns:
         code(CLONE),
         code(LOCATE),
         code(INSTALL),
+        code(RESTART),
         code(CONFIG_CELL),
         md("### Generate a synthetic log to demo the analysis (delete once you have real data)"),
         code('''
