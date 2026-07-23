@@ -227,10 +227,13 @@ class LlamaGuard:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "left"
         is_quantized = "quantization_config" in extra
+        # int8/int4 models must live entirely on one GPU — "auto" lets accelerate
+        # split layers to CPU which bitsandbytes forbids. Force cuda:0.
+        effective_device_map = {"": 0} if is_quantized else device_map
         self.model = AutoModelForCausalLM.from_pretrained(
             name,
             torch_dtype=None if is_quantized else torch_dtype,
-            device_map=device_map,
+            device_map=effective_device_map,
             token=token,
             output_hidden_states=True,
             **extra,
