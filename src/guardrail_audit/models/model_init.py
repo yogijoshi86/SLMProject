@@ -72,7 +72,7 @@ class WildGuard:
 
         self.model = AutoModelForCausalLM.from_pretrained(
             name,
-            torch_dtype=torch_dtype,
+            torch_dtype=None if "quantization_config" in extra else torch_dtype,
             device_map=device_map,
             output_hidden_states=True,
             token=token,
@@ -226,10 +226,14 @@ class LlamaGuard:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "left"
+        is_quantized = "quantization_config" in extra
         self.model = AutoModelForCausalLM.from_pretrained(
-            name, torch_dtype=torch_dtype, device_map=device_map,
+            name,
+            torch_dtype=None if is_quantized else torch_dtype,
+            device_map=device_map,
             token=token,
-            output_hidden_states=True, **extra,
+            output_hidden_states=True,
+            **extra,
         )
         self.model.eval()
         self.max_new_tokens = max_new_tokens
