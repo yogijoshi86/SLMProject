@@ -251,6 +251,8 @@ silhouette, and writes the prototype taxonomy. **CPU-only — no GPU needed.**
         code(LOCATE),
         code(INSTALL),
         code(RESTART),
+        md("### ↑ After that cell restarts the kernel, start from the LOCATE cell below ↓"),
+        code(LOCATE),
         code(CONFIG_CELL),
         md("### Build prototypes (sweep + silhouette + exemplars)"),
         code('''
@@ -417,6 +419,8 @@ Expects `artifacts/eval_logs.csv` with columns:
         code(LOCATE),
         code(INSTALL),
         code(RESTART),
+        md("### ↑ After that cell restarts the kernel, start from the LOCATE cell below ↓"),
+        code(LOCATE),
         code(CONFIG_CELL),
         md("### Generate a synthetic log to demo the analysis (delete once you have real data)"),
         code('''
