@@ -66,7 +66,8 @@ class AuditPipeline:
         timings["match_seconds"] = time.perf_counter() - t1
 
         t2 = time.perf_counter()
-        explanation = self.explainer.explain(text, match)
+        guard_decision = "UNSAFE" if decision.is_unsafe else "SAFE"
+        explanation = self.explainer.explain(text, match, guard_decision=guard_decision)
         timings["explain_seconds"] = time.perf_counter() - t2
         timings["total_seconds"] = sum(timings.values())
 
