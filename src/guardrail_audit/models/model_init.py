@@ -227,12 +227,16 @@ class LlamaGuard:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "left"
         is_quantized = "quantization_config" in extra
-        # bitsandbytes places the model on cuda:0 itself — passing device_map
-        # causes accelerate to call dispatch_model which calls .to() and fails.
+        # Clear any fragmented GPU memory from prior failed loads before loading
+        # an 8/4-bit quantized model — "auto" device_map offloads to CPU if not enough
+        # contiguous GPU RAM is available, which bitsandbytes forbids.
+        if is_quantized:
+            import torch as _torch
+            _torch.cuda.empty_cache()
         self.model = AutoModelForCausalLM.from_pretrained(
             name,
             torch_dtype=None if is_quantized else torch_dtype,
-            device_map=None if is_quantized else device_map,
+            device_map="auto",
             token=token,
             output_hidden_states=True,
             **extra,

@@ -186,6 +186,16 @@ records[0]
 '''),
         md("### Load Llama-Guard-3 (downloads ~16 GB on first run)"),
         code('''
+import torch
+free, total = torch.cuda.mem_get_info()
+print(f"GPU: {torch.cuda.get_device_name(0)}")
+print(f"Free: {free/1e9:.1f} GB / Total: {total/1e9:.1f} GB")
+if free < 9e9:
+    print("WARNING: < 9 GB free. Do Runtime → Disconnect and delete runtime for a clean slate.")
+else:
+    print("OK — enough free RAM for int8 load.")
+'''),
+        code('''
 from guardrail_audit.models import load_guard
 
 guard = load_guard(cfg.model)
