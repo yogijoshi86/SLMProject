@@ -124,6 +124,24 @@ except Exception as e:
 os.kill(os.getpid(), 9)
 '''
 
+DRIVE_CACHE = r'''
+# Mount Google Drive and redirect HuggingFace cache there.
+# The 16 GB model downloads once to Drive; future sessions load it in ~2 min instead of re-downloading.
+# Skip this cell if you don't want Drive persistence (model re-downloads every session).
+from google.colab import drive
+from pathlib import Path
+import os
+
+drive.mount("/content/drive")
+
+# Adjust this path if you want the cache in a different Drive folder.
+HF_CACHE = "/content/drive/MyDrive/hf_cache"
+Path(HF_CACHE).mkdir(parents=True, exist_ok=True)
+os.environ["HF_HOME"] = HF_CACHE
+os.environ["TRANSFORMERS_CACHE"] = HF_CACHE
+print(f"HF cache → {HF_CACHE}")
+'''
+
 GPU_CHECK = r'''
 import torch
 assert torch.cuda.is_available(), (
@@ -171,6 +189,8 @@ import numpy as np; np.random.seed(0)
 import torch; assert torch.cuda.is_available()
 print("numpy", np.__version__, "| torch", torch.__version__, "| CUDA OK")
 '''),
+        md("### (Optional) Cache model to Google Drive — avoids re-downloading 16 GB each session"),
+        code(DRIVE_CACHE),
         code(GPU_CHECK),
         md("### Hugging Face auth"),
         code('''
@@ -346,6 +366,8 @@ import numpy as np; np.random.seed(0)
 import torch; assert torch.cuda.is_available()
 print("numpy", np.__version__, "| torch", torch.__version__, "| CUDA OK")
 '''),
+        md("### (Optional) Cache model to Google Drive — avoids re-downloading 16 GB each session"),
+        code(DRIVE_CACHE),
         code(GPU_CHECK),
         md("### Hugging Face auth"),
         code('''
