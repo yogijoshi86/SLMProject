@@ -444,7 +444,110 @@ Expects `artifacts/eval_logs.csv` with columns:
         md("### ↑ After that cell restarts the kernel, start from the LOCATE cell below ↓"),
         code(LOCATE),
         code(CONFIG_CELL),
-        md("### Generate a synthetic log to demo the analysis (delete once you have real data)"),
+        md("### Day 16 — Curate 30 test cases from real embeddings"),
+        code('''
+import torch, json
+from pathlib import Path
+from datasets import load_dataset
+
+# Load what the guard actually processed
+payload = torch.load(cfg.paths.embeddings, map_location="cpu")
+metadata = payload["metadata"]
+print(f"Total UNSAFE flags from guard: {len(metadata)}")
+
+# FALSE POSITIVES: guard said UNSAFE but ground truth says safe
+fps = [m for m in metadata if m["gt_toxicity"] == 0]
+print(f"False positives available: {len(fps)}")
+
+# FALSE NEGATIVES: ground truth toxic but guard missed them
+# We need prompts that were seen during extraction but NOT flagged.
+# Re-load the full dataset and find toxic prompts not in our embeddings.
+flagged_texts = {m["text"] for m in metadata}
+ds = load_dataset(cfg.data.dataset_name, cfg.data.dataset_config, split=cfg.data.split)
+fns = [
+    {"text": r["user_input"], "gt_toxicity": 1, "gt_jailbreak": int(r.get("jailbreaking", 0) or 0),
+     "categories": [], "index": i}
+    for i, r in enumerate(ds)
+    if r.get("toxicity") == 1
+    and (r.get("user_input") or "").strip() not in flagged_texts
+]
+print(f"False negatives available: {len(fns)}")
+
+# Sample up to 15 of each
+import random; random.seed(42)
+fps_sample = random.sample(fps, min(15, len(fps)))
+fns_sample = random.sample(fns, min(15, len(fns)))
+
+print(f"\\nSelected — FPs: {len(fps_sample)}, FNs: {len(fns_sample)}")
+print("\\nSample FP:", fps_sample[0]["text"][:120])
+print("Sample FN:", fns_sample[0]["text"][:120])
+'''),
+        md("### Generate both packages per case using the audit pipeline"),
+        code('''
+# NOTE: requires guard + pipeline from 03_audit to be loaded in this session.
+# If running standalone, load them first (see 03_audit.ipynb assemble cell).
+
+cases = []
+all_samples = (
+    [{"failure_type": "false_positive", **m} for m in fps_sample] +
+    [{"failure_type": "false_negative", **m} for m in fns_sample]
+)
+
+for i, sample in enumerate(all_samples):
+    case_id = f"c{i+1:02d}"
+    text = sample["text"]
+    failure_type = sample["failure_type"]
+
+    # Run the full pipeline to get prototype match + explanation
+    result = pipeline.audit_dict(text, explain_safe=True)
+
+    cases.append({
+        "case_id": case_id,
+        "failure_type": failure_type,
+        "input_text": text,
+        "guard_decision": "UNSAFE" if result["is_unsafe"] else "SAFE",
+        "confidence": result.get("similarity_score"),
+        "matched_prototype": result["matched_prototype"],
+        "prototype_label": result.get("prototype_label", result["matched_prototype"]),
+        "similarity_score": result["similarity_score"],
+        "top_exemplars": [],
+        "explanation": result["explanation"],
+        "gt_toxicity": sample["gt_toxicity"],
+    })
+    print(f"[{i+1}/{len(all_samples)}] {case_id} ({failure_type}) — {result['matched_prototype']}")
+
+print(f"\\nGenerated {len(cases)} cases.")
+'''),
+        md("### Save the benchmark test set"),
+        code('''
+from guardrail_audit.evaluation import write_benchmark
+
+write_benchmark(cases, cfg.paths.benchmark)
+print(f"Saved to {cfg.paths.benchmark}")
+
+# Preview one case
+with open(cfg.paths.benchmark) as f:
+    bench = json.load(f)
+
+print("\\n--- Control package (what reviewer sees without explanation) ---")
+print(json.dumps(bench[0]["control"], indent=2))
+print("\\n--- Treatment package (what reviewer sees with explanation) ---")
+print(json.dumps(bench[0]["treatment"], indent=2))
+'''),
+        md("""
+### Day 17 — Run the A/B Study
+
+For each of the 30 cases in `benchmark_test_set.json`:
+1. Show **control** package to participants in the control arm
+2. Show **treatment** package to participants in the treatment arm
+3. Record time-to-diagnosis + whether the root cause was correct
+
+Log results to `artifacts/eval_logs.csv` with columns:
+`participant, case_id, arm, seconds, correct`
+
+Then run the statistics cells below.
+"""),
+        md("### Generate a synthetic log to demo the analysis (replace with real data)"),
         code('''
 import numpy as np, pandas as pd
 from pathlib import Path
