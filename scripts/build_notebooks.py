@@ -147,9 +147,14 @@ and saves terminal hidden states (dim=4096) for every prompt flagged **UNSAFE**.
         md("### Hugging Face auth"),
         code('''
 import os, getpass
+from huggingface_hub import login
+
 # Token from https://huggingface.co/settings/tokens (read access).
 # Accept the license at https://huggingface.co/meta-llama/Llama-Guard-3-8B first.
-os.environ["HF_TOKEN"] = getpass.getpass("HuggingFace token: ")
+token = getpass.getpass("HuggingFace token: ")
+os.environ["HF_TOKEN"] = token
+login(token=token)   # registers the token with transformers globally
+print("Logged in.")
 '''),
         code(CONFIG_CELL),
         md("### Load prompts"),

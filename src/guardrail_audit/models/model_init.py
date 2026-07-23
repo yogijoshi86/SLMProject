@@ -60,10 +60,12 @@ class WildGuard:
         hidden_layer: int = -1,
         **_ignored,
     ) -> None:
+        import os
         from transformers import AutoModelForCausalLM
 
+        token = os.environ.get("HF_TOKEN")
         torch_dtype, extra = _dtype_and_quant(dtype)
-        self.tokenizer = AutoTokenizer.from_pretrained(name)
+        self.tokenizer = AutoTokenizer.from_pretrained(name, token=token)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "left"
@@ -73,6 +75,7 @@ class WildGuard:
             torch_dtype=torch_dtype,
             device_map=device_map,
             output_hidden_states=True,
+            token=token,
             **extra,
         )
         self.model.eval()
@@ -211,15 +214,18 @@ class LlamaGuard:
         max_new_tokens: int = 20,
         hidden_layer: int = -1,
     ) -> None:
+        import os
         from transformers import AutoModelForCausalLM
 
+        token = os.environ.get("HF_TOKEN")
         torch_dtype, extra = _dtype_and_quant(dtype)
-        self.tokenizer = AutoTokenizer.from_pretrained(name)
+        self.tokenizer = AutoTokenizer.from_pretrained(name, token=token)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "left"
         self.model = AutoModelForCausalLM.from_pretrained(
             name, torch_dtype=torch_dtype, device_map=device_map,
+            token=token,
             output_hidden_states=True, **extra,
         )
         self.model.eval()
