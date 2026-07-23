@@ -101,11 +101,11 @@ print("Repo root:", REPO_ROOT)
 '''
 
 INSTALL = r'''
-# Install the project + GPU/model/explainer extras.
-# transformers==4.44.2: exact pin — supports Llama-3 rope_scaling, avoids is_jax_tensor conflicts.
+# Pin exact versions proven compatible: transformers 4.44.2 + accelerate 0.33.0 + bitsandbytes 0.45.x
 %pip install -q -e ".[quant,explainer,dev]" \
     "torch>=2.4.0" "torchvision>=0.19.0" \
     "transformers==4.44.2" \
+    "accelerate==0.33.0" \
     "bitsandbytes>=0.45.0"
 '''
 
