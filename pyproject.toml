@@ -10,7 +10,7 @@ authors = [{ name = "Yogi Joshi" }]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "torch==2.3.0",
+    "torch>=2.4.0",
     "transformers>=4.43.0",
     "datasets>=2.19.0",
     "scikit-learn==1.5.0",
