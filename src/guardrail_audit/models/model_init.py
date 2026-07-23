@@ -188,12 +188,21 @@ class TextModerationGuard:
 
 
 def _dtype_and_quant(dtype: str) -> tuple[torch.dtype | None, dict]:
+    import torch
     dtype = dtype.lower()
-    if dtype == "int8":
-        # Pass load_in_8bit directly — avoids BitsAndBytesConfig torch-scope bug on Colab.
-        return None, {"load_in_8bit": True}
-    if dtype == "int4":
-        return None, {"load_in_4bit": True}
+
+    if dtype in ("int8", "int4"):
+        from transformers import BitsAndBytesConfig
+
+        quant_config = BitsAndBytesConfig(
+            load_in_8bit=(dtype == "int8"),
+            load_in_4bit=(dtype == "int4"),
+            # Explicitly evaluate torch.float16 here (our scope) so transformers never
+            # hits the buggy auto-init path where torch is not in their local scope.
+            bnb_4bit_compute_dtype=torch.float16 if dtype == "int4" else None,
+        )
+        return torch.float16, {"quantization_config": quant_config}
+
     return {"float16": torch.float16, "bfloat16": torch.bfloat16}.get(dtype, torch.float16), {}
 
 
