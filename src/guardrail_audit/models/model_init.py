@@ -194,11 +194,10 @@ def _dtype_and_quant(dtype: str) -> tuple[torch.dtype | None, dict]:
             from transformers import BitsAndBytesConfig
         except ImportError as exc:
             raise ImportError("Install extras: pip install '.[quant]'") from exc
-        quant = BitsAndBytesConfig(
-            load_in_8bit=(dtype == "int8"),
-            load_in_4bit=(dtype == "int4"),
-            bnb_4bit_compute_dtype=torch.float16,
-        )
+        if dtype == "int8":
+            quant = BitsAndBytesConfig(load_in_8bit=True)
+        else:
+            quant = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16)
         return None, {"quantization_config": quant}
     return {"float16": torch.float16, "bfloat16": torch.bfloat16}.get(dtype, torch.float16), {}
 
