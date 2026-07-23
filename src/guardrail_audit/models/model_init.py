@@ -261,11 +261,22 @@ class LlamaGuard:
 
     @torch.no_grad()
     def classify_batch(self, texts: list[str]) -> tuple[list[GuardDecision], torch.Tensor]:
+        # apply_chat_template doesn't support batches in 4.44.2 for Llama-Guard —
+        # render each conversation individually then pad to a common length.
         chats = [[{"role": "user", "content": t}] for t in texts]
-        prompt_ids = self.tokenizer.apply_chat_template(
-            chats, return_tensors="pt", padding=True, add_generation_prompt=True,
-        ).to(self.device)
-        attention_mask = (prompt_ids != self.tokenizer.pad_token_id).long()
+        encoded = [
+            self.tokenizer.apply_chat_template(
+                c, return_tensors="pt", add_generation_prompt=True,
+            ).squeeze(0)
+            for c in chats
+        ]
+        max_len = max(e.shape[0] for e in encoded)
+        pad_id = self.tokenizer.pad_token_id
+        prompt_ids = torch.stack([
+            torch.cat([torch.full((max_len - e.shape[0],), pad_id, dtype=torch.long), e])
+            for e in encoded
+        ]).to(self.device)
+        attention_mask = (prompt_ids != pad_id).long()
         forward = self.model(input_ids=prompt_ids, attention_mask=attention_mask, output_hidden_states=True)
         embeddings = forward.hidden_states[self.hidden_layer][:, -1, :].float().cpu()
         generated = self.model.generate(
