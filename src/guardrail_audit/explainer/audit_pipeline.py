@@ -41,12 +41,10 @@ class AuditPipeline:
         self.latency_budget = latency_budget_seconds
 
     def audit(self, text: str, explain_safe: bool = False) -> AuditRecord:
-        from guardrail_audit.data import to_chat
-
         timings: dict[str, float] = {}
 
         t0 = time.perf_counter()
-        decisions, embeddings = self.guard.classify_batch([to_chat(text)])
+        decisions, embeddings = self.guard.classify_batch([text])
         decision = decisions[0]
         query_emb = embeddings[0].numpy()
         timings["guard_seconds"] = time.perf_counter() - t0
