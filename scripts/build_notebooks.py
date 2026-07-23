@@ -101,12 +101,13 @@ print("Repo root:", REPO_ROOT)
 '''
 
 INSTALL = r'''
-# Pin exact versions proven compatible: transformers 4.44.2 + accelerate 0.33.0 + bitsandbytes 0.45.x
+# Pin exact versions proven compatible on Colab T4.
 %pip install -q -e ".[quant,explainer,dev]" \
     "torch>=2.4.0" "torchvision>=0.19.0" \
     "transformers==4.44.2" \
     "accelerate==0.33.0" \
-    "bitsandbytes>=0.45.0"
+    "bitsandbytes>=0.45.0" \
+    "numpy>=1.26,<2.0"
 '''
 
 RESTART = r'''
