@@ -111,10 +111,16 @@ INSTALL = r'''
 '''
 
 RESTART = r'''
-# Restart the runtime so the upgraded transformers is loaded fresh.
-# After restart, re-run from the HF auth cell downwards (CLONE/LOCATE/INSTALL are done).
-import os
-print("Restarting runtime to pick up upgraded packages...")
+# MUST RUN after INSTALL. Restarts the kernel so upgraded packages load fresh.
+# After restart: skip this cell and the INSTALL cell, run from the next cell down.
+import os, sys
+# Sanity-check: if numpy is already broken, restart is definitely needed.
+try:
+    import numpy as np; np.random.seed(0)
+    print("Packages loaded OK. Restarting to ensure clean state...")
+except Exception as e:
+    print(f"Detected stale package (numpy ABI mismatch or similar): {e}")
+    print("Restarting now...")
 os.kill(os.getpid(), 9)
 '''
 
@@ -157,6 +163,13 @@ and saves terminal hidden states (dim=4096) for every prompt flagged **UNSAFE**.
         code(LOCATE),
         code(INSTALL),
         code(RESTART),
+        md("### ↑ After that cell restarts the kernel, start from here ↓"),
+        code('''
+# Sanity check — if this errors, re-run the INSTALL + RESTART cells above.
+import numpy as np; np.random.seed(0)
+import torch; assert torch.cuda.is_available()
+print("numpy", np.__version__, "| torch", torch.__version__, "| CUDA OK")
+'''),
         code(GPU_CHECK),
         md("### Hugging Face auth"),
         code('''
@@ -322,6 +335,13 @@ justification. Needs a **HF token** (for the guard) and an **explainer API key**
         code(LOCATE),
         code(INSTALL),
         code(RESTART),
+        md("### ↑ After that cell restarts the kernel, start from here ↓"),
+        code('''
+# Sanity check — if this errors, re-run the INSTALL + RESTART cells above.
+import numpy as np; np.random.seed(0)
+import torch; assert torch.cuda.is_available()
+print("numpy", np.__version__, "| torch", torch.__version__, "| CUDA OK")
+'''),
         code(GPU_CHECK),
         md("### Hugging Face auth"),
         code('''
