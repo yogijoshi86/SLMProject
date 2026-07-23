@@ -163,7 +163,8 @@ and saves terminal hidden states (dim=4096) for every prompt flagged **UNSAFE**.
         code(LOCATE),
         code(INSTALL),
         code(RESTART),
-        md("### ↑ After that cell restarts the kernel, start from here ↓"),
+        md("### ↑ After that cell restarts the kernel, start from the LOCATE cell below ↓"),
+        code(LOCATE),
         code('''
 # Sanity check — if this errors, re-run the INSTALL + RESTART cells above.
 import numpy as np; np.random.seed(0)
@@ -335,7 +336,8 @@ justification. Needs a **HF token** (for the guard) and an **explainer API key**
         code(LOCATE),
         code(INSTALL),
         code(RESTART),
-        md("### ↑ After that cell restarts the kernel, start from here ↓"),
+        md("### ↑ After that cell restarts the kernel, start from the LOCATE cell below ↓"),
+        code(LOCATE),
         code('''
 # Sanity check — if this errors, re-run the INSTALL + RESTART cells above.
 import numpy as np; np.random.seed(0)
