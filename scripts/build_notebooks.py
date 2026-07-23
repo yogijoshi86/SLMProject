@@ -102,8 +102,11 @@ print("Repo root:", REPO_ROOT)
 
 INSTALL = r'''
 # Install the project + GPU/model/explainer extras.
-# Explicit version floors ensure Colab upgrades from any stale cached versions.
-%pip install -q -e ".[quant,explainer,dev]" "transformers>=4.43.0" "bitsandbytes>=0.45.0" "torch>=2.4.0"
+# Pins torchvision to match torch ABI; caps transformers to a known-good Colab range.
+%pip install -q -e ".[quant,explainer,dev]" \
+    "torch>=2.4.0" "torchvision>=0.19.0" \
+    "transformers>=4.43.0,<4.50.0" \
+    "bitsandbytes>=0.45.0"
 '''
 
 RESTART = r'''
