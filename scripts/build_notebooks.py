@@ -142,6 +142,88 @@ os.environ["TRANSFORMERS_CACHE"] = HF_CACHE
 print(f"HF cache → {HF_CACHE}")
 '''
 
+DRIVE_BACKUP_01 = r'''
+# Save artifacts to Google Drive so they survive runtime resets.
+# Skip if Drive is not mounted (run the DRIVE_CACHE cell first).
+import shutil
+from pathlib import Path
+
+DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
+Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
+
+files = [
+    "artifacts/unsafe_embeddings_smoke.pt",
+    "artifacts/unsafe_embeddings.pt",
+]
+for f in files:
+    if Path(f).exists():
+        shutil.copy(f, DRIVE_ARTIFACTS)
+        print(f"Saved {f} → Drive")
+    else:
+        print(f"Skipped {f} (not found)")
+'''
+
+DRIVE_BACKUP_02 = r'''
+# Save taxonomy to Google Drive.
+import shutil
+from pathlib import Path
+
+DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
+Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
+
+files = [
+    "artifacts/prototypes_taxonomy_smoke.json",
+    "artifacts/prototypes_taxonomy.json",
+]
+for f in files:
+    if Path(f).exists():
+        shutil.copy(f, DRIVE_ARTIFACTS)
+        print(f"Saved {f} → Drive")
+    else:
+        print(f"Skipped {f} (not found)")
+'''
+
+DRIVE_BACKUP_04 = r'''
+# Save benchmark + evaluation artifacts to Google Drive.
+import shutil
+from pathlib import Path
+
+DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
+Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
+
+files = [
+    "artifacts/benchmark_test_set.json",
+    "artifacts/eval_logs.csv",
+    "artifacts/counterfactual_results.csv",
+    "artifacts/guard_classification_metrics.json",
+]
+for f in files:
+    if Path(f).exists():
+        shutil.copy(f, DRIVE_ARTIFACTS)
+        print(f"Saved {f} → Drive")
+    else:
+        print(f"Skipped {f} (not found)")
+'''
+
+DRIVE_RESTORE = r'''
+# Restore artifacts from Google Drive at the start of a new session.
+# Run this instead of re-running the extraction/clustering notebooks.
+import shutil
+from pathlib import Path
+
+DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
+LOCAL_ARTIFACTS = Path("artifacts")
+LOCAL_ARTIFACTS.mkdir(exist_ok=True)
+
+restored = []
+for f in Path(DRIVE_ARTIFACTS).glob("*"):
+    dest = LOCAL_ARTIFACTS / f.name
+    shutil.copy(f, dest)
+    restored.append(dest.name)
+
+print(f"Restored {len(restored)} files:", restored)
+'''
+
 GPU_CHECK = r'''
 import torch
 assert torch.cuda.is_available(), (
@@ -252,6 +334,8 @@ print(payload["stats"])
 **Next:** open `02_clustering.ipynb`.
 If you hit CUDA OOM, lower `extraction.batch_size` in `config/colab_smoke.yaml` (try 2 or 1).
 """),
+        md("### Save artifacts to Google Drive (run before closing runtime)"),
+        code(DRIVE_BACKUP_01),
     ])
 
 
@@ -274,6 +358,8 @@ silhouette, and writes the prototype taxonomy. **CPU-only — no GPU needed.**
         md("### ↑ After that cell restarts the kernel, start from the LOCATE cell below ↓"),
         code(LOCATE),
         code(CONFIG_CELL),
+        md("### Restore artifacts from Drive (skip if already present)"),
+        code(DRIVE_RESTORE),
         md("### Build prototypes (sweep + silhouette + exemplars)"),
         code('''
 from guardrail_audit.clustering import build_prototypes
@@ -339,6 +425,8 @@ with open(cfg.paths.taxonomy, "w") as f:
 print("Saved.")
 '''),
         md("**Next:** open `03_audit.ipynb`."),
+        md("### Save taxonomy to Google Drive (run before closing runtime)"),
+        code(DRIVE_BACKUP_02),
     ])
 
 
@@ -381,6 +469,8 @@ if not os.environ.get("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("OPENAI_API_KEY: ")
 '''),
         code(CONFIG_CELL),
+        md("### Restore artifacts from Drive (skip if already present)"),
+        code(DRIVE_RESTORE),
         md("### Assemble the pipeline"),
         code('''
 from guardrail_audit.models import load_guard
@@ -417,6 +507,8 @@ for p in prompts:
     print("   ", r["explanation"][:200].replace("\\n", " "), "\\n")
 '''),
         md("**Next:** open `04_evaluation.ipynb` once you've collected A/B latency logs."),
+        md("### Save artifacts to Google Drive (run before closing runtime)"),
+        code(DRIVE_BACKUP_04),
     ])
 
 
@@ -680,6 +772,8 @@ print(f"reduction={stats.reduction_pct:.1f}% | t={stats.t_statistic:.3f} p={stat
 if stats.accuracy_treatment is not None:
     print(f"accuracy: control {stats.accuracy_control:.1%} | treatment {stats.accuracy_treatment:.1%} (target >= 85%)")
 '''),
+        md("### Save all evaluation artifacts to Google Drive"),
+        code(DRIVE_BACKUP_04),
     ])
 
 
