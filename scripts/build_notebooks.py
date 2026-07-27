@@ -793,9 +793,212 @@ if stats.accuracy_treatment is not None:
     ])
 
 
+DRIVE_BACKUP_BERTOPIC = r'''
+import shutil
+from pathlib import Path
+
+DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
+Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
+
+files = ["artifacts/bertopic_baseline.json"]
+for f in files:
+    if Path(f).exists():
+        shutil.copy(f, DRIVE_ARTIFACTS)
+        print(f"Saved {f} -> Drive")
+    else:
+        print(f"Skipped {f} (not found)")
+'''
+
+
+def nb_bertopic():
+    return notebook([
+        md("""
+# Notebook 02b — BERTopic Baseline Clustering
+
+Runs **BERTopic** on the same UNSAFE embeddings used in `02_clustering.ipynb`.
+Used as a **baseline comparison** against K-means prototype clustering.
+
+**Research question:** Do BERTopic's keyword-level topic descriptions produce
+better or worse developer diagnostic performance than K-means prototype explanations?
+
+Uses pre-computed hidden-state embeddings (no sentence-transformer re-embedding needed).
+**CPU-only — no GPU required.**
+"""),
+        md("### Step 0 — get the repo onto this runtime"),
+        code(CLONE),
+        code(LOCATE),
+        code('''
+# Install project deps + BERTopic
+%pip install -q -e ".[dev]" "bertopic>=0.16" "umap-learn>=0.5" "hdbscan>=0.8"
+'''),
+        code(RESTART),
+        md("### After restart — re-run from here"),
+        code(LOCATE),
+        code('''
+# Sanity check
+import numpy as np; np.random.seed(0)
+print("numpy", np.__version__, "OK")
+'''),
+        code(CONFIG_CELL),
+        md("### Restore artifacts from Drive"),
+        code(DRIVE_RESTORE),
+        md("### Load train-split embeddings (same as 02_clustering)"),
+        code('''
+import torch
+import numpy as np
+from guardrail_audit.clustering.normalize import l2_normalize
+
+payload = torch.load(cfg.paths.embeddings, map_location="cpu")
+all_embeddings = payload["embeddings"].numpy().astype(np.float64)
+all_metadata   = payload["metadata"]
+train_indices  = payload.get("train_indices", list(range(len(all_metadata))))
+
+embeddings = all_embeddings[train_indices]
+metadata   = [all_metadata[i] for i in train_indices]
+texts      = [m["text"] for m in metadata]
+embeddings_norm = l2_normalize(embeddings)
+
+print(f"Train split: {len(texts)} prompts, dim={embeddings_norm.shape[1]}")
+'''),
+        md("### Run BERTopic with pre-computed embeddings"),
+        code('''
+from bertopic import BERTopic
+from umap import UMAP
+from hdbscan import HDBSCAN
+
+# Use pre-computed embeddings — no sentence-transformer needed
+umap_model  = UMAP(n_components=5, n_neighbors=15, min_dist=0.0,
+                   metric="cosine", random_state=cfg.seed)
+hdbscan_model = HDBSCAN(min_cluster_size=10, metric="euclidean",
+                        cluster_selection_method="eom", prediction_data=True)
+
+topic_model = BERTopic(
+    umap_model=umap_model,
+    hdbscan_model=hdbscan_model,
+    nr_topics="auto",
+    verbose=True,
+)
+
+topics, probs = topic_model.fit_transform(texts, embeddings=embeddings_norm)
+print(f"Topics found: {topic_model.get_topic_info().shape[0] - 1} (excluding outliers)")
+print(f"Outlier count (-1): {topics.count(-1)}")
+'''),
+        md("### Inspect topics — top words per topic"),
+        code('''
+import pandas as pd
+
+topic_info = topic_model.get_topic_info()
+print(topic_info[["Topic", "Count", "Name"]].to_string(index=False))
+
+print("\\n--- Top words per topic ---")
+for tid in sorted(set(topics)):
+    if tid == -1:
+        continue
+    words = topic_model.get_topic(tid)
+    word_str = ", ".join([w for w, _ in words[:8]])
+    size = topics.count(tid)
+    print(f"Topic {tid:2d} (n={size:3d}): {word_str}")
+'''),
+        md("### Compare silhouette score vs K-means"),
+        code('''
+from sklearn.metrics import silhouette_score
+import json
+
+# Silhouette on BERTopic labels (exclude outliers)
+non_outlier_mask = [t != -1 for t in topics]
+if sum(non_outlier_mask) > 1 and len(set(t for t in topics if t != -1)) > 1:
+    sil_bertopic = silhouette_score(
+        embeddings_norm[non_outlier_mask],
+        [t for t in topics if t != -1]
+    )
+else:
+    sil_bertopic = float("nan")
+
+# Load K-means silhouette from taxonomy for comparison
+with open(cfg.paths.taxonomy) as f:
+    tax = json.load(f)
+sil_kmeans = tax["meta"]["best_silhouette"]
+kmeans_k   = tax["meta"]["best_k"]
+
+print(f"K-means  (k={kmeans_k}):  silhouette = {sil_kmeans:.4f}")
+print(f"BERTopic (k={len(set(t for t in topics if t != -1))}): silhouette = {sil_bertopic:.4f}")
+print()
+if sil_kmeans > sil_bertopic:
+    print("K-means produces tighter, better-separated clusters on these embeddings.")
+else:
+    print("BERTopic produces tighter clusters — consider using it instead.")
+'''),
+        md("### Visualise topic distribution"),
+        code('''
+import matplotlib.pyplot as plt
+
+counts = topic_info[topic_info.Topic != -1].set_index("Topic")["Count"]
+plt.figure(figsize=(8, 4))
+plt.bar(counts.index.astype(str), counts.values)
+plt.xlabel("BERTopic Topic ID")
+plt.ylabel("Prompt count")
+plt.title(f"BERTopic topic sizes (outliers excluded)")
+plt.tight_layout(); plt.show()
+'''),
+        md("### Save baseline results"),
+        code('''
+from pathlib import Path
+
+baseline = {
+    "method": "BERTopic",
+    "n_topics": int(len(set(t for t in topics if t != -1))),
+    "n_outliers": int(topics.count(-1)),
+    "silhouette": float(sil_bertopic) if not (sil_bertopic != sil_bertopic) else None,
+    "kmeans_silhouette_for_comparison": float(sil_kmeans),
+    "kmeans_k": int(kmeans_k),
+    "topics": {
+        str(tid): {
+            "size": int(topics.count(tid)),
+            "top_words": [w for w, _ in topic_model.get_topic(tid)[:10]],
+            "exemplars": [
+                texts[i] for i, t in enumerate(topics)
+                if t == tid
+            ][:3],
+        }
+        for tid in sorted(set(topics)) if tid != -1
+    },
+}
+
+Path("artifacts").mkdir(exist_ok=True)
+with open("artifacts/bertopic_baseline.json", "w") as f:
+    json.dump(baseline, f, indent=2)
+print("Saved artifacts/bertopic_baseline.json")
+print(json.dumps({k: v for k, v in baseline.items() if k != "topics"}, indent=2))
+'''),
+        md("""
+### Interpreting for the paper (Section related work / ablation)
+
+| Metric | K-means | BERTopic |
+|---|---|---|
+| Silhouette score | from taxonomy | from cell above |
+| Cluster type | Centroid-based (runtime matchable) | Density-based (no centroid) |
+| Explanation type | Structural prototype + LLM | Token keyword list |
+| Runtime inference | O(k) cosine similarity | N/A — no inference-time matching |
+
+**If K-means silhouette > BERTopic silhouette:**
+Supports your claim that K-means on hidden states produces more coherent clusters
+for this task than density-based topic modelling.
+
+**Key paper sentence:**
+*"BERTopic extracts token-level keywords per topic (S=X.XX) whereas K-means on
+hidden states produces tighter semantic clusters (S=X.XX), and uniquely supports
+runtime prototype matching via centroid cosine similarity."*
+"""),
+        md("### Save to Google Drive"),
+        code(DRIVE_BACKUP_BERTOPIC),
+    ])
+
+
+
 NOTEBOOKS = {
     "01_extraction.ipynb": nb_extract,
     "02_clustering.ipynb": nb_cluster,
+    "02b_bertopic_baseline.ipynb": nb_bertopic,
     "03_audit.ipynb": nb_audit,
     "04_evaluation.ipynb": nb_eval,
 }

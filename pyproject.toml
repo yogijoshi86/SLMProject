@@ -23,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 quant = ["bitsandbytes>=0.45.0", "accelerate==0.33.0"]
 explainer = ["openai>=1.30.0", "anthropic>=0.28.0"]
-dev = ["pytest>=8.0", "pandas>=2.2", "matplotlib>=3.8", "jupyter>=1.0"]
+dev = ["pytest>=8.0", "pandas>=2.2", "matplotlib>=3.8", "jupyter>=1.0", "bertopic>=0.16", "umap-learn>=0.5", "hdbscan>=0.8"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
