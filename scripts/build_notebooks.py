@@ -225,12 +225,19 @@ print(f"Restored {len(restored)} files:", restored)
 '''
 
 GPU_CHECK = r'''
-import torch
+import os, torch
+
+# Reduce CUDA memory fragmentation — set before any model load
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 assert torch.cuda.is_available(), (
-    "No CUDA GPU. In Colab: Runtime -> Change runtime type -> T4 GPU, then rerun."
+    "No CUDA GPU. In Colab: Runtime -> Change runtime type -> T4/A100 GPU, then rerun."
 )
 print("GPU:", torch.cuda.get_device_name(0))
-print("VRAM (GB):", round(torch.cuda.get_device_properties(0).total_memory / 1e9, 1))
+free, total = torch.cuda.mem_get_info()
+print(f"VRAM: {free/1e9:.1f} GB free / {total/1e9:.1f} GB total")
+if free < 10e9:
+    print("WARNING: < 10 GB free. Consider Runtime → Disconnect and delete runtime.")
 '''
 
 CONFIG_CELL = r'''

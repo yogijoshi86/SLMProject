@@ -27,7 +27,7 @@ model:
   hidden_layer: -1
 
 extraction:
-  batch_size: 4             # conservative for T4 memory headroom
+  batch_size: 8             # safe for A100 with int8 + output_hidden_states=True
 
 clustering:
   k_min: 3
