@@ -16,7 +16,8 @@ data:
   dataset_config: toxicchat0124
   split: train
   text_column: user_input
-  max_samples: 500          # cap for a minutes-not-hours smoke run
+  max_samples: 5000         # 5k prompts; full dataset = null
+  train_ratio: 0.8          # 80% for clustering, 20% held out for A/B benchmark
 
 model:
   name: meta-llama/Llama-Guard-3-8B

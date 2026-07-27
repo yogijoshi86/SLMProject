@@ -327,8 +327,10 @@ payload = extract_unsafe_embeddings(
     records=records,
     batch_size=cfg.extraction.batch_size,
     output_path=cfg.paths.embeddings,
+    train_ratio=cfg.data.get("train_ratio", 0.8),
 )
-print(payload["stats"])
+stats = payload["stats"]
+print(f"Total UNSAFE: {stats['n_unsafe']}  |  Train: {stats['n_train']}  |  Test: {stats['n_test']}")
 '''),
         md("""
 **Next:** open `02_clustering.ipynb`.
@@ -545,15 +547,22 @@ from datasets import load_dataset
 # Load what the guard actually processed
 payload = torch.load(cfg.paths.embeddings, map_location="cpu")
 metadata = payload["metadata"]
-print(f"Total UNSAFE flags from guard: {len(metadata)}")
+test_indices = payload.get("test_indices", list(range(len(metadata))))
+train_indices = payload.get("train_indices", [])
 
-# FALSE POSITIVES: guard said UNSAFE but ground truth says safe
-fps = [m for m in metadata if m["gt_toxicity"] == 0]
-print(f"False positives available: {len(fps)}")
+print(f"Total UNSAFE flags: {len(metadata)}")
+print(f"Train split (used for clustering): {len(train_indices)}")
+print(f"Test split (held out for benchmark): {len(test_indices)}")
+
+# Use ONLY test split — avoids contamination with prototype exemplars
+test_metadata = [metadata[i] for i in test_indices]
+
+# FALSE POSITIVES from test split: guard said UNSAFE but ground truth says safe
+fps = [m for m in test_metadata if m["gt_toxicity"] == 0]
+print(f"False positives available (test split): {len(fps)}")
 
 # FALSE NEGATIVES: ground truth toxic but guard missed them
-# We need prompts that were seen during extraction but NOT flagged.
-# Re-load the full dataset and find toxic prompts not in our embeddings.
+# Re-load full dataset and find toxic prompts not flagged by guard
 flagged_texts = {m["text"] for m in metadata}
 ds = load_dataset(cfg.data.dataset_name, cfg.data.dataset_config, split=cfg.data.split)
 fns = [

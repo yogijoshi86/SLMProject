@@ -56,10 +56,26 @@ def build_prototypes(
     top_exemplars: int,
     k_cap: int | None = None,
 ) -> dict:
-    """End-to-end Phase 2: normalize, sweep, select k*, extract centroids + exemplars."""
+    """End-to-end Phase 2: normalize, sweep, select k*, extract centroids + exemplars.
+
+    Uses only the train split (train_indices) so prototype exemplars never overlap
+    with the held-out test set used for A/B benchmark curation.
+    """
     checkpoint = torch.load(data_path, map_location="cpu")
-    embeddings = checkpoint["embeddings"].numpy().astype(np.float64)
-    metadata = checkpoint["metadata"]
+    all_embeddings = checkpoint["embeddings"].numpy().astype(np.float64)
+    all_metadata = checkpoint["metadata"]
+
+    # Use train split only — test split is held out for A/B benchmark
+    train_indices = checkpoint.get("train_indices", list(range(len(all_metadata))))
+    if "train_indices" in checkpoint:
+        n_test = len(checkpoint.get("test_indices", []))
+        print(f"Using train split: {len(train_indices)} embeddings "
+              f"(held out {n_test} for A/B benchmark)")
+    else:
+        print(f"No split found — using all {len(all_metadata)} embeddings")
+
+    embeddings = all_embeddings[train_indices]
+    metadata = [all_metadata[i] for i in train_indices]
 
     embeddings_norm = l2_normalize(embeddings)
 
@@ -99,7 +115,8 @@ def build_prototypes(
             "best_k": best_k,
             "best_silhouette": best_score,
             "sweep": [asdict(r) for r in results],
-            "n_embeddings": int(embeddings.shape[0]),
+            "n_train": int(embeddings.shape[0]),
+            "n_test": len(checkpoint.get("test_indices", [])),
             "dim": int(embeddings.shape[1]),
         },
         "prototypes": prototypes,
