@@ -578,8 +578,11 @@ fns = [
     for i, r in enumerate(ds)
     if r.get("toxicity") == 1
     and (r.get("user_input") or "").strip() not in flagged_texts
+    and len((r.get("user_input") or "").strip()) > 20              # exclude empty/very short
+    and "THIS IS THE END OF THE CONVERSATION" not in (r.get("user_input") or "")  # exclude delimiter artifacts
+    and "A NEW CONVERSATION WILL NOW BEGIN" not in (r.get("user_input") or "")
 ]
-print(f"False negatives available: {len(fns)}")
+print(f"False negatives available (after filtering artifacts): {len(fns)}")
 
 # Sample up to 15 of each
 import random; random.seed(42)
