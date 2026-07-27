@@ -45,6 +45,6 @@ explainer:
   latency_budget_seconds: 1.5
 
 evaluation:
-  n_false_positives: 15
-  n_false_negatives: 15
+  n_false_positives: 25
+  n_false_negatives: 25
   n_participants: 6
