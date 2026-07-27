@@ -583,8 +583,10 @@ print(f"False negatives available: {len(fns)}")
 
 # Sample up to 15 of each
 import random; random.seed(42)
-fps_sample = random.sample(fps, min(15, len(fps)))
-fns_sample = random.sample(fns, min(15, len(fns)))
+n_fp = cfg.evaluation.n_false_positives
+n_fn = cfg.evaluation.n_false_negatives
+fps_sample = random.sample(fps, min(n_fp, len(fps)))
+fns_sample = random.sample(fns, min(n_fn, len(fns)))
 
 print(f"\\nSelected — FPs: {len(fps_sample)}, FNs: {len(fns_sample)}")
 print("\\nSample FP:", fps_sample[0]["text"][:120])
