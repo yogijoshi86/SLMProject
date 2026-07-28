@@ -69,19 +69,8 @@ class FormCanvas(canvas.Canvas):
         )
 
     def add_choice_field(self, name, x, y, width, height, options, value=""):
-        self.acroForm.choice(
-            name=name,
-            tooltip=name,
-            x=x, y=y,
-            width=width, height=height,
-            value=value,
-            options=options,
-            fontSize=8,
-            borderStyle="solid",
-            borderWidth=0.5,
-            borderColor=colors.HexColor("#999999"),
-            fillColor=colors.white,
-        )
+        """Fallback: render as a plain text field (choice widget has a reportlab bug)."""
+        self.add_text_field(name, x, y, width, height, value=value)
 
 
 # ── drawing helpers ───────────────────────────────────────────────────────────
