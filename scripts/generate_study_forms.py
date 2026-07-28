@@ -74,9 +74,21 @@ COVER_TEMPLATE = """
     explanations can help developers diagnose why an AI safety guardrail made a wrong decision &mdash;
     either flagging a safe prompt as unsafe (false positive), or failing to catch a harmful prompt
     (false negative).<br><br>
-    This booklet contains <strong>{n_cases} cases</strong>. For each case, read the prompt and the
-    guard&rsquo;s decision, then identify the most likely root cause and suggest a fix.
-    There are no trick questions &mdash; we want your honest, intuitive judgment.<br><br>
+    This booklet contains <strong>{n_cases} cases</strong>. Every case is a guardrail <strong>error</strong>:
+    the guard got it wrong. Your job for each case is to:
+    <ol style="margin:6px 0 6px 20px; padding:0;">
+      <li><strong>Read the prompt</strong> and the guard&rsquo;s decision.</li>
+      <li><strong>Check the case type</strong> shown at the top of each page:
+        <ul style="margin:4px 0 4px 16px;">
+          <li><strong>FALSE POSITIVE</strong> &mdash; the guard flagged a <em>safe</em> prompt as UNSAFE. The ground truth says SAFE.</li>
+          <li><strong>FALSE NEGATIVE</strong> &mdash; the guard missed a <em>harmful</em> prompt (said SAFE). The ground truth says UNSAFE.</li>
+        </ul>
+      </li>
+      <li><strong>Identify the root cause</strong> (Q1) &mdash; why did the guard make this error?</li>
+      <li><strong>Suggest a fix</strong> (Q2) &mdash; what would prevent this type of error in future?</li>
+    </ol>
+    Some booklets include an additional <em>Prototype Analysis</em> box below the guard decision &mdash;
+    use it if present. There are no trick questions &mdash; we want your honest, intuitive judgment.<br><br>
     Each case takes about <strong>1&ndash;2 minutes</strong>. Use a phone stopwatch and record your
     start and end time on the data collection sheet provided.
     Total session time: approximately <strong>30&ndash;45 minutes</strong>.
