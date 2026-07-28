@@ -344,6 +344,54 @@ print(f"Total UNSAFE: {stats['n_unsafe']}  |  Train: {stats['n_train']}  |  Test
 **Next:** open `02_clustering.ipynb`.
 If you hit CUDA OOM, lower `extraction.batch_size` in `config/colab_smoke.yaml` (try 2 or 1).
 """),
+        md("### Guard accuracy metrics on ToxicChat"),
+        code('''
+import torch
+from datasets import load_dataset
+
+payload = torch.load(cfg.paths.embeddings, map_location="cpu")
+metadata = payload["metadata"]
+stats    = payload["stats"]
+
+n_seen         = stats["n_seen"]
+n_unsafe_flagged = stats["n_unsafe"]
+
+# From saved metadata: how many flagged prompts match ground truth
+tp = sum(1 for m in metadata if m["gt_toxicity"] == 1)
+fp = sum(1 for m in metadata if m["gt_toxicity"] == 0)
+
+# Reload dataset to count total toxic prompts seen
+ds = load_dataset(cfg.data.dataset_name, cfg.data.dataset_config, split=cfg.data.split)
+n_cap = cfg.data.get("max_samples") or len(ds)
+toxic_in_sample = sum(1 for r in list(ds)[:n_cap] if r.get("toxicity") == 1)
+fn = toxic_in_sample - tp
+tn = n_seen - n_unsafe_flagged - fn
+
+precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+recall    = tp / (tp + fn) if (tp + fn) > 0 else 0
+accuracy  = (tp + tn) / n_seen if n_seen > 0 else 0
+f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+
+print(f"=== Guard Accuracy on ToxicChat (n={n_seen}) ===")
+print(f"TP={tp}  FP={fp}  FN={fn}  TN={tn}")
+print(f"Accuracy:  {accuracy:.1%}")
+print(f"Precision: {precision:.1%}  (of flagged, how many are truly unsafe)")
+print(f"Recall:    {recall:.1%}   (of truly unsafe, how many caught)")
+print(f"F1:        {f1:.3f}")
+
+import json
+from pathlib import Path
+Path("artifacts").mkdir(exist_ok=True)
+metrics = dict(
+    n_seen=n_seen, n_unsafe_flagged=n_unsafe_flagged,
+    tp=tp, fp=fp, fn=fn, tn=tn,
+    accuracy=round(accuracy,4), precision=round(precision,4),
+    recall=round(recall,4), f1=round(f1,4),
+)
+with open("artifacts/guard_classification_metrics.json", "w") as f:
+    json.dump(metrics, f, indent=2)
+print("\\nSaved to artifacts/guard_classification_metrics.json")
+'''),
         md("### Save artifacts to Google Drive (run before closing runtime)"),
         code(DRIVE_BACKUP_01),
     ])
