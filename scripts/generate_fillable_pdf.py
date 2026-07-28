@@ -122,24 +122,65 @@ def draw_answer_key(c, y, page_width=W, margin=MARGIN):
     return y - 17*mm
 
 
+def draw_column_legend(c, y, page_width=W, margin=MARGIN):
+    """Draw a compact column legend. Returns new y."""
+    usable = page_width - 2 * margin
+    x0     = margin
+
+    entries = [
+        ("Case",  "Case number from your booklet (1–25)"),
+        ("T",     "Type: write FP (false positive) or FN (false negative) — shown on each case page"),
+        ("Secs",  "How many seconds this case took (stopwatch lap time)"),
+        ("Q1",    "Root cause answer: write a, b, c, d, or e"),
+        ("Q2",    "Recommended fix: write a, b, c, d, or e"),
+        ("Conf",  "Your confidence: 1=not confident  2=somewhat  3=confident  4=very confident"),
+        ("✓?", "Leave blank — researcher fills this in after scoring"),
+    ]
+
+    line_h  = 4 * mm
+    box_pad = 2.5 * mm
+    box_h   = len(entries) * line_h + 2 * box_pad + 5 * mm
+
+    c.setFillColor(colors.HexColor("#f5f5f5"))
+    c.setStrokeColor(colors.HexColor("#cccccc"))
+    c.setLineWidth(0.5)
+    c.rect(x0, y - box_h, usable, box_h, fill=1, stroke=1)
+
+    c.setFont("Helvetica-Bold", 8)
+    c.setFillColor(colors.black)
+    c.drawString(x0 + box_pad, y - box_pad - 3 * mm, "Column legend — what to write in each column")
+
+    ty = y - box_pad - 3 * mm - line_h
+    col_label_w = 18 * mm
+    for col, desc in entries:
+        c.setFont("Helvetica-Bold", 7.5)
+        c.setFillColor(colors.black)
+        c.drawString(x0 + box_pad, ty, col)
+        c.setFont("Helvetica", 7.5)
+        c.drawString(x0 + box_pad + col_label_w, ty, desc)
+        ty -= line_h
+
+    return y - box_h - 3 * mm
+
+
 def draw_session_table(c, y, session_num, page_width=W, margin=MARGIN):
-    """Draw the 25-row data entry table for one session. Returns new y."""
+    """Draw the 25-row data entry table for one session. Returns new y.
+    Columns: Case | T | Secs | Q1 | Q2 | Conf | score
+    (Start and End removed — participants record elapsed seconds only.)
+    """
     usable = page_width - 2*margin
 
-    # column widths (pt)
+    # column widths (pt) — 7 columns
     col_case  = 10*mm
-    col_type  = 8*mm
-    col_time  = 14*mm   # start, end
-    col_secs  = 13*mm
-    col_ans   = 11*mm   # Q1, Q2
-    col_conf  = 10*mm
-    col_score = 10*mm
-    total_cols = col_case + col_type + col_time*2 + col_secs + col_ans*2 + col_conf + col_score
+    col_type  = 10*mm
+    col_secs  = 20*mm
+    col_ans   = 14*mm   # Q1, Q2
+    col_conf  = 14*mm
+    col_score = 12*mm
+    total_cols = col_case + col_type + col_secs + col_ans*2 + col_conf + col_score
 
-    # headers
-    headers = ["Case", "T", "Start", "End", "Secs", "Q1", "Q2", "Conf", "✓?"]
-    col_widths = [col_case, col_type, col_time, col_time,
-                  col_secs, col_ans, col_ans, col_conf, col_score]
+    headers    = ["Case", "T", "Secs", "Q1", "Q2", "Conf", "✓?"]
+    col_widths = [col_case, col_type, col_secs, col_ans, col_ans, col_conf, col_score]
 
     row_h = 6.5*mm
     hdr_h = 7*mm
@@ -185,29 +226,25 @@ def draw_session_table(c, y, session_num, page_width=W, margin=MARGIN):
         c.setFillColor(colors.black)
         c.drawCentredString(x0 + col_case/2, y_row + 1.8*mm, str(row))
 
-        # fields
+        # fields — Case | T | Secs | Q1 | Q2 | Conf | score
         prefix = f"s{session_num}_r{row:02d}"
         pad = 1*mm
         field_h = row_h - 2*pad
         field_y = y_row + pad
 
-        x_t    = x0 + col_case
-        x_st   = x_t   + col_type
-        x_en   = x_st  + col_time
-        x_sc   = x_en  + col_time
-        x_q1   = x_sc  + col_secs
-        x_q2   = x_q1  + col_ans
-        x_cf   = x_q2  + col_ans
-        x_ok   = x_cf  + col_conf
+        x_t   = x0 + col_case
+        x_sc  = x_t  + col_type
+        x_q1  = x_sc + col_secs
+        x_q2  = x_q1 + col_ans
+        x_cf  = x_q2 + col_ans
+        x_ok  = x_cf + col_conf
 
-        c.add_choice_field(f"{prefix}_type",  x_t + pad,  field_y, col_type - 2*pad,  field_h, t_options)
-        c.add_text_field(  f"{prefix}_start", x_st + pad, field_y, col_time - 2*pad,  field_h)
-        c.add_text_field(  f"{prefix}_end",   x_en + pad, field_y, col_time - 2*pad,  field_h)
-        c.add_text_field(  f"{prefix}_secs",  x_sc + pad, field_y, col_secs - 2*pad,  field_h)
-        c.add_choice_field(f"{prefix}_q1",    x_q1 + pad, field_y, col_ans  - 2*pad,  field_h, q_options)
-        c.add_choice_field(f"{prefix}_q2",    x_q2 + pad, field_y, col_ans  - 2*pad,  field_h, q_options)
-        c.add_choice_field(f"{prefix}_conf",  x_cf + pad, field_y, col_conf - 2*pad,  field_h, conf_opts)
-        c.add_choice_field(f"{prefix}_score", x_ok + pad, field_y, col_score- 2*pad,  field_h, score_opts)
+        c.add_choice_field(f"{prefix}_type",  x_t  + pad, field_y, col_type  - 2*pad, field_h, t_options)
+        c.add_text_field(  f"{prefix}_secs",  x_sc + pad, field_y, col_secs  - 2*pad, field_h)
+        c.add_choice_field(f"{prefix}_q1",    x_q1 + pad, field_y, col_ans   - 2*pad, field_h, q_options)
+        c.add_choice_field(f"{prefix}_q2",    x_q2 + pad, field_y, col_ans   - 2*pad, field_h, q_options)
+        c.add_choice_field(f"{prefix}_conf",  x_cf + pad, field_y, col_conf  - 2*pad, field_h, conf_opts)
+        c.add_choice_field(f"{prefix}_score", x_ok + pad, field_y, col_score - 2*pad, field_h, score_opts)
 
         y_cur = y_row
 
@@ -217,16 +254,15 @@ def draw_session_table(c, y, session_num, page_width=W, margin=MARGIN):
     c.rect(x0, y_tot, total_cols, row_h, fill=1, stroke=1)
     c.setFont("Helvetica-Bold", 7.5)
     c.setFillColor(colors.black)
-    c.drawRightString(x0 + col_case + col_type + col_time*2 - 2*mm,
-                      y_tot + 1.8*mm, "Session totals →")
+    c.drawRightString(x0 + col_case + col_type - 2*mm, y_tot + 1.8*mm, "Totals →")
     prefix = f"s{session_num}_tot"
     pad = 1*mm; field_h = row_h - 2*pad
-    x_sc = x0 + col_case + col_type + col_time*2
+    x_sc = x0 + col_case + col_type
     x_ok = x0 + total_cols - col_score
-    c.add_text_field(f"{prefix}_secs",     x_sc + pad, y_tot + pad, col_secs  - 2*pad, field_h)
-    c.add_text_field(f"{prefix}_mean",     x_sc + col_secs + pad, y_tot + pad,
+    c.add_text_field(f"{prefix}_secs",    x_sc + pad, y_tot + pad, col_secs - 2*pad, field_h)
+    c.add_text_field(f"{prefix}_mean",    x_sc + col_secs + pad, y_tot + pad,
                      col_ans*2 + col_conf - 2*pad, field_h)
-    c.add_text_field(f"{prefix}_correct",  x_ok + pad, y_tot + pad, col_score - 2*pad, field_h)
+    c.add_text_field(f"{prefix}_correct", x_ok + pad, y_tot + pad, col_score - 2*pad, field_h)
 
     note_y = y_tot - 4*mm
     c.setFont("Helvetica-Oblique", 6.5)
@@ -417,8 +453,9 @@ def generate(output_path=OUTPUT_PATH):
         ("Date",           "date",      30),
     ])
 
-    # answer key
+    # answer key + column legend
     y = draw_answer_key(c, y)
+    y = draw_column_legend(c, y)
 
     # session 1
     y = draw_section_header(c, y, f"SESSION 1  — 25 cases")
