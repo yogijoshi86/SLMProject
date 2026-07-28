@@ -290,6 +290,104 @@ def draw_summary(c, y, page_width=W, margin=MARGIN):
     return y_cur - 10*mm
 
 
+def draw_intro_and_consent(c, y, page_width=W, margin=MARGIN):
+    """Draw study description + consent block. Returns new y."""
+    usable = page_width - 2 * margin
+    x0     = margin
+
+    # ── Study intro box ──────────────────────────────────────────────────
+    intro_lines = [
+        ("bold",   "About this study"),
+        ("normal", "Thank you for taking part in this research. We are studying whether short"),
+        ("normal", "explanations can help developers diagnose why an AI safety guardrail made"),
+        ("normal", "a wrong decision — either flagging a safe prompt as unsafe, or missing a"),
+        ("normal", "harmful one."),
+        ("normal", ""),
+        ("normal", "You will review 25 guardrail failure cases per session across two sessions"),
+        ("normal", "(at least 3 days apart). For each case, identify the most likely root cause"),
+        ("normal", "and suggest a fix. There are no trick questions — we want your honest judgment."),
+        ("normal", ""),
+        ("normal", "Each case takes about 1–2 minutes. Use a phone stopwatch to record your time."),
+        ("normal", "Total session time: ~30–45 minutes."),
+    ]
+    line_h   = 4.2 * mm
+    box_pad  = 3   * mm
+    box_h    = len(intro_lines) * line_h + 2 * box_pad
+
+    c.setFillColor(colors.HexColor("#f0f6ff"))
+    c.setStrokeColor(colors.HexColor("#4a90d9"))
+    c.setLineWidth(1.2)
+    c.rect(x0, y - box_h, usable, box_h, fill=1, stroke=1)
+
+    # left accent bar
+    c.setFillColor(colors.HexColor("#4a90d9"))
+    c.rect(x0, y - box_h, 3, box_h, fill=1, stroke=0)
+
+    ty = y - box_pad - line_h + 1 * mm
+    for style, text in intro_lines:
+        if not text:
+            ty -= line_h * 0.4
+            continue
+        if style == "bold":
+            c.setFont("Helvetica-Bold", 8.5)
+            c.setFillColor(colors.HexColor("#1a5fa8"))
+        else:
+            c.setFont("Helvetica", 8)
+            c.setFillColor(colors.black)
+        c.drawString(x0 + 5 * mm, ty, text)
+        ty -= line_h
+
+    y -= box_h + 4 * mm
+
+    # ── Consent box ──────────────────────────────────────────────────────
+    consent_lines = [
+        "This study collects only your answers and the time you spend on each case.",
+        "No personally identifiable information is stored — your responses are recorded",
+        "under a participant ID only (e.g. P01). Your data will be used solely for",
+        "academic research and will not be shared with any third party. You may",
+        "withdraw at any time without penalty.",
+    ]
+    consent_h = (len(consent_lines) + 3) * line_h + 2 * box_pad + 10 * mm
+
+    c.setFillColor(colors.HexColor("#fff8e1"))
+    c.setStrokeColor(colors.HexColor("#f0b400"))
+    c.setLineWidth(1.2)
+    c.rect(x0, y - consent_h, usable, consent_h, fill=1, stroke=1)
+
+    ty = y - box_pad - line_h + 1 * mm
+    c.setFont("Helvetica-Bold", 8.5)
+    c.setFillColor(colors.black)
+    c.drawString(x0 + 3 * mm, ty, "Participant consent")
+    ty -= line_h
+
+    c.setFont("Helvetica", 8)
+    for line in consent_lines:
+        c.drawString(x0 + 3 * mm, ty, line)
+        ty -= line_h
+
+    ty -= 2 * mm
+
+    # checkbox
+    cb_size = 3.5 * mm
+    c.setStrokeColor(colors.black)
+    c.setLineWidth(1)
+    c.rect(x0 + 3 * mm, ty - cb_size + 1 * mm, cb_size, cb_size, fill=0, stroke=1)
+    c.setFont("Helvetica", 7.5)
+    c.setFillColor(colors.black)
+    c.drawString(x0 + 3 * mm + cb_size + 2 * mm, ty,
+                 "I agree to take part. I understand only anonymised data is collected and I can withdraw at any time.")
+    ty -= 6 * mm
+
+    # signature line
+    c.setFont("Helvetica", 7.5)
+    c.drawString(x0 + 3 * mm, ty, "Signature:")
+    c.line(x0 + 24 * mm, ty - 0.5 * mm, x0 + 80 * mm, ty - 0.5 * mm)
+    c.drawString(x0 + 85 * mm, ty, "Date:")
+    c.line(x0 + 96 * mm, ty - 0.5 * mm, x0 + 130 * mm, ty - 0.5 * mm)
+
+    return y - consent_h - 4 * mm
+
+
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def generate(output_path=OUTPUT_PATH):
@@ -307,6 +405,9 @@ def generate(output_path=OUTPUT_PATH):
     c.setFillColor(colors.black)
     c.drawString(MARGIN, y, "A/B Study — Participant Data Collection Sheet")
     y -= 6*mm
+
+    # study intro + consent
+    y = draw_intro_and_consent(c, y)
 
     # meta row
     y = draw_meta_row(c, y, [

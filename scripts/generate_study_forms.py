@@ -66,33 +66,61 @@ COVER_TEMPLATE = """
 <div class="cover">
   <h1 style="font-size:18pt; margin-bottom:4px;">AI Safety Guardrail Diagnostic Study</h1>
   <h2 style="font-size:14pt; color:#555; margin-top:4px;">{arm_label}</h2>
-  <hr/>
+  <hr style="margin:10px 0;"/>
+
+  <div style="background:#f0f6ff; border-left:4px solid #4a90d9; padding:12px 16px; margin:12px 0; font-size:10pt; line-height:1.7;">
+    <strong style="color:#1a5fa8;">About this study</strong><br>
+    Thank you for taking part in this research. We are investigating whether short, structured
+    explanations can help developers diagnose why an AI safety guardrail made a wrong decision &mdash;
+    either flagging a safe prompt as unsafe (false positive), or failing to catch a harmful prompt
+    (false negative).<br><br>
+    This booklet contains <strong>{n_cases} cases</strong>. For each case, read the prompt and the
+    guard&rsquo;s decision, then identify the most likely root cause and suggest a fix.
+    There are no trick questions &mdash; we want your honest, intuitive judgment.<br><br>
+    Each case takes about <strong>1&ndash;2 minutes</strong>. Use a phone stopwatch and record your
+    start and end time on the data collection sheet provided.
+    Total session time: approximately <strong>30&ndash;45 minutes</strong>.
+  </div>
+
+  <div style="background:#fff8e1; border:1.5px solid #f0b400; padding:12px 16px; margin:12px 0; font-size:10pt; line-height:1.7;">
+    <strong>Participant consent</strong><br>
+    This study collects only your answers and the time spent on each case.
+    <strong>No personally identifiable information is stored</strong> &mdash; responses are
+    recorded under a participant ID only. Data will be used solely for academic research
+    and will not be shared with any third party. You may withdraw at any time without penalty.<br><br>
+    <table style="border:none; margin-top:4px;">
+      <tr>
+        <td style="border:none; padding:0; vertical-align:top; width:24px;">
+          <div style="width:16px; height:16px; border:1.5px solid #333; margin-top:2px;">&nbsp;&nbsp;&nbsp;&nbsp;</div>
+        </td>
+        <td style="border:none; padding:0; font-size:9.5pt;">
+          I have read the above and agree to take part. I understand that only anonymised
+          timing and answer data is collected, and I can withdraw at any time.
+        </td>
+      </tr>
+    </table>
+    <div style="margin-top:10px; font-size:9.5pt;">
+      Signature: <span style="display:inline-block; border-bottom:1px solid #333; width:180px;">&nbsp;</span>
+      &nbsp;&nbsp;&nbsp;
+      Date: <span style="display:inline-block; border-bottom:1px solid #333; width:120px;">&nbsp;</span>
+    </div>
+  </div>
 
   <h3>Participant Information</h3>
-  <table style="border-collapse:collapse; width:400px;">
-    <tr><td style="padding:6px 0;">Participant ID:</td><td style="border-bottom:1px solid #333; width:200px;">&nbsp;</td></tr>
-    <tr><td style="padding:6px 0;">Date:</td><td style="border-bottom:1px solid #333;">&nbsp;</td></tr>
-    <tr><td style="padding:6px 0;">Session:</td><td style="border-bottom:1px solid #333;">&nbsp;</td></tr>
+  <table style="border-collapse:collapse; width:420px;">
+    <tr><td style="padding:5px 0;">Participant ID:</td><td style="border-bottom:1px solid #333; width:200px;">&nbsp;</td></tr>
+    <tr><td style="padding:5px 0;">Date:</td><td style="border-bottom:1px solid #333;">&nbsp;</td></tr>
+    <tr><td style="padding:5px 0;">Session (1 or 2):</td><td style="border-bottom:1px solid #333;">&nbsp;</td></tr>
   </table>
 
-  <h3 style="margin-top:24px;">Instructions</h3>
-  <ol style="line-height:1.8;">
-    <li>This booklet contains <strong>{n_cases} cases</strong>. Each case is a guardrail failure — either a false positive (safe prompt flagged as unsafe) or a false negative (harmful prompt missed).</li>
-    <li>For each case: note your <strong>start time</strong>, read the case, answer the two questions, note your <strong>end time</strong>.</li>
-    <li>Use a phone stopwatch or wall clock for timing. Record to the nearest second.</li>
-    <li>Work at your natural pace. Aim for accuracy, not speed.</li>
-    <li>There are no trick questions. Choose the answer that best matches your diagnosis.</li>
-    <li>If you are unsure, make your best judgment and note it in the Notes field.</li>
-  </ol>
-
-  <h3>Answer Key</h3>
+  <h3 style="margin-top:16px;">Answer Key</h3>
   <table style="border-collapse:collapse; font-size:10pt; line-height:1.7;">
     <tr><td style="padding-right:12px; font-weight:bold;">Q1 — Root Cause</td><td></td></tr>
     <tr><td style="padding-left:16px;">a)</td><td>Category definition too broad — keyword triggered without context</td></tr>
     <tr><td style="padding-left:16px;">b)</td><td>Novel evasion tactic — not enough training examples for this pattern</td></tr>
-    <tr><td style="padding-left:16px;">c)</td><td>Confidence threshold — guard fires at wrong sensitivity level</td></tr>
+    <tr><td style="padding-left:16px;">c)</td><td>Confidence threshold too low / too high</td></tr>
     <tr><td style="padding-left:16px;">d)</td><td>Misinformation risk — guard may be correct to flag this</td></tr>
-    <tr><td style="padding-left:16px;">e)</td><td>Genuinely unsafe — this is not a guardrail failure</td></tr>
+    <tr><td style="padding-left:16px;">e)</td><td>Prompt is genuinely unsafe — this is not a guardrail failure</td></tr>
     <tr><td style="padding-right:12px; font-weight:bold; padding-top:10px;">Q2 — Recommended Fix</td><td></td></tr>
     <tr><td style="padding-left:16px;">a)</td><td>Add domain-context examples to category training data</td></tr>
     <tr><td style="padding-left:16px;">b)</td><td>Add examples of this evasion pattern to training</td></tr>
@@ -101,8 +129,9 @@ COVER_TEMPLATE = """
     <tr><td style="padding-left:16px;">e)</td><td>No fix needed — guard decision was correct</td></tr>
   </table>
 
-  <p style="margin-top:24px; font-size:10pt; color:#555;">
-    Please return this booklet when complete. Thank you for participating.
+  <p style="margin-top:16px; font-size:9.5pt; color:#555;">
+    Please return this booklet together with your data collection sheet when complete.
+    Thank you &mdash; your time and input are genuinely valuable to this research.
   </p>
 </div>
 """
