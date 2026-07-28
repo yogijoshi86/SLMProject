@@ -902,6 +902,69 @@ if stats.accuracy_treatment is not None:
 '''),
         md("### Save all evaluation artifacts to Google Drive"),
         code(DRIVE_BACKUP_04),
+        md("### Generate A/B Study Forms from benchmark_test_set.json"),
+        code('''
+# ── Regenerate all printable study forms ─────────────────────────────────────
+# Run this cell after benchmark_test_set.json has been generated and saved.
+# Applies real taxonomy labels, generates 4 HTML booklets + fillable PDF sheet.
+
+import subprocess, json
+from pathlib import Path
+
+# Install form generation dependencies
+subprocess.run(["pip", "install", "-q", "reportlab", "weasyprint"], check=False)
+
+Path("artifacts").mkdir(exist_ok=True)
+
+# Apply real taxonomy labels to benchmark
+LABEL_MAP = {
+    "prototype_0": "Persona and Role-Based Bypass",
+    "prototype_1": "Fictional Narrative Bypass",
+    "prototype_2": "Direct Harmful Content Request",
+    "prototype_3": "Privacy and Sensitive Information Request",
+}
+
+bench_path = cfg.paths.benchmark
+with open(bench_path) as f:
+    bench = json.load(f)
+
+for case in bench:
+    for pkg in ["control", "treatment"]:
+        if pkg in case:
+            proto = case[pkg].get("matched_prototype", "")
+            case[pkg]["prototype_label"] = LABEL_MAP.get(proto, proto)
+
+with open(bench_path, "w") as f:
+    json.dump(bench, f, indent=2)
+print(f"Labels applied to {len(bench)} cases in {bench_path}")
+
+# Generate 4 study form HTML booklets (form_A/B_control + form_A/B_treatment)
+subprocess.run(["python", "scripts/generate_study_forms.py"], check=True)
+
+# Generate fillable PDF data collection sheet
+subprocess.run(["python", "scripts/generate_fillable_pdf.py"], check=True)
+
+print("\\nAll forms generated. Downloading...")
+'''),
+        code('''
+# Download all study materials to your local machine
+from google.colab import files
+import glob
+from pathlib import Path
+
+to_download = (
+    sorted(glob.glob("artifacts/study_forms/*.html")) +
+    sorted(glob.glob("artifacts/study_forms/*.pdf")) +
+    ["docs/data_collection_sheet_fillable.pdf",
+     "docs/data_collection_sheet.html"]
+)
+for f in to_download:
+    if Path(f).exists():
+        files.download(f)
+        print(f"Downloaded: {f}")
+    else:
+        print(f"Skipped (not found): {f}")
+'''),
     ])
 
 
