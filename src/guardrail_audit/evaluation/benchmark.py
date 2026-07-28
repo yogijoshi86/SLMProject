@@ -36,12 +36,14 @@ def build_control_package(case: dict) -> dict:
 
 
 def build_treatment_package(case: dict) -> dict:
-    """Package B: control fields + prototype match + similarity + LLM justification."""
+    """Package B: control fields + prototype match + cosine distance + LLM justification."""
     return {
         **build_control_package(case),
         "matched_prototype": case["matched_prototype"],
         "prototype_label": case.get("prototype_label"),
         "similarity_score": case["similarity_score"],
+        "cosine_distance": case.get("cosine_distance"),   # 1 - similarity; lower = closer match
+        "guard_categories": case.get("guard_categories", []),
         "top_exemplars": case.get("top_exemplars", []),
         "explanation": case["explanation"],
     }

@@ -614,15 +614,24 @@ for i, sample in enumerate(all_samples):
     # Run the full pipeline to get prototype match + explanation
     result = pipeline.audit_dict(text, explain_safe=True)
 
+    # similarity_score from DistanceEngine is correct cosine similarity (0-1).
+    # In high-dimensional space (4096-dim), scores cluster near 0.99 — use
+    # cosine distance (1 - sim) for a more readable spread in treatment packages.
+    cos_sim  = result["similarity_score"]
+    cos_dist = round(1.0 - cos_sim, 4)
+
     cases.append({
         "case_id": case_id,
         "failure_type": failure_type,
         "input_text": text,
         "guard_decision": "UNSAFE" if result["is_unsafe"] else "SAFE",
-        "confidence": result.get("similarity_score"),
+        "guard_categories": result.get("guard_categories", []),
+        "cosine_similarity": round(cos_sim, 4),
+        "cosine_distance": cos_dist,         # more readable — lower = closer to prototype
+        "confidence": round(cos_sim, 4),     # kept for control package compatibility
         "matched_prototype": result["matched_prototype"],
         "prototype_label": result.get("prototype_label", result["matched_prototype"]),
-        "similarity_score": result["similarity_score"],
+        "similarity_score": round(cos_sim, 4),
         "top_exemplars": [],
         "explanation": result["explanation"],
         "gt_toxicity": sample["gt_toxicity"],
