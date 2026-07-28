@@ -947,23 +947,27 @@ subprocess.run(["python", "scripts/generate_fillable_pdf.py"], check=True)
 print("\\nAll forms generated. Downloading...")
 '''),
         code('''
-# Download all study materials to your local machine
-from google.colab import files
-import glob
+# Copy all study materials to Google Drive
+import shutil, glob
 from pathlib import Path
 
-to_download = (
+drive_dest = "/content/drive/MyDrive/hf_cache/study_forms"
+Path(drive_dest).mkdir(parents=True, exist_ok=True)
+
+to_copy = (
     sorted(glob.glob("artifacts/study_forms/*.html")) +
     sorted(glob.glob("artifacts/study_forms/*.pdf")) +
     ["docs/data_collection_sheet_fillable.pdf",
      "docs/data_collection_sheet.html"]
 )
-for f in to_download:
+for f in to_copy:
     if Path(f).exists():
-        files.download(f)
-        print(f"Downloaded: {f}")
+        shutil.copy(f, drive_dest)
+        print(f"Saved to Drive: {Path(f).name}")
     else:
         print(f"Skipped (not found): {f}")
+
+print(f"\\nAll study materials saved to {drive_dest}")
 '''),
     ])
 
