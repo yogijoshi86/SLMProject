@@ -1,12 +1,22 @@
 """
 Generate printable A/B study forms from benchmark_test_set.json.
 
-Produces two PDF-ready HTML files:
-  - form_control.html   : 25 cases, raw flag only
-  - form_treatment.html : 25 cases, flag + prototype explanation
+Produces HTML + PDF booklets (one per arm per block):
+  - form_A_control.html/pdf   : Block A, raw flag only
+  - form_A_treatment.html/pdf : Block A, flag + prototype explanation
+  - form_B_control.html/pdf   : Block B, raw flag only
+  - form_B_treatment.html/pdf : Block B, flag + prototype explanation
 
-Print each file and give to participants with a physical stopwatch or phone timer.
-Participants write start/end time per case on the form.
+PDF generation uses weasyprint (pip install weasyprint) if available,
+falling back to pdfkit (pip install pdfkit + wkhtmltopdf binary) if not,
+and finally leaving HTML-only if neither is installed.
+
+Usage:
+  python scripts/generate_study_forms.py
+
+In Colab:
+  !pip install -q weasyprint
+  !python scripts/generate_study_forms.py
 """
 
 import json
@@ -315,6 +325,46 @@ def build_html(cases, arm, title):
     return f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>{title}</title>{CSS}</head><body>{body}</body></html>"
 
 
+def html_to_pdf(html_path: str, pdf_path: str) -> bool:
+    """Convert an HTML file to PDF using weasyprint or pdfkit.
+
+    Returns True on success, False if no PDF library is available.
+    """
+    html_path = str(html_path)
+    pdf_path  = str(pdf_path)
+
+    # --- Try weasyprint first (pure Python, best quality) ---
+    try:
+        from weasyprint import HTML
+        HTML(filename=html_path).write_pdf(pdf_path)
+        return True
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"  weasyprint failed ({e}), trying pdfkit...")
+
+    # --- Fall back to pdfkit (requires wkhtmltopdf binary) ---
+    try:
+        import pdfkit
+        options = {
+            "page-size": "A4",
+            "margin-top": "10mm",
+            "margin-bottom": "10mm",
+            "margin-left": "12mm",
+            "margin-right": "12mm",
+            "encoding": "UTF-8",
+            "enable-local-file-access": "",
+        }
+        pdfkit.from_file(html_path, pdf_path, options=options)
+        return True
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"  pdfkit failed ({e})")
+
+    return False
+
+
 def main():
     with open(BENCHMARK_PATH) as f:
         all_cases = json.load(f)
@@ -336,35 +386,44 @@ def main():
 
     Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
-    # Control forms (both blocks)
-    html = build_html(block_a, "control",
-                      "Guardrail Diagnostic — Session A (Standard View)")
-    Path(f"{OUTPUT_DIR}/form_A_control.html").write_text(html, encoding="utf-8")
+    forms = [
+        (block_a, "control",   "Guardrail Diagnostic — Session A (Standard View)",  "form_A_control"),
+        (block_b, "control",   "Guardrail Diagnostic — Session B (Standard View)",  "form_B_control"),
+        (block_a, "treatment", "Guardrail Diagnostic — Session A (With Analysis)",  "form_A_treatment"),
+        (block_b, "treatment", "Guardrail Diagnostic — Session B (With Analysis)",  "form_B_treatment"),
+    ]
 
-    html = build_html(block_b, "control",
-                      "Guardrail Diagnostic — Session B (Standard View)")
-    Path(f"{OUTPUT_DIR}/form_B_control.html").write_text(html, encoding="utf-8")
+    pdf_available = None  # will be set on first attempt
 
-    # Treatment forms (both blocks)
-    html = build_html(block_a, "treatment",
-                      "Guardrail Diagnostic — Session A (With Analysis)")
-    Path(f"{OUTPUT_DIR}/form_A_treatment.html").write_text(html, encoding="utf-8")
+    for cases, arm, title, stem in forms:
+        html      = build_html(cases, arm, title)
+        html_path = Path(OUTPUT_DIR) / f"{stem}.html"
+        pdf_path  = Path(OUTPUT_DIR) / f"{stem}.pdf"
 
-    html = build_html(block_b, "treatment",
-                      "Guardrail Diagnostic — Session B (With Analysis)")
-    Path(f"{OUTPUT_DIR}/form_B_treatment.html").write_text(html, encoding="utf-8")
+        html_path.write_text(html, encoding="utf-8")
+        print(f"  wrote {html_path.name}  ({len(cases)} cases)")
 
-    print(f"Generated 4 form files in {OUTPUT_DIR}/")
-    print(f"  form_A_control.html   ({len(block_a)} cases)")
-    print(f"  form_A_treatment.html ({len(block_a)} cases)")
-    print(f"  form_B_control.html   ({len(block_b)} cases)")
-    print(f"  form_B_treatment.html ({len(block_b)} cases)")
+        ok = html_to_pdf(str(html_path), str(pdf_path))
+        if ok:
+            print(f"  wrote {pdf_path.name}")
+            pdf_available = True
+        else:
+            if pdf_available is None:
+                pdf_available = False
+
+    print()
+    if pdf_available:
+        print(f"PDF booklets saved to {OUTPUT_DIR}/")
+    else:
+        print("PDF generation skipped — install weasyprint or pdfkit:")
+        print("  pip install weasyprint          (recommended)")
+        print("  pip install pdfkit              (requires wkhtmltopdf binary)")
+        print("Alternatively: open each .html in Chrome → Print → Save as PDF")
+
     print()
     print("Counterbalancing for 10 participants:")
     print("  P01-P05: Session 1 = form_A_control,   Session 2 = form_B_treatment")
     print("  P06-P10: Session 1 = form_A_treatment, Session 2 = form_B_control")
-    print()
-    print("To print: open each HTML file in Chrome → File → Print → Save as PDF")
 
 
 if __name__ == "__main__":
