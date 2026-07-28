@@ -164,7 +164,7 @@ for f in files:
 '''
 
 DRIVE_BACKUP_02 = r'''
-# Save taxonomy to Google Drive.
+# Save taxonomy + UMAP reducer to Google Drive.
 import shutil
 from pathlib import Path
 
@@ -174,6 +174,7 @@ Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
 files = [
     "artifacts/prototypes_taxonomy_smoke.json",
     "artifacts/prototypes_taxonomy.json",
+    "artifacts/umap_reducer.pkl",   # required for DistanceEngine at inference time
 ]
 for f in files:
     if Path(f).exists():
@@ -382,8 +383,13 @@ taxonomy = build_prototypes(
     seed=cfg.seed,
     top_exemplars=cfg.clustering.top_exemplars,
     k_cap=cfg.clustering.k_cap,
+    use_umap=cfg.clustering.get("use_umap", True),
+    umap_n_components=cfg.clustering.get("umap_n_components", 50),
+    umap_n_neighbors=cfg.clustering.get("umap_n_neighbors", 15),
+    umap_min_dist=cfg.clustering.get("umap_min_dist", 0.0),
 )
-print("best k*:", taxonomy["meta"]["best_k"], "| silhouette:", round(taxonomy["meta"]["best_silhouette"], 4))
+umap_on = taxonomy["meta"]["umap_enabled"]
+print(f"best k*: {taxonomy['meta']['best_k']} | silhouette: {round(taxonomy['meta']['best_silhouette'], 4)} | umap={umap_on}")
 '''),
         md("### Plot the silhouette / inertia sweep"),
         code('''

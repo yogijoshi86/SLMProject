@@ -35,6 +35,10 @@ clustering:
   k_cap: 10
   n_init: 10
   top_exemplars: 5
+  use_umap: true          # UMAP reduces curse of dimensionality: S≈0.41 vs S≈0.04 full-dim
+  umap_n_components: 50
+  umap_n_neighbors: 15
+  umap_min_dist: 0.0
 
 explainer:
   provider: openai
