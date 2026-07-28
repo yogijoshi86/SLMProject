@@ -434,6 +434,74 @@ with open(cfg.paths.taxonomy, "w") as f:
 print("Saved.")
 '''),
         md("**Next:** open `03_audit.ipynb`."),
+        md("### Appendix A — UMAP dimensionality reduction comparison (curse-of-dimensionality mitigation)"),
+        code('''
+# Compare K-means silhouette on full 4096-dim embeddings vs UMAP-reduced 50-dim embeddings.
+# Addresses the curse of dimensionality: in high-dim space cosine distances compress,
+# weakening cluster separation. UMAP preserves local topology in fewer dimensions.
+# If reduced silhouette > full silhouette, use reduced embeddings as primary method.
+
+try:
+    from umap import UMAP
+except ImportError:
+    import subprocess, sys
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "umap-learn>=0.5"], check=True)
+    from umap import UMAP
+
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from guardrail_audit.clustering.normalize import l2_normalize
+import torch, json
+
+# Load embeddings (train split)
+payload = torch.load(cfg.paths.embeddings, map_location="cpu")
+all_emb  = payload["embeddings"].numpy().astype(np.float64)
+train_idx = payload.get("train_indices", list(range(len(payload["metadata"]))))
+emb_full  = l2_normalize(all_emb[train_idx])
+
+print(f"Train embeddings: {emb_full.shape[0]} x {emb_full.shape[1]}")
+
+# --- Full-dim clustering ---
+best_k_full, best_sil_full = 3, -1
+for k in range(cfg.clustering.k_min, min(cfg.clustering.k_max, cfg.clustering.k_cap) + 1):
+    labels = KMeans(n_clusters=k, random_state=cfg.seed, n_init=10).fit_predict(emb_full)
+    s = silhouette_score(emb_full, labels)
+    if s > best_sil_full:
+        best_sil_full, best_k_full = s, k
+
+print(f"Full 4096-dim  →  best k={best_k_full}, silhouette={best_sil_full:.4f}")
+
+# --- UMAP-reduced clustering (50 dims) ---
+print("\\nFitting UMAP (n_components=50)...")
+reducer = UMAP(n_components=50, metric="cosine", n_neighbors=15,
+               min_dist=0.0, random_state=cfg.seed)
+emb_umap = reducer.fit_transform(emb_full)
+emb_umap = l2_normalize(emb_umap)
+
+best_k_umap, best_sil_umap = 3, -1
+for k in range(cfg.clustering.k_min, min(cfg.clustering.k_max, cfg.clustering.k_cap) + 1):
+    labels = KMeans(n_clusters=k, random_state=cfg.seed, n_init=10).fit_predict(emb_umap)
+    s = silhouette_score(emb_umap, labels)
+    if s > best_sil_umap:
+        best_sil_umap, best_k_umap = s, k
+
+print(f"UMAP 50-dim    →  best k={best_k_umap}, silhouette={best_sil_umap:.4f}")
+
+# --- Comparison ---
+print("\\n=== Dimensionality Reduction Comparison ===")
+print(f"Full 4096-dim : k*={best_k_full}, S={best_sil_full:.4f}")
+print(f"UMAP  50-dim  : k*={best_k_umap}, S={best_sil_umap:.4f}")
+improvement = ((best_sil_umap - best_sil_full) / best_sil_full * 100) if best_sil_full > 0 else 0
+print(f"Silhouette improvement from UMAP: {improvement:+.1f}%")
+
+if best_sil_umap > best_sil_full:
+    print("\\nRecommendation: UMAP reduces dimensionality curse. Consider using UMAP embeddings")
+    print("as primary method and report both in paper (Appendix A).")
+else:
+    print("\\nFull-dim clustering is competitive. Report UMAP comparison in Appendix A as robustness check.")
+'''),
+        md("**Next:** open `03_audit.ipynb`."),
         md("### Save taxonomy to Google Drive (run before closing runtime)"),
         code(DRIVE_BACKUP_02),
     ])
