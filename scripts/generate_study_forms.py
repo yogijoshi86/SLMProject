@@ -113,6 +113,14 @@ COVER_TEMPLATE = """
     <tr><td style="padding:5px 0;">Session (1 or 2):</td><td style="border-bottom:1px solid #333;">&nbsp;</td></tr>
   </table>
 
+  <div style="background:#fff3cd; border:1.5px solid #e6a817; padding:10px 14px; margin:12px 0; font-size:10pt; line-height:1.7;">
+    <strong>&#9888; Important &mdash; please read before you begin</strong><br>
+    This booklet is your <strong>question paper only</strong>. Please <strong>do not write on it</strong>.
+    Record all your answers, timings, and notes on the separate
+    <strong>Data Collection Sheet</strong> provided alongside this booklet.
+    Return both this booklet and your completed Data Collection Sheet when you are done.
+  </div>
+
   <h3 style="margin-top:16px;">Answer Key</h3>
   <table style="border-collapse:collapse; font-size:10pt; line-height:1.7;">
     <tr><td style="padding-right:12px; font-weight:bold;">Q1 — Root Cause</td><td></td></tr>
