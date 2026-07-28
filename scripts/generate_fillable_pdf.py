@@ -348,6 +348,10 @@ def draw_intro_and_consent(c, y, page_width=W, margin=MARGIN):
         ("normal", ""),
         ("italic",  "Each case shows you a guardrail decision that went wrong. Some cases include"),
         ("italic",  "additional analysis, some don't — just work with whatever information is on the page."),
+        ("normal", ""),
+        ("warn",   "Content notice: Cases are from the ToxicChat dataset (huggingface.co/datasets/lmsys/toxic-chat)."),
+        ("warn",   "Some prompts contain foul or offensive language — this reflects real-world safety content."),
+        ("warn",   "You may stop and withdraw at any time if you feel uncomfortable."),
     ]
     line_h   = 4.2 * mm
     box_pad  = 3   * mm
@@ -373,6 +377,9 @@ def draw_intro_and_consent(c, y, page_width=W, margin=MARGIN):
         elif style == "italic":
             c.setFont("Helvetica-Oblique", 8)
             c.setFillColor(colors.HexColor("#6b4c00"))
+        elif style == "warn":
+            c.setFont("Helvetica-Oblique", 7.5)
+            c.setFillColor(colors.HexColor("#992222"))
         else:
             c.setFont("Helvetica", 8)
             c.setFillColor(colors.black)

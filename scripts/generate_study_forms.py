@@ -82,7 +82,19 @@ COVER_TEMPLATE = """
     Total session time: approximately <strong>30&ndash;45 minutes</strong>.
   </div>
 
-  <div style="background:#fff3cd; border-left:4px solid #e6a817; padding:10px 16px; margin:12px 0; font-size:10pt; font-style:italic; line-height:1.6;">
+  <div style="background:#fff3cd; border:1.5px solid #e6a817; padding:10px 14px; margin:12px 0; font-size:10pt; line-height:1.7;">
+    <strong>&#9888; Content notice</strong><br>
+    The cases in this study are drawn from the
+    <strong>ToxicChat dataset</strong>
+    (<a href="https://huggingface.co/datasets/lmsys/toxic-chat" style="color:#1a5fa8;">huggingface.co/datasets/lmsys/toxic-chat</a>),
+    a publicly available benchmark of real-world AI safety failures. Some prompts contain
+    <strong>foul, offensive, or objectionable language</strong> &mdash; this is an inherent property
+    of the dataset and reflects the kinds of content that AI safety systems must handle in practice.
+    Please proceed with this in mind. If at any point you feel uncomfortable, you are free to
+    stop and withdraw without any obligation to explain.
+  </div>
+
+  <div style="background:#f0f0f0; border-left:4px solid #888; padding:10px 16px; margin:12px 0; font-size:10pt; font-style:italic; line-height:1.6;">
     Each case shows you a guardrail decision that went wrong. Some cases include additional
     analysis, some don&rsquo;t &mdash; just work with whatever information is on the page.
   </div>
