@@ -25,6 +25,10 @@ class PrototypeMatch:
     failure_mode: str
     top_exemplars: list[str]
     dominant_categories: list[str]
+    # second-best prototype — useful for margin/uncertainty analysis
+    second_prototype_key: str = ""
+    second_similarity: float = 0.0
+    margin: float = 0.0   # similarity - second_similarity; low = boundary case
 
 
 class DistanceEngine:
@@ -96,11 +100,21 @@ class DistanceEngine:
     def match(self, query_embedding: np.ndarray) -> PrototypeMatch:
         query = self._project(query_embedding)
         sims = cosine_similarity(query, self.centroids)
-        best = int(np.argmax(sims))
-        best_sim = float(sims[best])
-        key = self.keys[best]
+
+        # Rank all prototypes — expose top-2 for margin/uncertainty analysis
+        ranked = np.argsort(sims)[::-1]
+        best   = int(ranked[0])
+        second = int(ranked[1]) if len(ranked) > 1 else best
+
+        best_sim   = float(sims[best])
+        second_sim = float(sims[second])
+        margin     = best_sim - second_sim
+
+        key   = self.keys[best]
+        key2  = self.keys[second]
         proto = self.prototypes[key]
         is_ood = best_sim < self.ood_floor
+
         return PrototypeMatch(
             prototype_key=key,
             similarity=best_sim,
@@ -109,4 +123,7 @@ class DistanceEngine:
             failure_mode=proto.get("failure_mode", ""),
             top_exemplars=proto.get("top_exemplars", []),
             dominant_categories=proto.get("dominant_categories", []),
+            second_prototype_key=key2,
+            second_similarity=second_sim,
+            margin=margin,
         )

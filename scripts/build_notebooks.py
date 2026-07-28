@@ -1446,6 +1446,248 @@ print("Saved to Drive.")
     ])
 
 
+DRIVE_BACKUP_DECISION = r'''
+import shutil
+from pathlib import Path
+
+DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
+Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
+
+files = ["artifacts/decision_analysis.json"]
+for f in files:
+    if Path(f).exists():
+        shutil.copy(f, DRIVE_ARTIFACTS)
+        print(f"Saved {f} -> Drive")
+    else:
+        print(f"Skipped {f} (not found)")
+'''
+
+
+def nb_decision_analysis():
+    return notebook([
+        md("""
+# Notebook 06 — Decision Geometry Analysis
+
+Compares the embedding geometry of all four guard decision quadrants:
+- **TP** — guard correctly flagged a harmful prompt
+- **TN** — guard correctly passed a safe prompt
+- **FP** — guard wrongly flagged a safe prompt (false alarm)
+- **FN** — guard missed a harmful prompt (false negative)
+
+**Research question:** Do incorrect decisions (FP/FN) sit closer to prototype
+boundaries (lower margin) than correct decisions (TP/TN)?
+
+Requires `01_extraction.ipynb` to have been run with `record_safe=True`
+so that SAFE-classified embeddings are also saved in the `.pt` file.
+
+**CPU-only — no GPU required.**
+"""),
+        md("### Step 0 — get the repo onto this runtime"),
+        code(CLONE),
+        code(LOCATE),
+        code('''
+%pip install -q -e ".[dev]" umap-learn joblib matplotlib seaborn pandas
+'''),
+        code(CONFIG_CELL),
+        md("### Step 1 — Load all-quadrant embeddings from .pt file"),
+        code('''
+import torch
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+payload = torch.load(cfg.paths.embeddings, map_location="cpu")
+
+# UNSAFE-flagged (TP + FP)
+unsafe_emb  = payload["embeddings"].numpy()          # (n_unsafe, dim)
+unsafe_meta = payload["metadata"]
+
+# SAFE-flagged (TN + FN) — present if 01_extraction ran with record_safe=True
+safe_emb  = payload.get("safe_embeddings")
+safe_meta = payload.get("safe_metadata", [])
+if safe_emb is not None and len(safe_emb) > 0:
+    safe_emb = safe_emb.numpy()
+else:
+    safe_emb = np.empty((0, unsafe_emb.shape[1]))
+    print("WARNING: no SAFE embeddings found. Re-run 01_extraction.ipynb with record_safe=True.")
+
+all_emb  = np.vstack([unsafe_emb, safe_emb]) if len(safe_emb) > 0 else unsafe_emb
+all_meta = unsafe_meta + safe_meta
+
+print(f"UNSAFE embeddings: {len(unsafe_meta)}")
+print(f"SAFE   embeddings: {len(safe_meta)}")
+print(f"Total:             {len(all_meta)}")
+
+from collections import Counter
+print("Quadrant counts:", Counter(m.get("quadrant","?") for m in all_meta))
+'''),
+        md("### Step 2 — Run prototype matching on all embeddings"),
+        code('''
+from guardrail_audit.explainer.distance_engine import DistanceEngine
+import numpy as np
+
+engine = DistanceEngine(cfg.paths.taxonomy,
+                        ood_similarity_floor=cfg.explainer.ood_similarity_floor)
+
+rows = []
+for i, (emb, meta) in enumerate(zip(all_emb, all_meta)):
+    match = engine.match(emb)
+    rows.append({
+        "text":               meta.get("text", ""),
+        "guard_decision":     meta.get("guard_decision", "UNSAFE" if i < len(unsafe_meta) else "SAFE"),
+        "gt_toxicity":        meta.get("gt_toxicity", None),
+        "quadrant":           meta.get("quadrant", "?"),
+        "matched_prototype":  match.prototype_key,
+        "prototype_label":    match.label,
+        "cosine_similarity":  round(match.similarity, 6),
+        "cosine_distance":    round(1.0 - match.similarity, 6),
+        "second_prototype":   match.second_prototype_key,
+        "second_similarity":  round(match.second_similarity, 6),
+        "margin":             round(match.margin, 6),
+        "is_ood":             match.is_ood,
+    })
+    if (i + 1) % 200 == 0:
+        print(f"  matched {i+1}/{len(all_meta)}")
+
+df = pd.DataFrame(rows)
+print(f"\\nDataFrame shape: {df.shape}")
+print(df.groupby("quadrant")[["cosine_distance","margin"]].describe().round(5))
+'''),
+        md("### Step 3 — Distance by quadrant (box plot)"),
+        code('''
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+order = ["TP", "FP", "TN", "FN"]
+palette = {"TP": "#2ecc71", "TN": "#3498db", "FP": "#e74c3c", "FN": "#e67e22"}
+present = [q for q in order if q in df["quadrant"].values]
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+# Cosine distance
+sns.boxplot(data=df[df.quadrant.isin(present)], x="quadrant", y="cosine_distance",
+            order=present, palette=palette, ax=axes[0])
+axes[0].set_title("Cosine Distance to Nearest Prototype by Quadrant")
+axes[0].set_ylabel("Cosine Distance (lower = closer match)")
+axes[0].set_xlabel("Quadrant")
+
+# Margin (best - second similarity)
+sns.boxplot(data=df[df.quadrant.isin(present)], x="quadrant", y="margin",
+            order=present, palette=palette, ax=axes[1])
+axes[1].set_title("Prototype Margin (best − 2nd similarity) by Quadrant")
+axes[1].set_ylabel("Margin (higher = more certain assignment)")
+axes[1].set_xlabel("Quadrant")
+
+plt.tight_layout()
+plt.show()
+print("Interpretation: low margin = embedding sits near cluster boundary = uncertain assignment.")
+'''),
+        md("### Step 4 — Margin histogram: errors vs correct decisions"),
+        code('''
+import matplotlib.pyplot as plt
+
+df["correct"] = df["quadrant"].isin(["TP", "TN"])
+fig, ax = plt.subplots(figsize=(9, 4))
+for correct, label, color in [(True, "Correct (TP+TN)", "#2ecc71"), (False, "Error (FP+FN)", "#e74c3c")]:
+    subset = df[df.correct == correct]["margin"]
+    ax.hist(subset, bins=40, alpha=0.6, label=f"{label} (n={len(subset)})", color=color)
+ax.set_xlabel("Margin (best − 2nd prototype similarity)")
+ax.set_ylabel("Count")
+ax.set_title("Margin Distribution: Correct vs Incorrect Guard Decisions")
+ax.legend()
+plt.tight_layout()
+plt.show()
+
+from scipy import stats as scipy_stats
+correct_m = df[df.correct]["margin"]
+error_m   = df[~df.correct]["margin"]
+if len(correct_m) > 0 and len(error_m) > 0:
+    t, p = scipy_stats.mannwhitneyu(correct_m, error_m, alternative="greater")
+    print(f"Mann-Whitney U (correct > error margin): U={t:.1f}, p={p:.4f}")
+    print("Hypothesis: correct decisions have higher margin (more decisive prototype assignment).")
+'''),
+        md("### Step 5 — UMAP 2D scatter coloured by quadrant"),
+        code('''
+import matplotlib.pyplot as plt
+import joblib, numpy as np
+
+# Reuse the UMAP reducer fitted during clustering
+try:
+    import json
+    with open(cfg.paths.taxonomy) as f:
+        tax = json.load(f)
+    reducer_path = tax["meta"].get("reducer_path", "artifacts/umap_reducer.pkl")
+    reducer = joblib.load(reducer_path)
+
+    proj = reducer.transform(all_emb.astype(np.float64))
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+    colors = {"TP": "#2ecc71", "TN": "#3498db", "FP": "#e74c3c", "FN": "#e67e22", "?": "#aaa"}
+    for q in ["TN", "TP", "FN", "FP"]:
+        mask = df["quadrant"] == q
+        if mask.sum() == 0:
+            continue
+        ax.scatter(proj[mask, 0], proj[mask, 1], c=colors[q], label=q,
+                   alpha=0.5, s=12, linewidths=0)
+    ax.set_title("UMAP 2D — All Prompts Coloured by Guard Decision Quadrant")
+    ax.set_xlabel("UMAP-1"); ax.set_ylabel("UMAP-2")
+    ax.legend(markerscale=2)
+    plt.tight_layout(); plt.show()
+except Exception as e:
+    print(f"UMAP visualisation skipped: {e}")
+    print("Ensure 02_clustering.ipynb has been run and artifacts/umap_reducer.pkl is present.")
+'''),
+        md("### Step 6 — OOD analysis: are FNs more likely to be out-of-distribution?"),
+        code('''
+ood_rates = df.groupby("quadrant")["is_ood"].mean().round(3)
+print("OOD rate by quadrant:")
+print(ood_rates.to_string())
+print()
+print("Interpretation: a high FN OOD rate means the guard misses prompts that")
+print("have no close structural match to known attack patterns — novel evasion tactics.")
+print("A high FP OOD rate would be surprising (FPs should be close to harmful prototypes).")
+'''),
+        md("### Step 7 — Per-prototype breakdown"),
+        code('''
+summary = df.groupby(["quadrant", "matched_prototype"]).agg(
+    count=("cosine_distance", "count"),
+    mean_dist=("cosine_distance", "mean"),
+    mean_margin=("margin", "mean"),
+    ood_rate=("is_ood", "mean"),
+).round(5).reset_index()
+print(summary.to_string(index=False))
+'''),
+        md("### Step 8 — Summary table (paper-ready)"),
+        code('''
+import json
+
+summary_dict = df.groupby("quadrant").agg(
+    count=("cosine_distance", "count"),
+    mean_cosine_distance=("cosine_distance", "mean"),
+    mean_margin=("margin", "mean"),
+    ood_rate=("is_ood", "mean"),
+).round(5).to_dict(orient="index")
+
+print("=== Decision Geometry Summary ===")
+for q, vals in summary_dict.items():
+    print(f"  {q}: n={vals['count']}, dist={vals['mean_cosine_distance']:.5f}, "
+          f"margin={vals['mean_margin']:.5f}, ood={vals['ood_rate']:.2%}")
+
+# Save for paper
+Path("artifacts").mkdir(exist_ok=True)
+with open("artifacts/decision_analysis.json", "w") as f:
+    json.dump({
+        "summary": summary_dict,
+        "df_records": df[["quadrant","matched_prototype","cosine_distance",
+                           "margin","is_ood"]].to_dict(orient="records"),
+    }, f, indent=2)
+print("\\nSaved artifacts/decision_analysis.json")
+'''),
+        md("### Save to Google Drive"),
+        code(DRIVE_BACKUP_DECISION),
+    ])
+
+
 NOTEBOOKS = {
     "01_extraction.ipynb": nb_extract,
     "02_clustering.ipynb": nb_cluster,
@@ -1453,6 +1695,7 @@ NOTEBOOKS = {
     "03_audit.ipynb": nb_audit,
     "04_evaluation.ipynb": nb_eval,
     "05_harmbench_validation.ipynb": nb_harmbench,
+    "06_decision_analysis.ipynb": nb_decision_analysis,
 }
 
 

@@ -1,4 +1,16 @@
-"""Batched extraction of hidden states for UNSAFE-flagged prompts (Day 5)."""
+"""Batched extraction of hidden states for all prompts (Day 5 + extended Day 17).
+
+UNSAFE-flagged embeddings go into `embeddings`/`metadata` (used by clustering).
+SAFE-flagged embeddings go into `safe_embeddings`/`safe_metadata` (new, for analysis).
+
+Each metadata entry now includes:
+  guard_decision  "UNSAFE" | "SAFE"
+  gt_correct      True if guard_decision matches gt_toxicity
+  quadrant        "TP" | "TN" | "FP" | "FN"
+
+Backward compatibility: `embeddings`, `metadata`, `train_indices`, `test_indices`
+keys are unchanged — 02_clustering and 03_audit are unaffected.
+"""
 
 from __future__ import annotations
 
@@ -17,18 +29,24 @@ def extract_unsafe_embeddings(
     batch_size: int,
     output_path: str | Path,
     train_ratio: float = 0.8,
+    record_safe: bool = True,
 ) -> dict:
-    """Run the guard over prompts; keep embeddings for those flagged UNSAFE.
+    """Run the guard over prompts; record embeddings for all four quadrants.
 
-    Applies an 80/20 train/test split on the UNSAFE-flagged results:
-    - train split → used for clustering / prototype discovery
-    - test split  → held out for A/B benchmark case curation
+    UNSAFE-flagged prompts → `embeddings` / `metadata` (80/20 split for clustering).
+    SAFE-flagged prompts   → `safe_embeddings` / `safe_metadata` (all, for analysis).
 
-    Both splits are saved inside the same .pt file to keep things portable.
+    Quadrant labels:
+      TP — guard UNSAFE, gt_toxicity=1 (correct flag)
+      FP — guard UNSAFE, gt_toxicity=0 (false alarm)
+      TN — guard SAFE,   gt_toxicity=0 (correct pass)
+      FN — guard SAFE,   gt_toxicity=1 (missed harmful)
     """
-    embeddings: list[torch.Tensor] = []
-    metadata: list[dict] = []
-    n_seen = n_unsafe = 0
+    unsafe_embeddings: list[torch.Tensor] = []
+    unsafe_metadata: list[dict] = []
+    safe_embeddings: list[torch.Tensor] = []
+    safe_metadata: list[dict] = []
+    n_seen = n_unsafe = n_safe = 0
 
     for chunk in tqdm(list(batched(records, batch_size)), desc="Extracting", unit="batch"):
         texts = [r.text for r in chunk]
@@ -36,40 +54,68 @@ def extract_unsafe_embeddings(
 
         for record, decision, emb in zip(chunk, decisions, batch_emb):
             n_seen += 1
-            if not decision.is_unsafe:
-                continue
-            n_unsafe += 1
-            embeddings.append(emb)
-            metadata.append({
-                "index": record.index,
-                "text": record.text,
-                "categories": decision.categories,
-                "gt_toxicity": record.gt_toxicity,
-                "gt_jailbreak": record.gt_jailbreak,
-            })
+            gt = int(record.gt_toxicity or 0)
+            is_unsafe = bool(decision.is_unsafe)
+            guard_decision = "UNSAFE" if is_unsafe else "SAFE"
+            gt_correct = (is_unsafe and gt == 1) or (not is_unsafe and gt == 0)
+            if is_unsafe and gt == 1:
+                quadrant = "TP"
+            elif is_unsafe and gt == 0:
+                quadrant = "FP"
+            elif not is_unsafe and gt == 0:
+                quadrant = "TN"
+            else:
+                quadrant = "FN"
 
-    if not embeddings:
+            entry = {
+                "index":         record.index,
+                "text":          record.text,
+                "categories":    decision.categories,
+                "gt_toxicity":   record.gt_toxicity,
+                "gt_jailbreak":  record.gt_jailbreak,
+                "guard_decision": guard_decision,
+                "gt_correct":    gt_correct,
+                "quadrant":      quadrant,
+            }
+
+            if is_unsafe:
+                n_unsafe += 1
+                unsafe_embeddings.append(emb)
+                unsafe_metadata.append(entry)
+            elif record_safe:
+                n_safe += 1
+                safe_embeddings.append(emb)
+                safe_metadata.append(entry)
+
+    if not unsafe_embeddings:
         raise RuntimeError("No prompts were flagged UNSAFE; nothing to save.")
 
-    tensor = torch.stack(embeddings)
+    tensor = torch.stack(unsafe_embeddings)
 
-    # Deterministic 80/20 split — no shuffling needed since guard processes
-    # prompts in dataset order which is already random w.r.t. content.
-    n_train = math.floor(len(metadata) * train_ratio)
+    # Deterministic 80/20 split on UNSAFE only (used by clustering downstream)
+    n_train = math.floor(len(unsafe_metadata) * train_ratio)
     train_indices = list(range(n_train))
-    test_indices  = list(range(n_train, len(metadata)))
+    test_indices  = list(range(n_train, len(unsafe_metadata)))
+
+    safe_tensor = torch.stack(safe_embeddings) if safe_embeddings else torch.empty(0)
 
     payload = {
-        "embeddings": tensor,
-        "metadata": metadata,
-        "train_indices": train_indices,   # 80% — use for clustering
-        "test_indices":  test_indices,    # 20% — hold out for A/B benchmark
+        # ── UNSAFE (backward-compatible keys) ────────────────────────────────
+        "embeddings":    tensor,
+        "metadata":      unsafe_metadata,
+        "train_indices": train_indices,
+        "test_indices":  test_indices,
+        # ── SAFE (new keys for analysis) ─────────────────────────────────────
+        "safe_embeddings": safe_tensor,
+        "safe_metadata":   safe_metadata,
+        # ── Summary ──────────────────────────────────────────────────────────
         "stats": {
-            "n_seen": n_seen,
-            "n_unsafe": n_unsafe,
-            "n_train": len(train_indices),
-            "n_test":  len(test_indices),
-            "dim": tensor.shape[1],
+            "n_seen":      n_seen,
+            "n_unsafe":    n_unsafe,
+            "n_safe":      n_safe,
+            "n_train":     len(train_indices),
+            "n_test":      len(test_indices),
+            "dim":         tensor.shape[1],
             "train_ratio": train_ratio,
         },
     }
@@ -77,8 +123,8 @@ def extract_unsafe_embeddings(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(payload, output_path)
     print(
-        f"Saved {tensor.shape[0]} UNSAFE embeddings "
-        f"(train={len(train_indices)}, test={len(test_indices)}, "
-        f"dim={tensor.shape[1]}) to {output_path}"
+        f"Saved {tensor.shape[0]} UNSAFE + {len(safe_metadata)} SAFE embeddings "
+        f"(unsafe train={len(train_indices)}, test={len(test_indices)}, "
+        f"dim={tensor.shape[1]}) → {output_path}"
     )
     return payload

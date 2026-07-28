@@ -19,8 +19,12 @@ class AuditRecord:
     is_unsafe: bool
     guard_categories: list[str]
     matched_prototype: str
+    prototype_label: str          # human-readable label (e.g. "Persona and Role-Based Bypass")
     similarity_score: float
     is_ood: bool
+    second_prototype: str         # runner-up prototype key
+    second_similarity: float      # runner-up cosine similarity
+    margin: float                 # similarity - second_similarity; low = boundary/uncertain case
     explanation: str
     timings: dict[str, float] = field(default_factory=dict)
 
@@ -55,8 +59,12 @@ class AuditPipeline:
                 is_unsafe=False,
                 guard_categories=[],
                 matched_prototype="",
+                prototype_label="",
                 similarity_score=0.0,
                 is_ood=False,
+                second_prototype="",
+                second_similarity=0.0,
+                margin=0.0,
                 explanation="Input classified SAFE; no audit generated.",
                 timings=timings,
             )
@@ -76,8 +84,12 @@ class AuditPipeline:
             is_unsafe=decision.is_unsafe,
             guard_categories=decision.categories,
             matched_prototype=match.prototype_key,
+            prototype_label=match.label,
             similarity_score=match.similarity,
             is_ood=match.is_ood,
+            second_prototype=match.second_prototype_key,
+            second_similarity=match.second_similarity,
+            margin=match.margin,
             explanation=explanation,
             timings=timings,
         )
