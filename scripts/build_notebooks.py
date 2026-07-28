@@ -336,9 +336,10 @@ payload = extract_unsafe_embeddings(
     batch_size=cfg.extraction.batch_size,
     output_path=cfg.paths.embeddings,
     train_ratio=cfg.data.get("train_ratio", 0.8),
+    record_safe=True,   # also save SAFE-classified embeddings for 06_decision_analysis
 )
 stats = payload["stats"]
-print(f"Total UNSAFE: {stats['n_unsafe']}  |  Train: {stats['n_train']}  |  Test: {stats['n_test']}")
+print(f"UNSAFE: {stats['n_unsafe']} (train={stats['n_train']}, test={stats['n_test']})  |  SAFE: {stats['n_safe']}")
 '''),
         md("""
 **Next:** open `02_clustering.ipynb`.
