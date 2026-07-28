@@ -32,24 +32,26 @@
 **Sample:** 500 prompts (earlier smoke run)
 
 ### Output
-| Metric | Value |
-|---|---|
-| Total prompts seen | 500 |
-| Guard flagged UNSAFE | 116 |
-| True Positives | 102 |
-| False Positives | 14 |
-| False Negatives | 98 |
-| True Negatives | 286 |
-| **Accuracy** | **77.6%** |
-| **Precision** | **87.9%** |
-| **Recall** | **51.0%** |
-| **F1** | **0.646** |
+| Metric | Value (full run, n=5,082) | Value (500-prompt smoke run) |
+|---|---|---|
+| Total prompts seen | 5,082 | 500 |
+| Guard flagged UNSAFE | 381 | 116 |
+| True Positives | 187 | 102 |
+| False Positives | 194 | 14 |
+| False Negatives | 197 | 98 |
+| True Negatives | 4,504 | 286 |
+| **Accuracy** | **92.3%** | 77.6% |
+| **Precision** | **49.1%** | 87.9% |
+| **Recall** | **48.7%** | 51.0% |
+| **F1** | **0.489** | 0.646 |
 
 ### Findings
-- High precision (87.9%) — when the guard flags something, it is usually correct
-- Low recall (51.0%) — the guard misses approximately half of all truly toxic prompts
-- The **98 false negatives** represent the core diagnostic gap this system targets: developers need to understand *why* the guard missed these toxic inputs
-- False positives are dominated by prompts containing dangerous-sounding words in benign contexts (e.g. "who shot ya? lyrics", "kill a running process")
+- **Precision = 49.1%** — nearly half of all UNSAFE flags are false positives. The guard fires on safe prompts almost as often as harmful ones. This is the primary motivation for the audit system: developers cannot trust the flag alone.
+- **Recall = 48.7%** — the guard misses approximately half of all truly harmful prompts, consistent with the earlier smoke run
+- **Note on 500-prompt smoke run:** the earlier precision of 87.9% was a small-sample artifact. The 14 FPs in 500 prompts happened to be a lucky draw. The full dataset reveals the true FP rate is much higher.
+- **194 false positives** — developers waste time investigating safe prompts flagged as harmful. The audit system helps them quickly identify which are FPs and why.
+- **197 false negatives** — harmful prompts slipping through undetected represent the core safety gap the audit system is designed to surface.
+- Accuracy appears high (92.3%) but is misleading due to class imbalance — the vast majority of ToxicChat prompts are safe.
 
 ---
 
