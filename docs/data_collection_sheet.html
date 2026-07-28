@@ -9,49 +9,50 @@ body { font-family: Arial, sans-serif; font-size: 9.5pt; color: #111; padding: 1
 h1 { font-size: 13pt; margin-bottom: 6px; }
 h2 { font-size: 10pt; background: #333; color: #fff; padding: 4px 8px; margin: 14px 0 6px; }
 
-/* study intro */
 .intro { background: #f8f8f8; border: 1px solid #ccc; border-left: 4px solid #4a90d9; padding: 10px 14px; margin-bottom: 10px; font-size: 9pt; line-height: 1.7; }
-.intro h2 { background: none; color: #1a5fa8; font-size: 10pt; margin: 0 0 6px; padding: 0; border: none; }
+.intro-title { color: #1a5fa8; font-size: 10pt; font-weight: bold; margin-bottom: 4px; }
 
-/* consent */
 .consent { background: #fff8e1; border: 1.5px solid #f0b400; padding: 8px 14px; margin-bottom: 12px; font-size: 9pt; line-height: 1.7; }
 .consent-check { display: flex; align-items: flex-start; gap: 10px; margin-top: 6px; }
-.consent-check .box { width: 14px; height: 14px; border: 1.5px solid #333; flex-shrink: 0; margin-top: 1px; }
-.consent-check span { font-size: 8.5pt; }
+.consent-check .box { width: 14px; height: 14px; border: 1.5px solid #333; flex-shrink: 0; margin-top: 2px; }
 
-/* meta fields */
 .meta-row { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; }
 .meta-field { display: flex; flex-direction: column; }
 .meta-field label { font-size: 7.5pt; color: #666; margin-bottom: 1px; }
 .meta-field .field { border-bottom: 1px solid #333; min-width: 120px; height: 16px; }
 
-/* example box */
 .example { background: #e8f2ff; border: 1.5px solid #4a90d9; padding: 8px 12px; margin-bottom: 10px; }
-.example h3 { font-size: 9.5pt; color: #1a5fa8; margin-bottom: 6px; }
+.example-title { font-size: 9.5pt; color: #1a5fa8; font-weight: bold; margin-bottom: 5px; }
 .example p { font-size: 8.5pt; line-height: 1.6; margin-bottom: 4px; }
 
-/* answer key */
+.legend { background: #f5f5f5; border: 1px solid #ccc; padding: 8px 12px; margin-bottom: 8px; font-size: 8pt; line-height: 1.9; }
+.legend-title { font-weight: bold; font-size: 8.5pt; margin-bottom: 4px; }
+.legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+.legend-item { display: flex; gap: 6px; }
+.legend-col { font-weight: bold; min-width: 36px; }
+
 .key { background: #f2f2f2; border: 1px solid #ccc; padding: 6px 10px; margin-bottom: 10px; font-size: 8pt; line-height: 1.8; }
 
-/* session table */
 table.log { width: 100%; border-collapse: collapse; margin-bottom: 4px; table-layout: fixed; }
 table.log th { background: #333; color: #fff; font-size: 8pt; font-weight: bold; padding: 4px 2px; text-align: center; border: 1px solid #555; }
 table.log td { border: 1px solid #bbb; padding: 3px 2px; text-align: center; font-size: 8.5pt; height: 18px; }
 table.log tr:nth-child(even) td { background: #f7f7f7; }
 table.log tr.totals td { background: #e5e5e5; font-weight: bold; font-size: 8pt; }
 td.score { background: #fffde7 !important; }
-col.c-case { width: 5%; } col.c-type { width: 5%; } col.c-start { width: 10%; }
-col.c-end { width: 10%; } col.c-secs { width: 8%; } col.c-q1 { width: 7%; }
-col.c-q2 { width: 7%; } col.c-conf { width: 7%; } col.c-score { width: 7%; }
+col.c-case { width: 7%; }
+col.c-type { width: 8%; }
+col.c-secs { width: 14%; }
+col.c-q1   { width: 10%; }
+col.c-q2   { width: 10%; }
+col.c-conf { width: 10%; }
+col.c-score{ width: 10%; }
 
-/* example table */
 table.ex { border-collapse: collapse; margin: 6px 0; font-size: 8pt; }
-table.ex th { background: #4a90d9; color: #fff; padding: 3px 7px; border: 1px solid #3a80c9; text-align: center; }
-table.ex td { border: 1px solid #aac; padding: 3px 7px; text-align: center; }
+table.ex th { background: #4a90d9; color: #fff; padding: 3px 8px; border: 1px solid #3a80c9; text-align: center; }
+table.ex td { border: 1px solid #aac; padding: 3px 8px; text-align: center; }
 table.ex td.f { background: #cce0ff; font-weight: bold; }
 table.ex td.r { background: #fffde7; }
 
-/* summary */
 table.sum { border-collapse: collapse; width: 70%; margin-top: 4px; }
 table.sum th { background: #333; color: #fff; font-size: 8pt; padding: 4px 8px; border: 1px solid #555; text-align: center; }
 table.sum td { border: 1px solid #ccc; padding: 4px 8px; font-size: 8.5pt; }
@@ -67,44 +68,34 @@ table.sum td.val { background: #fafafa; min-width: 80px; }
 
 <!-- STUDY DESCRIPTION -->
 <div class="intro">
-  <h2>About this study</h2>
-  <p>
-    Thank you for taking part in this research. We are studying whether short explanations can help
-    developers diagnose why an AI safety guardrail made a wrong decision &mdash; either flagging a
-    safe prompt as unsafe, or missing a harmful one.
-  </p>
-  <p>
-    You will review <strong>25 guardrail failure cases per session</strong> across two sessions
-    (at least 3 days apart). For each case, read the prompt and the guard&rsquo;s decision, then
-    identify the most likely root cause and suggest a fix. There are no trick questions &mdash; we
-    are interested in your honest judgment, not a &ldquo;correct&rdquo; answer.
-  </p>
-  <p>
-    Each case should take about <strong>1&ndash;2 minutes</strong>. Please use a phone stopwatch
-    to record how long each case takes you. The total session time is around <strong>30&ndash;45 minutes</strong>.
-  </p>
+  <div class="intro-title">About this study</div>
+  <p>Thank you for taking part in this research. We are studying whether short explanations
+  can help developers diagnose why an AI safety guardrail made a wrong decision &mdash;
+  either flagging a safe prompt as unsafe, or missing a harmful one.</p>
+  <p style="margin-top:4px;">You will review <strong>25 guardrail failure cases per session</strong>
+  across two sessions (at least 3 days apart). For each case, identify the most likely root
+  cause and suggest a fix. There are no trick questions &mdash; we want your honest judgment.</p>
+  <p style="margin-top:4px;">Each case takes about <strong>1&ndash;2 minutes</strong>. Use a
+  phone stopwatch and write the number of seconds each case took in the <strong>Secs</strong>
+  column. Total session time: ~30&ndash;45 minutes.</p>
 </div>
 
 <!-- CONSENT -->
 <div class="consent">
-  <strong>Participant consent</strong><br>
-  <p style="margin-top:4px; font-size:8.5pt;">
-    This study collects only your answers and the time you spend on each case.
-    <strong>No personally identifiable information is stored</strong> &mdash; your responses
-    are recorded under a participant ID only (e.g. P01). Your data will be used solely for
-    academic research and will not be shared with any third party. You may withdraw at any time
-    without penalty.
-  </p>
+  <strong>Participant consent</strong>
+  <p style="margin-top:4px;">This study collects only your answers and timing.
+  <strong>No personally identifiable information is stored</strong> &mdash; responses are
+  recorded under a participant ID only. Data is used solely for academic research and will
+  not be shared with any third party. You may withdraw at any time without penalty.</p>
   <div class="consent-check">
     <div class="box"></div>
-    <span>
-      I have read the above and agree to take part in this study. I understand that only
-      anonymised timing and answer data is collected, and that I can withdraw at any time.
-    </span>
+    <span>I agree to take part. I understand that only anonymised timing and answer data is
+    collected, and that I can withdraw at any time.</span>
   </div>
-  <div style="margin-top:8px; font-size:8pt; color:#555;">
-    Signature: <span style="display:inline-block; border-bottom:1px solid #333; width:180px; margin-left:4px;">&nbsp;</span>
-    &nbsp;&nbsp;&nbsp; Date: <span style="display:inline-block; border-bottom:1px solid #333; width:100px; margin-left:4px;">&nbsp;</span>
+  <div style="margin-top:8px; font-size:8pt;">
+    Signature:&nbsp;<span style="display:inline-block; border-bottom:1px solid #333; width:180px;">&nbsp;</span>
+    &nbsp;&nbsp;&nbsp;
+    Date:&nbsp;<span style="display:inline-block; border-bottom:1px solid #333; width:100px;">&nbsp;</span>
   </div>
 </div>
 
@@ -116,35 +107,25 @@ table.sum td.val { background: #fafafa; min-width: 80px; }
   <div class="meta-field"><label>Date</label><div class="field" style="min-width:100px;">&nbsp;</div></div>
 </div>
 
-<!-- WORKED EXAMPLE -->
-<div class="example">
-  <h3>Worked Example &mdash; how to fill in one row</h3>
-  <p><strong>Case in booklet:</strong> Prompt: &ldquo;who shot ya? lyrics&rdquo; &nbsp;|&nbsp; Guard: [UNSAFE] &nbsp;|&nbsp; Categories: S12, S8 &nbsp;|&nbsp; Ground truth: <strong>SAFE</strong> (false positive)</p>
-  <p><strong>Diagnosis:</strong> Category too broad &mdash; &ldquo;shot&rdquo; triggered S12 despite benign musical context. &nbsp; <strong>Fix:</strong> Add music/entertainment domain examples to S12. &nbsp; <strong>Q1 = a &nbsp;&nbsp; Q2 = a &nbsp;&nbsp; Conf = 3</strong></p>
-  <table class="ex">
-    <thead>
-      <tr><th>Case</th><th>T</th><th>Start</th><th>End</th><th>Secs</th><th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>1</td><td class="f">FP</td><td class="f">10:04:12</td><td class="f">10:05:24</td>
-        <td class="f">72</td><td class="f">a</td><td class="f">a</td><td class="f">3</td>
-        <td class="r">researcher fills</td>
-      </tr>
-    </tbody>
-  </table>
-  <p style="margin-top:5px; font-size:8pt; color:#333;">
-    <strong>T</strong>: write FP or FN from your case booklet &nbsp;|&nbsp;
-    <strong>Start/End</strong>: phone stopwatch time when you begin and submit &nbsp;|&nbsp;
-    <strong>Secs</strong>: End &minus; Start &nbsp;|&nbsp;
-    <strong>&#10003;?</strong>: leave blank &mdash; researcher fills after collection
-  </p>
+<!-- COLUMN LEGEND -->
+<div class="legend">
+  <div class="legend-title">Column legend &mdash; what to write in each column</div>
+  <div class="legend-grid">
+    <div class="legend-item"><span class="legend-col">Case</span><span>Case number from your booklet (1&ndash;25)</span></div>
+    <div class="legend-item"><span class="legend-col">Q1</span><span>Root cause answer: write a, b, c, d, or e</span></div>
+    <div class="legend-item"><span class="legend-col">T</span><span>Type: write <strong>FP</strong> (false positive) or <strong>FN</strong> (false negative) &mdash; shown on each case page</span></div>
+    <div class="legend-item"><span class="legend-col">Q2</span><span>Recommended fix: write a, b, c, d, or e</span></div>
+    <div class="legend-item"><span class="legend-col">Secs</span><span>How many seconds you spent on this case (stopwatch lap time)</span></div>
+    <div class="legend-item"><span class="legend-col">Conf</span><span>Your confidence: 1=not confident &nbsp; 2=somewhat &nbsp; 3=confident &nbsp; 4=very confident</span></div>
+    <div class="legend-item"><span class="legend-col">&#10003;?</span><span style="background:#fffde7; padding:0 4px;">Leave blank &mdash; researcher fills this in after scoring</span></div>
+    <div class="legend-item"></div>
+  </div>
 </div>
 
 <!-- ANSWER KEY -->
 <div class="key">
   <strong>Q1 &mdash; Root Cause:</strong> &nbsp;
-  a) Category too broad (keyword trigger) &nbsp;|&nbsp;
+  a) Category too broad (keyword trigger without context) &nbsp;|&nbsp;
   b) Novel evasion / training gap &nbsp;|&nbsp;
   c) Wrong confidence threshold &nbsp;|&nbsp;
   d) Misinformation risk (guard may be correct) &nbsp;|&nbsp;
@@ -156,9 +137,28 @@ table.sum td.val { background: #fafafa; min-width: 80px; }
   c) Adjust threshold &nbsp;|&nbsp;
   d) Add explicit policy rule &nbsp;|&nbsp;
   e) No fix needed
-  <br>
-  <strong>T:</strong> FP = false positive (safe prompt flagged) &nbsp;|&nbsp; FN = false negative (unsafe prompt missed) &nbsp;&nbsp;
-  <strong>Conf:</strong> 1 = not confident &nbsp; 2 = somewhat &nbsp; 3 = confident &nbsp; 4 = very confident
+</div>
+
+<!-- WORKED EXAMPLE -->
+<div class="example">
+  <div class="example-title">Worked Example &mdash; how to fill in one row</div>
+  <p><strong>Case in booklet:</strong> Prompt: &ldquo;who shot ya? lyrics&rdquo; &nbsp;|&nbsp;
+  Guard: [UNSAFE] &nbsp;|&nbsp; Ground truth: SAFE (false positive &mdash; &ldquo;shot&rdquo; triggered S12 despite being a song title)</p>
+  <p style="margin-top:3px;"><strong>Diagnosis:</strong> Q1 = <strong>a</strong> (category too broad) &nbsp;&nbsp;
+  <strong>Fix:</strong> Q2 = <strong>a</strong> (add music domain examples) &nbsp;&nbsp;
+  <strong>Conf = 3</strong></p>
+  <table class="ex">
+    <thead>
+      <tr><th>Case</th><th>T</th><th>Secs</th><th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td><td class="f">FP</td><td class="f">72</td>
+        <td class="f">a</td><td class="f">a</td><td class="f">3</td>
+        <td class="r">researcher fills</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- SESSION 1 -->
@@ -169,38 +169,42 @@ table.sum td.val { background: #fafafa; min-width: 80px; }
   <div class="meta-field"><label>Session end time</label><div class="field" style="min-width:80px;">&nbsp;</div></div>
 </div>
 <table class="log">
-  <colgroup><col class="c-case"><col class="c-type"><col class="c-start"><col class="c-end"><col class="c-secs"><col class="c-q1"><col class="c-q2"><col class="c-conf"><col class="c-score"></colgroup>
-  <thead><tr><th>Case</th><th>T</th><th>Start</th><th>End</th><th>Secs</th><th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th></tr></thead>
+  <colgroup><col class="c-case"><col class="c-type"><col class="c-secs"><col class="c-q1"><col class="c-q2"><col class="c-conf"><col class="c-score"></colgroup>
+  <thead><tr><th>Case</th><th>T</th><th>Secs</th><th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>10</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>11</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>12</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>13</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>14</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>15</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>16</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>17</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>18</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>19</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>20</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>21</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>22</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>23</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>24</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>25</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr class="totals"><td colspan="4" style="text-align:right; padding-right:6px;">Totals &rarr;</td><td></td><td colspan="3" style="font-size:7.5pt; text-align:center;">mean secs:</td><td class="score"></td></tr>
+    <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>10</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>11</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>12</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>13</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>14</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>15</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>16</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>17</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>18</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>19</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>20</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>21</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>22</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>23</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>24</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>25</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr class="totals">
+      <td colspan="2" style="text-align:right; padding-right:6px;">Totals &rarr;</td>
+      <td></td><td colspan="3" style="font-size:7.5pt; text-align:center;">mean secs:</td>
+      <td class="score"></td>
+    </tr>
   </tbody>
 </table>
-<p class="note">T = FP or FN from booklet &nbsp;|&nbsp; &#10003;? filled by researcher after scoring (1=correct, 0=incorrect)</p>
+<p class="note">&#10003;? column is filled by the researcher after you return this sheet (1 = correct, 0 = incorrect)</p>
 
 <!-- SESSION 2 -->
 <h2>Session 2 &mdash; 25 Cases &nbsp;<span style="font-weight:normal; font-size:8.5pt;">(minimum 3 days after Session 1)</span></h2>
@@ -210,38 +214,42 @@ table.sum td.val { background: #fafafa; min-width: 80px; }
   <div class="meta-field"><label>Session end time</label><div class="field" style="min-width:80px;">&nbsp;</div></div>
 </div>
 <table class="log">
-  <colgroup><col class="c-case"><col class="c-type"><col class="c-start"><col class="c-end"><col class="c-secs"><col class="c-q1"><col class="c-q2"><col class="c-conf"><col class="c-score"></colgroup>
-  <thead><tr><th>Case</th><th>T</th><th>Start</th><th>End</th><th>Secs</th><th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th></tr></thead>
+  <colgroup><col class="c-case"><col class="c-type"><col class="c-secs"><col class="c-q1"><col class="c-q2"><col class="c-conf"><col class="c-score"></colgroup>
+  <thead><tr><th>Case</th><th>T</th><th>Secs</th><th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>10</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>11</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>12</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>13</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>14</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>15</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>16</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>17</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>18</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>19</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>20</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>21</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>22</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>23</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>24</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>25</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr class="totals"><td colspan="4" style="text-align:right; padding-right:6px;">Totals &rarr;</td><td></td><td colspan="3" style="font-size:7.5pt; text-align:center;">mean secs:</td><td class="score"></td></tr>
+    <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>10</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>11</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>12</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>13</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>14</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>15</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>16</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>17</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>18</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>19</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>20</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>21</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>22</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>23</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>24</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr><td>25</td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
+    <tr class="totals">
+      <td colspan="2" style="text-align:right; padding-right:6px;">Totals &rarr;</td>
+      <td></td><td colspan="3" style="font-size:7.5pt; text-align:center;">mean secs:</td>
+      <td class="score"></td>
+    </tr>
   </tbody>
 </table>
-<p class="note">T = FP or FN from booklet &nbsp;|&nbsp; &#10003;? filled by researcher after scoring (1=correct, 0=incorrect)</p>
+<p class="note">&#10003;? column is filled by the researcher after you return this sheet (1 = correct, 0 = incorrect)</p>
 
 <!-- SUMMARY -->
 <h2>Summary &mdash; filled by researcher after scoring</h2>
@@ -253,258 +261,6 @@ table.sum td.val { background: #fafafa; min-width: 80px; }
     <tr><td>Total correct answers (/ 25)</td><td class="val"></td><td class="val"></td></tr>
     <tr><td>Accuracy (%)</td><td class="val"></td><td class="val"></td></tr>
     <tr><td>Mean confidence rating (1&ndash;4)</td><td class="val"></td><td class="val"></td></tr>
-  </tbody>
-</table>
-<p class="note" style="margin-top:6px;">
-  <strong>Primary metric:</strong> mean diagnostic time &mdash; H1 requires &ge;30% reduction in treatment vs control, p&lt;0.05 &nbsp;|&nbsp;
-  <strong>Secondary:</strong> accuracy &ge;85% in treatment arm
-</p>
-
-</body>
-</html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>A/B Study — Data Collection Sheet</title>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; font-size: 9.5pt; color: #111; padding: 16px 28px; }
-h1 { font-size: 13pt; margin-bottom: 10px; }
-h2 { font-size: 10pt; background: #333; color: #fff; padding: 4px 8px; margin: 14px 0 6px; }
-
-/* meta fields */
-.meta-row { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; }
-.meta-field { display: flex; flex-direction: column; }
-.meta-field label { font-size: 7.5pt; color: #666; margin-bottom: 1px; }
-.meta-field .field { border-bottom: 1px solid #333; min-width: 120px; height: 16px; }
-
-/* example box */
-.example { background: #e8f2ff; border: 1.5px solid #4a90d9; padding: 8px 12px; margin-bottom: 10px; }
-.example h3 { font-size: 9.5pt; color: #1a5fa8; margin-bottom: 6px; }
-.example p { font-size: 8.5pt; line-height: 1.6; margin-bottom: 4px; }
-
-/* answer key */
-.key { background: #f2f2f2; border: 1px solid #ccc; padding: 6px 10px; margin-bottom: 10px; font-size: 8pt; line-height: 1.8; }
-
-/* session table */
-table.log { width: 100%; border-collapse: collapse; margin-bottom: 4px; table-layout: fixed; }
-table.log th {
-  background: #333; color: #fff; font-size: 8pt; font-weight: bold;
-  padding: 4px 2px; text-align: center; border: 1px solid #555;
-}
-table.log td {
-  border: 1px solid #bbb; padding: 3px 2px; text-align: center;
-  font-size: 8.5pt; height: 18px;
-}
-table.log tr:nth-child(even) td { background: #f7f7f7; }
-table.log tr.totals td { background: #e5e5e5; font-weight: bold; font-size: 8pt; }
-td.score { background: #fffde7 !important; }
-
-/* column widths */
-col.c-case { width: 5%; }
-col.c-type { width: 5%; }
-col.c-start { width: 10%; }
-col.c-end   { width: 10%; }
-col.c-secs  { width: 8%; }
-col.c-q1    { width: 7%; }
-col.c-q2    { width: 7%; }
-col.c-conf  { width: 7%; }
-col.c-score { width: 7%; }
-
-/* example table */
-table.ex { border-collapse: collapse; margin: 6px 0; font-size: 8pt; }
-table.ex th { background: #4a90d9; color: #fff; padding: 3px 7px; border: 1px solid #3a80c9; text-align: center; }
-table.ex td { border: 1px solid #aac; padding: 3px 7px; text-align: center; }
-table.ex td.f { background: #cce0ff; font-weight: bold; }
-table.ex td.r { background: #fffde7; }
-
-/* summary */
-table.sum { border-collapse: collapse; width: 70%; margin-top: 4px; }
-table.sum th { background: #333; color: #fff; font-size: 8pt; padding: 4px 8px; border: 1px solid #555; text-align: center; }
-table.sum td { border: 1px solid #ccc; padding: 4px 8px; font-size: 8.5pt; }
-table.sum td.metric { font-weight: normal; }
-table.sum td.val { background: #fafafa; min-width: 80px; }
-
-.note { font-size: 7.5pt; color: #666; margin: 3px 0 10px; }
-@media print { body { padding: 8px 16px; } }
-</style>
-</head>
-<body>
-
-<h1>A/B Study &mdash; Participant Data Collection Sheet</h1>
-
-<!-- PARTICIPANT INFO -->
-<div class="meta-row">
-  <div class="meta-field"><label>Participant ID</label><div class="field">&nbsp;</div></div>
-  <div class="meta-field"><label>Role</label><div class="field" style="min-width:160px;">&nbsp;</div></div>
-  <div class="meta-field"><label>LLM Familiarity (1=none, 5=expert)</label><div class="field" style="min-width:60px;">&nbsp;</div></div>
-  <div class="meta-field"><label>Date</label><div class="field" style="min-width:100px;">&nbsp;</div></div>
-</div>
-
-<!-- WORKED EXAMPLE -->
-<div class="example">
-  <h3>Worked Example &mdash; how to fill in one row</h3>
-  <p><strong>Case in booklet:</strong> Prompt: &ldquo;who shot ya? lyrics&rdquo; &nbsp;|&nbsp; Guard: [UNSAFE] &nbsp;|&nbsp; Categories: S12, S8 &nbsp;|&nbsp; Ground truth: <strong>SAFE</strong> (false positive)</p>
-  <p><strong>Diagnosis:</strong> Category too broad &mdash; &ldquo;shot&rdquo; triggered S12 despite benign musical context. &nbsp; <strong>Fix:</strong> Add music/entertainment domain examples to S12. &nbsp; <strong>Q1=a &nbsp; Q2=a &nbsp; Conf=3</strong></p>
-  <table class="ex">
-    <thead>
-      <tr><th>Case</th><th>T</th><th>Start</th><th>End</th><th>Secs</th><th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>1</td><td class="f">FP</td><td class="f">10:04:12</td><td class="f">10:05:24</td>
-        <td class="f">72</td><td class="f">a</td><td class="f">a</td><td class="f">3</td>
-        <td class="r">researcher fills</td>
-      </tr>
-    </tbody>
-  </table>
-  <p style="margin-top:5px; font-size:8pt; color:#333;">
-    <strong>T</strong>: write FP or FN from your case booklet &nbsp;|&nbsp;
-    <strong>Start/End</strong>: phone stopwatch time when you begin and submit &nbsp;|&nbsp;
-    <strong>Secs</strong>: End &minus; Start &nbsp;|&nbsp;
-    <strong>&#10003;?</strong>: leave blank, researcher scores after collection
-  </p>
-</div>
-
-<!-- ANSWER KEY -->
-<div class="key">
-  <strong>Q1 &mdash; Root Cause:</strong> &nbsp;
-  a) Category too broad (keyword trigger) &nbsp;|&nbsp;
-  b) Novel evasion / training gap &nbsp;|&nbsp;
-  c) Wrong confidence threshold &nbsp;|&nbsp;
-  d) Misinformation risk (guard may be correct) &nbsp;|&nbsp;
-  e) Guard is correct &mdash; not a failure
-  <br>
-  <strong>Q2 &mdash; Fix:</strong> &nbsp;
-  a) Add domain-context examples &nbsp;|&nbsp;
-  b) Add evasion-pattern examples &nbsp;|&nbsp;
-  c) Adjust threshold &nbsp;|&nbsp;
-  d) Add explicit policy rule &nbsp;|&nbsp;
-  e) No fix needed
-  <br>
-  <strong>T:</strong> FP = false positive (safe prompt flagged) &nbsp;|&nbsp; FN = false negative (unsafe prompt missed) &nbsp;&nbsp;
-  <strong>Conf:</strong> 1 = not confident &nbsp; 2 = somewhat &nbsp; 3 = confident &nbsp; 4 = very confident
-</div>
-
-<!-- SESSION 1 -->
-<h2>Session 1 &mdash; 25 Cases</h2>
-<div class="meta-row">
-  <div class="meta-field"><label>Form received</label><div class="field" style="min-width:140px;">&nbsp;</div></div>
-  <div class="meta-field"><label>Session start time</label><div class="field" style="min-width:80px;">&nbsp;</div></div>
-  <div class="meta-field"><label>Session end time</label><div class="field" style="min-width:80px;">&nbsp;</div></div>
-</div>
-
-<table class="log">
-  <colgroup>
-    <col class="c-case"><col class="c-type"><col class="c-start"><col class="c-end">
-    <col class="c-secs"><col class="c-q1"><col class="c-q2"><col class="c-conf"><col class="c-score">
-  </colgroup>
-  <thead>
-    <tr>
-      <th>Case</th><th>T</th><th>Start</th><th>End</th><th>Secs</th>
-      <th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- 25 data rows -->
-    <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>10</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>11</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>12</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>13</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>14</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>15</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>16</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>17</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>18</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>19</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>20</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>21</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>22</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>23</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>24</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>25</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr class="totals">
-      <td colspan="4" style="text-align:right; padding-right:6px;">Totals &rarr;</td>
-      <td></td><td colspan="3" style="font-size:7.5pt; text-align:center;">mean secs:</td><td class="score"></td>
-    </tr>
-  </tbody>
-</table>
-<p class="note">T = FP or FN from booklet &nbsp;|&nbsp; &#10003;? filled by researcher (1=correct, 0=incorrect)</p>
-
-<!-- SESSION 2 -->
-<h2>Session 2 &mdash; 25 Cases &nbsp;<span style="font-weight:normal; font-size:8.5pt;">(minimum 3 days after Session 1)</span></h2>
-<div class="meta-row">
-  <div class="meta-field"><label>Form received</label><div class="field" style="min-width:140px;">&nbsp;</div></div>
-  <div class="meta-field"><label>Session start time</label><div class="field" style="min-width:80px;">&nbsp;</div></div>
-  <div class="meta-field"><label>Session end time</label><div class="field" style="min-width:80px;">&nbsp;</div></div>
-</div>
-
-<table class="log">
-  <colgroup>
-    <col class="c-case"><col class="c-type"><col class="c-start"><col class="c-end">
-    <col class="c-secs"><col class="c-q1"><col class="c-q2"><col class="c-conf"><col class="c-score">
-  </colgroup>
-  <thead>
-    <tr>
-      <th>Case</th><th>T</th><th>Start</th><th>End</th><th>Secs</th>
-      <th>Q1</th><th>Q2</th><th>Conf</th><th>&#10003;?</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>10</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>11</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>12</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>13</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>14</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>15</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>16</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>17</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>18</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>19</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>20</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>21</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>22</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>23</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>24</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr><td>25</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="score"></td></tr>
-    <tr class="totals">
-      <td colspan="4" style="text-align:right; padding-right:6px;">Totals &rarr;</td>
-      <td></td><td colspan="3" style="font-size:7.5pt; text-align:center;">mean secs:</td><td class="score"></td>
-    </tr>
-  </tbody>
-</table>
-<p class="note">T = FP or FN from booklet &nbsp;|&nbsp; &#10003;? filled by researcher (1=correct, 0=incorrect)</p>
-
-<!-- SUMMARY -->
-<h2>Summary &mdash; filled by researcher after scoring</h2>
-<table class="sum">
-  <thead>
-    <tr><th style="width:55%;">Metric</th><th>Session 1</th><th>Session 2</th></tr>
-  </thead>
-  <tbody>
-    <tr><td class="metric">Arm (control / treatment)</td><td class="val"></td><td class="val"></td></tr>
-    <tr><td class="metric">Mean diagnostic time (seconds)</td><td class="val"></td><td class="val"></td></tr>
-    <tr><td class="metric">Total correct answers (/ 25)</td><td class="val"></td><td class="val"></td></tr>
-    <tr><td class="metric">Accuracy (%)</td><td class="val"></td><td class="val"></td></tr>
-    <tr><td class="metric">Mean confidence rating (1&ndash;4)</td><td class="val"></td><td class="val"></td></tr>
   </tbody>
 </table>
 <p class="note" style="margin-top:6px;">
