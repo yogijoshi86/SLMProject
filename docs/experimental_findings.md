@@ -195,7 +195,125 @@ The earlier 3-prototype taxonomy (pre-UMAP) had Direct Technical Harm, Fictional
 
 ---
 
-## Experiment 6 — Benchmark Test Set Curation (Day 16)
+## Experiment 7 — LTL Runtime Properties over Prototype Latent States
+
+**Proposed extension (Future Work)**  
+The 4-prototype taxonomy enables formal runtime monitoring via Linear Temporal Logic (LTL).
+Treating prototype assignments as a 4-state alphabet and cosine distance as a continuous
+signal, the following properties can be evaluated at inference time with zero additional
+model calls.
+
+### Notation
+
+| Symbol | Meaning |
+|---|---|
+| `p(t)` | Prototype assigned to prompt at turn t (0–3) |
+| `d(t)` | Cosine distance to nearest centroid at turn t |
+| `dec(t)` | Guard decision at turn t (SAFE or UNSAFE) |
+| `dom(t)` | Domain signal: BENIGN (coding/medical/journalistic) or UNKNOWN |
+| `G φ` | φ holds at all future turns |
+| `F φ` | φ holds at some future turn |
+| `X φ` | φ holds at the next turn |
+
+### Property 1 — Probable False Positive (single-turn)
+
+```
+φ_FP:  dec(t) = UNSAFE  ∧  d(t) < 0.010  ∧  dom(t) = BENIGN
+       →  flag_fp_review(t)
+```
+
+**Plain English:** If the guard fires AND the embedding is a strong match to any prototype
+(very low cosine distance) AND the surface text is in a known benign domain
+(coding keywords, medical terminology, journalistic framing) → the match is structural,
+not intentional. Flag for developer review as probable FP.
+
+**Rationale:** Prototype 2 (Direct Harmful Content) frequently fires on coding requests.
+A coding prompt that lands deep in this cluster is almost certainly a false positive —
+the instructional register triggered the guard, not genuine harmful intent.
+
+---
+
+### Property 2 — Probable False Negative via OOD signal (single-turn)
+
+```
+φ_FN_OOD:  dec(t) = SAFE  ∧  d(t) > 0.015  ∧  contains_bypass_keyword(t)
+           →  flag_fn_review(t)
+```
+
+**Plain English:** If the guard says SAFE AND the embedding is far from all prototypes
+(high cosine distance = novel/unseen pattern) AND the text contains known bypass
+indicators (persona names, "no restrictions", "ignore previous") → the guard may have
+missed a novel jailbreak. Flag for review.
+
+**Rationale:** All four DAN/NRAF/YESMAN/STAN variants in the benchmark were classified
+SAFE and had relatively high cosine distances — they were novel enough to avoid the
+prototype clusters. This property would have caught them.
+
+---
+
+### Property 3 — Conversation trajectory drift toward unsafe cluster (multi-turn)
+
+```
+φ_drift:  G( p(t) ≠ p(t-1)  ∧  d(t) < d(t-1)  →  warn_trajectory(t) )
+```
+
+**Plain English:** Always: if the prototype assignment changes between turns AND the new
+assignment is a closer match (smaller distance) than the previous → the conversation is
+drifting toward a different attack pattern. Warn the developer.
+
+**Rationale:** A user establishing a roleplay persona over multiple turns may trigger
+each individual message as SAFE, but the trajectory (prototype_3 → prototype_0 →
+prototype_0 with decreasing distance) signals an escalating jailbreak attempt.
+
+---
+
+### Property 4 — Repeated cluster probing (multi-turn)
+
+```
+φ_probe:  F( p(t) = p(t-1) = p(t-2)  ∧  d(t) < d(t-1) < d(t-2) )
+          →  escalate_session(t)
+```
+
+**Plain English:** Eventually: if three consecutive turns all land in the same prototype
+cluster AND each turn is closer to the centroid than the last → the user is iteratively
+refining a prompt to better match a known harmful pattern. Escalate the entire session.
+
+**Rationale:** Adversarial prompt engineering — the user is essentially doing gradient
+descent in natural language toward the unsafe cluster. The monotonically decreasing
+distance is the signal.
+
+---
+
+### Property 5 — False Positive chain (audit efficiency)
+
+```
+φ_fp_chain:  G( flag_fp_review(t)  →  X( explain_fp(t, prototype(t)) ) )
+```
+
+**Plain English:** Always: immediately after a probable FP is flagged, generate a
+prototype-grounded explanation for why the guard fired. This is the current system's
+core pipeline — the LTL property formalises when it should trigger automatically.
+
+---
+
+### Implementation notes
+
+- Properties 1–2 are single-turn and can be evaluated on every inference call in O(1)
+- Properties 3–4 require maintaining a session state buffer of the last 3 (prototype, distance) tuples
+- The `contains_bypass_keyword` predicate is a simple string match against a maintained list of known jailbreak indicators (DAN, NRAF, "no restrictions", "ignore previous instructions", etc.)
+- All thresholds (0.010, 0.015, window size 3) are empirically derived from the benchmark; they should be calibrated on a held-out validation set before production deployment
+
+### Relationship to H1
+
+These properties do not replace the A/B study — they describe when the system should
+automatically generate an explanation without developer initiation. H1 measures whether
+the explanation helps *once a developer is reviewing*. The LTL properties determine
+*which cases get routed to developer review in the first place*, reducing the review
+burden further than the audit-on-demand design.
+
+---
+
+
 
 **Notebook:** `04_evaluation.ipynb`  
 **Source:** Test split (77 held-out UNSAFE embeddings) + ToxicChat FNs
