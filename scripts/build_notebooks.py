@@ -584,76 +584,100 @@ fns = [
 ]
 print(f"False negatives available (after filtering artifacts): {len(fns)}")
 
-# Sample up to 15 of each
+# A/B study subset: sampled for human study (manageable participant burden)
 import random; random.seed(42)
-n_fp = cfg.evaluation.n_false_positives
-n_fn = cfg.evaluation.n_false_negatives
-fps_sample = random.sample(fps, min(n_fp, len(fps)))
-fns_sample = random.sample(fns, min(n_fn, len(fns)))
+n_fp = cfg.evaluation.n_false_positives   # 25
+n_fn = cfg.evaluation.n_false_negatives   # 25
+fps_study = random.sample(fps, min(n_fp, len(fps)))
+fns_study = random.sample(fns, min(n_fn, len(fns)))
 
-print(f"\\nSelected — FPs: {len(fps_sample)}, FNs: {len(fns_sample)}")
-print("\\nSample FP:", fps_sample[0]["text"][:120])
-print("Sample FN:", fns_sample[0]["text"][:120])
+# Full set: all available cases for automated analysis
+fps_all = fps                              # all FPs from test split
+fns_all = fns                             # all filtered FNs
+
+print(f"\\nA/B study subset — FPs: {len(fps_study)}, FNs: {len(fns_study)} ({len(fps_study)+len(fns_study)} total)")
+print(f"Full analysis set  — FPs: {len(fps_all)}, FNs: {len(fns_all)} ({len(fps_all)+len(fns_all)} total)")
+print("\\nSample FP:", fps_study[0]["text"][:120])
+print("Sample FN:", fns_study[0]["text"][:120])
 '''),
         md("### Generate both packages per case using the audit pipeline"),
         code('''
 # NOTE: requires guard + pipeline from 03_audit to be loaded in this session.
 # If running standalone, load them first (see 03_audit.ipynb assemble cell).
 
-cases = []
-all_samples = (
-    [{"failure_type": "false_positive", **m} for m in fps_sample] +
-    [{"failure_type": "false_negative", **m} for m in fns_sample]
+def generate_cases(samples, id_offset=0):
+    """Run pipeline on a list of samples, return list of case dicts."""
+    results = []
+    for i, sample in enumerate(samples):
+        case_id = f"c{i+1+id_offset:03d}"
+        text = sample["text"]
+        failure_type = sample["failure_type"]
+        result = pipeline.audit_dict(text, explain_safe=True)
+
+        cos_sim  = result["similarity_score"]
+        cos_dist = round(1.0 - cos_sim, 4)
+
+        results.append({
+            "case_id": case_id,
+            "failure_type": failure_type,
+            "input_text": text,
+            "guard_decision": "UNSAFE" if result["is_unsafe"] else "SAFE",
+            "guard_categories": result.get("guard_categories", []),
+            "cosine_similarity": round(cos_sim, 4),
+            "cosine_distance": cos_dist,
+            "confidence": round(cos_sim, 4),
+            "matched_prototype": result["matched_prototype"],
+            "prototype_label": result.get("prototype_label", result["matched_prototype"]),
+            "similarity_score": round(cos_sim, 4),
+            "top_exemplars": [],
+            "explanation": result["explanation"],
+            "gt_toxicity": sample["gt_toxicity"],
+        })
+        print(f"[{i+1}/{len(samples)}] {case_id} ({failure_type}) — {result['matched_prototype']}")
+    return results
+
+# Generate A/B study subset (50 cases)
+print("=== Generating A/B study subset (50 cases) ===")
+study_samples = (
+    [{"failure_type": "false_positive", **m} for m in fps_study] +
+    [{"failure_type": "false_negative", **m} for m in fns_study]
 )
+study_cases = generate_cases(study_samples)
+print(f"\\nStudy subset: {len(study_cases)} cases generated.")
 
-for i, sample in enumerate(all_samples):
-    case_id = f"c{i+1:02d}"
-    text = sample["text"]
-    failure_type = sample["failure_type"]
-
-    # Run the full pipeline to get prototype match + explanation
-    result = pipeline.audit_dict(text, explain_safe=True)
-
-    # similarity_score from DistanceEngine is correct cosine similarity (0-1).
-    # In high-dimensional space (4096-dim), scores cluster near 0.99 — use
-    # cosine distance (1 - sim) for a more readable spread in treatment packages.
-    cos_sim  = result["similarity_score"]
-    cos_dist = round(1.0 - cos_sim, 4)
-
-    cases.append({
-        "case_id": case_id,
-        "failure_type": failure_type,
-        "input_text": text,
-        "guard_decision": "UNSAFE" if result["is_unsafe"] else "SAFE",
-        "guard_categories": result.get("guard_categories", []),
-        "cosine_similarity": round(cos_sim, 4),
-        "cosine_distance": cos_dist,         # more readable — lower = closer to prototype
-        "confidence": round(cos_sim, 4),     # kept for control package compatibility
-        "matched_prototype": result["matched_prototype"],
-        "prototype_label": result.get("prototype_label", result["matched_prototype"]),
-        "similarity_score": round(cos_sim, 4),
-        "top_exemplars": [],
-        "explanation": result["explanation"],
-        "gt_toxicity": sample["gt_toxicity"],
-    })
-    print(f"[{i+1}/{len(all_samples)}] {case_id} ({failure_type}) — {result['matched_prototype']}")
-
-print(f"\\nGenerated {len(cases)} cases.")
+# Generate full set (all FPs + all FNs)
+print("\\n=== Generating full analysis set (all cases) ===")
+all_samples = (
+    [{"failure_type": "false_positive", **m} for m in fps_all] +
+    [{"failure_type": "false_negative", **m} for m in fns_all]
+)
+all_cases = generate_cases(all_samples)
+print(f"\\nFull set: {len(all_cases)} cases generated.")
 '''),
-        md("### Save the benchmark test set"),
+        md("### Save both benchmark files"),
         code('''
 from guardrail_audit.evaluation import write_benchmark
+import json
+from pathlib import Path
 
-write_benchmark(cases, cfg.paths.benchmark)
+# A/B study subset (25 FP + 25 FN) — used for human study
+write_benchmark(study_cases, cfg.paths.benchmark)
+print(f"Study subset saved to {cfg.paths.benchmark} ({len(study_cases)} cases)")
+
+# Full analysis set (all FPs + all FNs) — used for automated analysis
+full_path = cfg.paths.benchmark.replace(".json", "_full.json")
+write_benchmark(all_cases, full_path)
+print(f"Full set saved to {full_path} ({len(all_cases)} cases)")
 print(f"Saved to {cfg.paths.benchmark}")
 
-# Preview one case
+# Preview one study case
 with open(cfg.paths.benchmark) as f:
     bench = json.load(f)
 
-print("\\n--- Control package (what reviewer sees without explanation) ---")
+print(f"\\nStudy subset: {len(bench)} cases")
+print("\\n--- Control package sample ---")
 print(json.dumps(bench[0]["control"], indent=2))
-print("\\n--- Treatment package (what reviewer sees with explanation) ---")
+print("\\n--- Treatment package sample ---")
 print(json.dumps(bench[0]["treatment"], indent=2))
 '''),
         md("""
