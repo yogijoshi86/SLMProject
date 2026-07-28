@@ -82,6 +82,11 @@ COVER_TEMPLATE = """
     Total session time: approximately <strong>30&ndash;45 minutes</strong>.
   </div>
 
+  <div style="background:#fff3cd; border-left:4px solid #e6a817; padding:10px 16px; margin:12px 0; font-size:10pt; font-style:italic; line-height:1.6;">
+    Each case shows you a guardrail decision that went wrong. Some cases include additional
+    analysis, some don&rsquo;t &mdash; just work with whatever information is on the page.
+  </div>
+
   <div style="background:#fff8e1; border:1.5px solid #f0b400; padding:12px 16px; margin:12px 0; font-size:10pt; line-height:1.7;">
     <strong>Participant consent</strong><br>
     This study collects only your answers and the time spent on each case.

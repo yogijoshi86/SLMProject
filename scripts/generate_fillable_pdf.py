@@ -345,6 +345,9 @@ def draw_intro_and_consent(c, y, page_width=W, margin=MARGIN):
         ("normal", ""),
         ("normal", "Each case takes about 1–2 minutes. Use a phone stopwatch to record your time."),
         ("normal", "Total session time: ~30–45 minutes."),
+        ("normal", ""),
+        ("italic",  "Each case shows you a guardrail decision that went wrong. Some cases include"),
+        ("italic",  "additional analysis, some don't — just work with whatever information is on the page."),
     ]
     line_h   = 4.2 * mm
     box_pad  = 3   * mm
@@ -367,6 +370,9 @@ def draw_intro_and_consent(c, y, page_width=W, margin=MARGIN):
         if style == "bold":
             c.setFont("Helvetica-Bold", 8.5)
             c.setFillColor(colors.HexColor("#1a5fa8"))
+        elif style == "italic":
+            c.setFont("Helvetica-Oblique", 8)
+            c.setFillColor(colors.HexColor("#6b4c00"))
         else:
             c.setFont("Helvetica", 8)
             c.setFillColor(colors.black)
