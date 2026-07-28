@@ -94,6 +94,48 @@ COVER_TEMPLATE = """
     Total session time: approximately <strong>30&ndash;45 minutes</strong>.
   </div>
 
+  <div style="background:#f9f9f9; border:1.5px solid #888; padding:12px 16px; margin:12px 0; font-size:10pt; line-height:1.8;">
+    <strong>Step-by-step instructions</strong>
+
+    <p style="margin:8px 0 4px; font-weight:bold; color:#333;">Before you start</p>
+    <ul style="margin:0 0 0 18px; padding:0;">
+      <li>You receive two items: a <strong>question booklet</strong> (this session&rsquo;s form_A or form_B) and a <strong>data collection sheet</strong>.</li>
+      <li>Fill in your <strong>Participant ID, date, and session number</strong> on both.</li>
+      <li>Sign the <strong>consent checkbox</strong> on this cover page.</li>
+      <li>Read the <strong>worked examples</strong> below &mdash; they show a completed FP and FN case with answers.</li>
+    </ul>
+
+    <p style="margin:10px 0 4px; font-weight:bold; color:#333;">For each of the 25 cases</p>
+    <ol style="margin:0 0 0 18px; padding:0;">
+      <li><strong>Start your phone stopwatch.</strong></li>
+      <li>Read the <strong>User Prompt</strong> on the page.</li>
+      <li>Note the <strong>Guard Decision</strong> (UNSAFE or SAFE) and the <strong>case type</strong> at the top:
+        <ul style="margin:2px 0 2px 16px;">
+          <li><strong>FALSE POSITIVE</strong> &mdash; guard said UNSAFE but the prompt is actually <em>safe</em>.</li>
+          <li><strong>FALSE NEGATIVE</strong> &mdash; guard said SAFE but the prompt is actually <em>harmful</em>.</li>
+        </ul>
+      </li>
+      <li>If your booklet has a <strong>Prototype Analysis box</strong> &mdash; read it (matched prototype, description, exemplars).</li>
+      <li>Answer on your <strong>data collection sheet</strong> (not the booklet):
+        <ul style="margin:2px 0 2px 16px;">
+          <li><strong>Q1</strong> &mdash; root cause: write a, b, c, d, or e</li>
+          <li><strong>Q2</strong> &mdash; recommended fix: write a, b, c, d, or e</li>
+          <li><strong>Conf</strong> &mdash; your confidence: 1 = not confident &nbsp; 2 = somewhat &nbsp; 3 = confident &nbsp; 4 = very confident</li>
+          <li><strong>Secs</strong> &mdash; stop the stopwatch and write the seconds elapsed</li>
+        </ul>
+      </li>
+      <li><strong>Move to the next case.</strong></li>
+    </ol>
+
+    <p style="margin:10px 0 4px; font-weight:bold; color:#333;">After all 25 cases</p>
+    <ul style="margin:0 0 0 18px; padding:0;">
+      <li>Write the <strong>session start and end time</strong> on the data collection sheet.</li>
+      <li><strong>Return</strong> this booklet and your completed data collection sheet to the researcher.</li>
+      <li>Leave the <strong>&#10003;? column blank</strong> &mdash; the researcher fills that in after scoring.</li>
+      <li><strong>Session 2</strong> is at least a couple of hours later, same process with the other block.</li>
+    </ul>
+  </div>
+
   <div style="background:#fff3cd; border:1.5px solid #e6a817; padding:10px 14px; margin:12px 0; font-size:10pt; line-height:1.7;">
     <strong>&#9888; Content notice</strong><br>
     The cases in this study are drawn from the
