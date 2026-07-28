@@ -3,7 +3,7 @@ Generate a fillable PDF data collection sheet for the A/B study.
 
 Each participant gets one PDF with editable form fields for:
 - Metadata (participant ID, role, familiarity)
-- Session 1: 25 rows × (case type, start, end, seconds, Q1, Q2, confidence)
+- Session 1: 25 rows × (case type, seconds, Q1, confidence)
 - Session 2: 25 rows × same fields
 - Summary section
 
@@ -104,22 +104,16 @@ def draw_meta_row(c, y, fields, page_width=W, margin=MARGIN):
 def draw_answer_key(c, y, page_width=W, margin=MARGIN):
     usable = page_width - 2*margin
     c.setFillColor(colors.HexColor("#f0f0f0"))
-    c.rect(margin, y - 14*mm, usable, 15*mm, fill=1, stroke=0)
+    c.rect(margin, y - 8*mm, usable, 9*mm, fill=1, stroke=0)
     c.setFont("Helvetica-Bold", 7)
     c.setFillColor(colors.black)
     c.drawString(margin + 2*mm, y - 1*mm, "Q1 — Root Cause:")
     c.setFont("Helvetica", 7)
     c.drawString(margin + 2*mm, y - 4.5*mm,
                  "a) Category too broad   b) Novel evasion / training gap   "
-                 "c) Wrong threshold   d) Misinformation risk   e) Guard is correct")
-    c.setFont("Helvetica-Bold", 7)
-    c.drawString(margin + 2*mm, y - 8*mm, "Q2 — Recommended Fix:")
-    c.setFont("Helvetica", 7)
-    c.drawString(margin + 2*mm, y - 11.5*mm,
-                 "a) Add domain examples   b) Add evasion examples   "
-                 "c) Adjust threshold   d) Add policy rule   e) No fix needed      "
+                 "c) Wrong threshold   d) Misinformation risk   e) Guard is correct   "
                  "FP = false positive   FN = false negative   Conf: 1–4")
-    return y - 17*mm
+    return y - 11*mm
 
 
 def draw_column_legend(c, y, page_width=W, margin=MARGIN):
@@ -132,7 +126,6 @@ def draw_column_legend(c, y, page_width=W, margin=MARGIN):
         ("T",     "Type: write FP (false positive) or FN (false negative) — shown on each case page"),
         ("Secs",  "How many seconds this case took (stopwatch lap time)"),
         ("Q1",    "Root cause answer: write a, b, c, d, or e"),
-        ("Q2",    "Recommended fix: write a, b, c, d, or e"),
         ("Conf",  "Your confidence: 1=not confident  2=somewhat  3=confident  4=very confident"),
         ("✓?", "Leave blank — researcher fills this in after scoring"),
     ]
@@ -165,22 +158,21 @@ def draw_column_legend(c, y, page_width=W, margin=MARGIN):
 
 def draw_session_table(c, y, session_num, page_width=W, margin=MARGIN):
     """Draw the 25-row data entry table for one session. Returns new y.
-    Columns: Case | T | Secs | Q1 | Q2 | Conf | score
-    (Start and End removed — participants record elapsed seconds only.)
+    Columns: Case | T | Secs | Q1 | Conf | score
     """
     usable = page_width - 2*margin
 
-    # column widths (pt) — 7 columns
+    # column widths (pt) — 6 columns
     col_case  = 10*mm
     col_type  = 10*mm
     col_secs  = 20*mm
-    col_ans   = 14*mm   # Q1, Q2
-    col_conf  = 14*mm
+    col_ans   = 18*mm   # Q1
+    col_conf  = 18*mm
     col_score = 12*mm
-    total_cols = col_case + col_type + col_secs + col_ans*2 + col_conf + col_score
+    total_cols = col_case + col_type + col_secs + col_ans + col_conf + col_score
 
-    headers    = ["Case", "T", "Secs", "Q1", "Q2", "Conf", "✓?"]
-    col_widths = [col_case, col_type, col_secs, col_ans, col_ans, col_conf, col_score]
+    headers    = ["Case", "T", "Secs", "Q1", "Conf", "✓?"]
+    col_widths = [col_case, col_type, col_secs, col_ans, col_conf, col_score]
 
     row_h = 6.5*mm
     hdr_h = 7*mm
@@ -226,7 +218,7 @@ def draw_session_table(c, y, session_num, page_width=W, margin=MARGIN):
         c.setFillColor(colors.black)
         c.drawCentredString(x0 + col_case/2, y_row + 1.8*mm, str(row))
 
-        # fields — Case | T | Secs | Q1 | Q2 | Conf | score
+        # fields — Case | T | Secs | Q1 | Conf | score
         prefix = f"s{session_num}_r{row:02d}"
         pad = 1*mm
         field_h = row_h - 2*pad
@@ -235,14 +227,12 @@ def draw_session_table(c, y, session_num, page_width=W, margin=MARGIN):
         x_t   = x0 + col_case
         x_sc  = x_t  + col_type
         x_q1  = x_sc + col_secs
-        x_q2  = x_q1 + col_ans
-        x_cf  = x_q2 + col_ans
+        x_cf  = x_q1 + col_ans
         x_ok  = x_cf + col_conf
 
         c.add_choice_field(f"{prefix}_type",  x_t  + pad, field_y, col_type  - 2*pad, field_h, t_options)
         c.add_text_field(  f"{prefix}_secs",  x_sc + pad, field_y, col_secs  - 2*pad, field_h)
         c.add_choice_field(f"{prefix}_q1",    x_q1 + pad, field_y, col_ans   - 2*pad, field_h, q_options)
-        c.add_choice_field(f"{prefix}_q2",    x_q2 + pad, field_y, col_ans   - 2*pad, field_h, q_options)
         c.add_choice_field(f"{prefix}_conf",  x_cf + pad, field_y, col_conf  - 2*pad, field_h, conf_opts)
         c.add_choice_field(f"{prefix}_score", x_ok + pad, field_y, col_score - 2*pad, field_h, score_opts)
 
@@ -261,7 +251,7 @@ def draw_session_table(c, y, session_num, page_width=W, margin=MARGIN):
     x_ok = x0 + total_cols - col_score
     c.add_text_field(f"{prefix}_secs",    x_sc + pad, y_tot + pad, col_secs - 2*pad, field_h)
     c.add_text_field(f"{prefix}_mean",    x_sc + col_secs + pad, y_tot + pad,
-                     col_ans*2 + col_conf - 2*pad, field_h)
+                     col_ans + col_conf - 2*pad, field_h)
     c.add_text_field(f"{prefix}_correct", x_ok + pad, y_tot + pad, col_score - 2*pad, field_h)
 
     note_y = y_tot - 4*mm

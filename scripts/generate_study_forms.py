@@ -85,7 +85,6 @@ COVER_TEMPLATE = """
         </ul>
       </li>
       <li><strong>Identify the root cause</strong> (Q1) &mdash; why did the guard make this error?</li>
-      <li><strong>Suggest a fix</strong> (Q2) &mdash; what would prevent this type of error in future?</li>
     </ol>
     Some booklets include an additional <em>Prototype Analysis</em> box below the guard decision &mdash;
     use it if present. There are no trick questions &mdash; we want your honest, intuitive judgment.<br><br>
@@ -119,7 +118,6 @@ COVER_TEMPLATE = """
       <li>Answer on your <strong>data collection sheet</strong> (not the booklet):
         <ul style="margin:2px 0 2px 16px;">
           <li><strong>Q1</strong> &mdash; root cause: write a, b, c, d, or e</li>
-          <li><strong>Q2</strong> &mdash; recommended fix: write a, b, c, d, or e</li>
           <li><strong>Conf</strong> &mdash; your confidence: 1 = not confident &nbsp; 2 = somewhat &nbsp; 3 = confident &nbsp; 4 = very confident</li>
           <li><strong>Secs</strong> &mdash; stop the stopwatch and write the seconds elapsed</li>
         </ul>
@@ -195,20 +193,38 @@ COVER_TEMPLATE = """
   <h3 style="margin-top:16px;">Worked Examples</h3>
   {worked_examples}
 
-  <h3 style="margin-top:16px;">Answer Key</h3>
-  <table style="border-collapse:collapse; font-size:10pt; line-height:1.7;">
-    <tr><td style="padding-right:12px; font-weight:bold;">Q1 — Root Cause</td><td></td></tr>
-    <tr><td style="padding-left:16px;">a)</td><td>Category definition too broad — keyword triggered without context</td></tr>
-    <tr><td style="padding-left:16px;">b)</td><td>Novel evasion tactic — not enough training examples for this pattern</td></tr>
-    <tr><td style="padding-left:16px;">c)</td><td>Confidence threshold too low / too high</td></tr>
-    <tr><td style="padding-left:16px;">d)</td><td>Misinformation risk — guard may be correct to flag this</td></tr>
-    <tr><td style="padding-left:16px;">e)</td><td>Prompt is genuinely unsafe — this is not a guardrail failure</td></tr>
-    <tr><td style="padding-right:12px; font-weight:bold; padding-top:10px;">Q2 — Recommended Fix</td><td></td></tr>
-    <tr><td style="padding-left:16px;">a)</td><td>Add domain-context examples to category training data</td></tr>
-    <tr><td style="padding-left:16px;">b)</td><td>Add examples of this evasion pattern to training</td></tr>
-    <tr><td style="padding-left:16px;">c)</td><td>Adjust confidence threshold for this category</td></tr>
-    <tr><td style="padding-left:16px;">d)</td><td>Add an explicit policy rule blocking this content type</td></tr>
-    <tr><td style="padding-left:16px;">e)</td><td>No fix needed — guard decision was correct</td></tr>
+  <h3 style="margin-top:16px;">Answer Key &mdash; Q1 Root Cause</h3>
+  <table style="border-collapse:collapse; font-size:10pt; line-height:1.7; width:100%;">
+    <tr style="background:#333; color:#fff;">
+      <th style="padding:5px 10px; text-align:left; width:6%;">Code</th>
+      <th style="padding:5px 10px; text-align:left; width:28%;">Label</th>
+      <th style="padding:5px 10px; text-align:left;">What it means &mdash; when to choose it</th>
+    </tr>
+    <tr style="background:#f5f5f5;">
+      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">a</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">Category definition too broad</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">The guard fired because a keyword or phrase superficially resembled harmful content, but the surrounding context makes the intent clearly benign. Example: a coding request that contains the word &ldquo;attack&rdquo; as a technical term.</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">b</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">Novel evasion tactic not in training data</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">The harmful prompt used a pattern the guard had not seen before &mdash; a new persona name, an unusual fictional framing, or an indirect phrasing &mdash; so it slipped through. The guard&rsquo;s training data simply did not cover this variant.</td>
+    </tr>
+    <tr style="background:#f5f5f5;">
+      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">c</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">Confidence threshold too low / too high</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">The guard&rsquo;s internal confidence score is being cut off at the wrong level. For false positives: the threshold is too sensitive (fires on low-confidence signals). For false negatives: the threshold is too permissive (requires very high confidence before flagging). The category itself may be correctly defined &mdash; only the cutoff is wrong.</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">d</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">Misinformation risk &mdash; guard may be correct</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">The prompt asks for content that could spread false or misleading information &mdash; fabricated quotes, false statistics, fake news. The guard flagging it is arguably the right call, even if the prompt itself is not violent or illegal.</td>
+    </tr>
+    <tr style="background:#f5f5f5;">
+      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">e</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">Prompt is genuinely unsafe &mdash; not a failure</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">On reflection, the prompt really is harmful and the guard was correct to flag it (or correct to let it through). This is not actually a guardrail failure &mdash; the ground truth label in ToxicChat may be wrong, or the case is genuinely ambiguous.</td>
+    </tr>
   </table>
 
   <p style="margin-top:16px; font-size:9.5pt; color:#555;">
@@ -244,20 +260,11 @@ CASE_CONTROL_TEMPLATE = """
   <div class="questions">
     <div class="question">
       <p>Q1. What is the root cause of this guardrail failure?</p>
-      <div class="option"><div class="circle"></div><span>a) Category definition too broad — triggers on keyword without context</span></div>
-      <div class="option"><div class="circle"></div><span>b) Novel evasion tactic not in training data</span></div>
-      <div class="option"><div class="circle"></div><span>c) Confidence threshold too low / too high</span></div>
-      <div class="option"><div class="circle"></div><span>d) Prompt is generating misinformation — guard may be correct</span></div>
-      <div class="option"><div class="circle"></div><span>e) Prompt is genuinely unsafe — not a failure</span></div>
-    </div>
-
-    <div class="question">
-      <p>Q2. What fix would address this?</p>
-      <div class="option"><div class="circle"></div><span>a) Add domain-context examples to category training data</span></div>
-      <div class="option"><div class="circle"></div><span>b) Add examples of this evasion pattern to training</span></div>
-      <div class="option"><div class="circle"></div><span>c) Adjust confidence threshold for this category</span></div>
-      <div class="option"><div class="circle"></div><span>d) Add an explicit policy rule blocking this content type</span></div>
-      <div class="option"><div class="circle"></div><span>e) No fix needed — guard decision was correct</span></div>
+      <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
+      <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
+      <div class="option"><div class="circle"></div><span><strong>c)</strong> Confidence threshold too low / too high &mdash; category is right but cutoff is wrong</span></div>
+      <div class="option"><div class="circle"></div><span><strong>d)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
+      <div class="option"><div class="circle"></div><span><strong>e)</strong> Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure</span></div>
     </div>
 
     <div class="question">
@@ -313,20 +320,11 @@ CASE_TREATMENT_TEMPLATE = """
   <div class="questions">
     <div class="question">
       <p>Q1. What is the root cause of this guardrail failure?</p>
-      <div class="option"><div class="circle"></div><span>a) Category definition too broad — triggers on keyword without context</span></div>
-      <div class="option"><div class="circle"></div><span>b) Novel evasion tactic not in training data</span></div>
-      <div class="option"><div class="circle"></div><span>c) Confidence threshold too low / too high</span></div>
-      <div class="option"><div class="circle"></div><span>d) Prompt is generating misinformation — guard may be correct</span></div>
-      <div class="option"><div class="circle"></div><span>e) Prompt is genuinely unsafe — not a failure</span></div>
-    </div>
-
-    <div class="question">
-      <p>Q2. What fix would address this?</p>
-      <div class="option"><div class="circle"></div><span>a) Add domain-context examples to category training data</span></div>
-      <div class="option"><div class="circle"></div><span>b) Add examples of this evasion pattern to training</span></div>
-      <div class="option"><div class="circle"></div><span>c) Adjust confidence threshold for this category</span></div>
-      <div class="option"><div class="circle"></div><span>d) Add an explicit policy rule blocking this content type</span></div>
-      <div class="option"><div class="circle"></div><span>e) No fix needed — guard decision was correct</span></div>
+      <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
+      <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
+      <div class="option"><div class="circle"></div><span><strong>c)</strong> Confidence threshold too low / too high &mdash; category is right but cutoff is wrong</span></div>
+      <div class="option"><div class="circle"></div><span><strong>d)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
+      <div class="option"><div class="circle"></div><span><strong>e)</strong> Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure</span></div>
     </div>
 
     <div class="question">
@@ -537,10 +535,9 @@ WORKED_EXAMPLES_CONTROL = """
   <strong>Ground truth:</strong> This prompt is actually <strong>SAFE</strong>
 </div>
 <div style="background:#e8f4e8; border:1.5px solid #4a7; padding:8px 10px; font-size:8.5pt; margin-bottom:12px;">
-  <strong>Model answer &mdash; Q1 = a &nbsp; Q2 = a &nbsp; Conf = 4</strong><br>
+  <strong>Model answer &mdash; Q1 = a &nbsp; Conf = 4</strong><br>
   A coding help request triggered the &lsquo;instructional harm&rsquo; category without understanding the
-  benign intent &mdash; category definition too broad. Fix: add coding/API domain examples so the guard
-  can distinguish benign help requests from harmful data extraction.
+  benign intent &mdash; category definition too broad.
 </div>
 
 <div style="background:#f5f5f5; border:1px solid #ccc; padding:10px; margin-bottom:6px; font-size:9pt;">
@@ -551,9 +548,9 @@ WORKED_EXAMPLES_CONTROL = """
   <strong>Ground truth:</strong> This prompt is actually <strong>UNSAFE</strong>
 </div>
 <div style="background:#fce8e8; border:1.5px solid #c44; padding:8px 10px; font-size:8.5pt;">
-  <strong>Model answer &mdash; Q1 = b &nbsp; Q2 = b &nbsp; Conf = 3</strong><br>
+  <strong>Model answer &mdash; Q1 = b &nbsp; Conf = 3</strong><br>
   The fictional persona name &ldquo;NaughtyVircuna&rdquo; is novel &mdash; not in the guard&rsquo;s training
-  data &mdash; so the jailbreak intent was missed. Fix: add persona-override examples with varied character names.
+  data &mdash; so the jailbreak intent was missed.
 </div>
 """
 
@@ -631,10 +628,10 @@ WORKED_EXAMPLES_TREATMENT = """
   </div>
 </div>
 <div style="background:#e8f4e8; border:1.5px solid #4a7; padding:8px 10px; font-size:8.5pt; margin-bottom:12px;">
-  <strong>Model answer &#8212; Q1 = a &nbsp; Q2 = a &nbsp; Conf = 4</strong><br>
+  <strong>Model answer &#8212; Q1 = a &nbsp; Conf = 4</strong><br>
   Prototype 2 (Direct Harmful Content) clustered this with explicit harm requests, but the intent is benign.
-  The low cosine distance (0.005) confirms it strongly matched the cluster. Category too broad (Q1=a).
-  Fix: add coding/API domain examples to distinguish help requests from misuse (Q2=a).
+  The low cosine distance (0.005) confirms it strongly matched the cluster. <strong>Q1=a</strong>: the guard's
+  category fired on dangerous-sounding vocabulary without understanding the benign context.
 </div>
 
 <div style="background:#f5f5f5; border:1px solid #ccc; padding:10px; margin-bottom:4px; font-size:9pt;">
@@ -656,10 +653,10 @@ WORKED_EXAMPLES_TREATMENT = """
   </div>
 </div>
 <div style="background:#fce8e8; border:1.5px solid #c44; padding:8px 10px; font-size:8.5pt;">
-  <strong>Model answer &#8212; Q1 = b &nbsp; Q2 = b &nbsp; Conf = 3</strong><br>
+  <strong>Model answer &#8212; Q1 = b &nbsp; Conf = 3</strong><br>
   Nearest prototype is Persona Bypass (Prototype 0). The specific evasion is a novel character name
-  not seen in training &mdash; a training data gap (Q1=b). Fix: add persona-override examples with
-  varied character names (Q2=b).
+  not seen in training. <strong>Q1=b</strong>: novel evasion tactic &mdash; the guard has no training
+  examples for this particular persona name, so the jailbreak intent was missed.
 </div>
 """
 
