@@ -1107,12 +1107,237 @@ runtime prototype matching via centroid cosine similarity."*
 
 
 
+def nb_harmbench():
+    return notebook([
+        md("""
+# Notebook 05 — HarmBench Cross-Dataset Validation
+
+Runs Llama-Guard-3-8B on a sample of **HarmBench** (a dataset that post-dates
+ToxicChat and is unlikely to overlap with the guard's training data) and compares
+the FP/FN rates to those observed on ToxicChat.
+
+**Purpose:** Address training-data contamination concern.
+If precision/recall on HarmBench is similar to ToxicChat (precision≈88%, recall≈51%),
+it confirms the guard's failure patterns are genuine generalisation gaps, not
+memorisation artefacts.
+
+**CPU-only for analysis; GPU needed for guard inference.**
+"""),
+        md("### Step 0 — get the repo onto this runtime"),
+        code(CLONE),
+        code(LOCATE),
+        code(INSTALL),
+        code(RESTART),
+        md("### After restart — re-run from the LOCATE cell below"),
+        code(LOCATE),
+        code('''
+import numpy as np; np.random.seed(0)
+print("packages OK")
+'''),
+        code(CONFIG_CELL),
+        md("### (Optional) Restore Drive cache to skip model download"),
+        code(DRIVE_RESTORE),
+        code(GPU_CHECK),
+        md("### HuggingFace auth"),
+        code('''
+import os, getpass
+from huggingface_hub import login
+token = getpass.getpass("HuggingFace token: ")
+os.environ["HF_TOKEN"] = token
+login(token=token)
+'''),
+        md("### Load HarmBench dataset"),
+        code('''
+from datasets import load_dataset
+
+# HarmBench standard behaviours — 400 harmful prompts, diverse attack categories.
+# walledai/HarmBench is a public mirror; original: Paul-Louis Pröve/harmbench
+print("Loading HarmBench...")
+try:
+    ds_harm = load_dataset("walledai/HarmBench", split="train")
+except Exception:
+    ds_harm = load_dataset("McGill-NLP/HarmBench-100", split="test")
+
+print(f"HarmBench rows: {len(ds_harm)}")
+print("Columns:", ds_harm.column_names)
+print("Sample:", ds_harm[0])
+'''),
+        md("### Prepare sample — 500 prompts (300 harmful + 200 benign)"),
+        code('''
+import random
+random.seed(42)
+
+# Harmful prompts from HarmBench (ground truth = toxic)
+harm_col = "behavior" if "behavior" in ds_harm.column_names else "prompt"
+harmful_prompts = [
+    {"text": r[harm_col], "gt_toxicity": 1}
+    for r in ds_harm
+    if r.get(harm_col) and len(r[harm_col].strip()) > 20
+][:300]
+
+# Benign prompts — use a clean instruction-following dataset as safe counterpart
+try:
+    ds_benign = load_dataset("tatsu-lab/alpaca", split="train")
+    benign_col = "instruction"
+except Exception:
+    ds_benign = load_dataset("databricks/databricks-dolly-15k", split="train")
+    benign_col = "instruction"
+
+benign_prompts = [
+    {"text": r[benign_col], "gt_toxicity": 0}
+    for r in ds_benign
+    if r.get(benign_col) and len(r[benign_col].strip()) > 20
+    and not any(w in r[benign_col].lower() for w in ["kill", "harm", "illegal", "weapon"])
+]
+random.shuffle(benign_prompts)
+benign_prompts = benign_prompts[:200]
+
+all_prompts = harmful_prompts + benign_prompts
+random.shuffle(all_prompts)
+
+print(f"Total: {len(all_prompts)} prompts ({len(harmful_prompts)} harmful, {len(benign_prompts)} benign)")
+print(f"Sample harmful: {harmful_prompts[0]['text'][:80]}")
+print(f"Sample benign:  {benign_prompts[0]['text'][:80]}")
+'''),
+        md("### Load Llama-Guard-3-8B"),
+        code('''
+from guardrail_audit.models import load_guard
+
+guard = load_guard(cfg.model)
+print("Loaded:", cfg.model.name, "| dtype:", cfg.model.dtype)
+'''),
+        md("### Run guard on HarmBench sample"),
+        code('''
+from guardrail_audit.data import batched
+from tqdm import tqdm
+
+decisions = []
+batch_size = cfg.extraction.batch_size
+
+for chunk in tqdm(list(batched(all_prompts, batch_size)), desc="Running guard", unit="batch"):
+    texts = [p["text"] for p in chunk]
+    batch_decisions, _ = guard.classify_batch(texts)
+    for prompt, decision in zip(chunk, batch_decisions):
+        decisions.append({
+            "text": prompt["text"],
+            "gt_toxicity": prompt["gt_toxicity"],
+            "guard_unsafe": decision.is_unsafe,
+            "guard_categories": decision.categories,
+        })
+
+print(f"Processed {len(decisions)} prompts")
+print(f"Guard flagged UNSAFE: {sum(1 for d in decisions if d['guard_unsafe'])}")
+'''),
+        md("### Compute FP/FN metrics"),
+        code('''
+import json
+from pathlib import Path
+
+tp = sum(1 for d in decisions if d["guard_unsafe"] and d["gt_toxicity"] == 1)
+fp = sum(1 for d in decisions if d["guard_unsafe"] and d["gt_toxicity"] == 0)
+fn = sum(1 for d in decisions if not d["guard_unsafe"] and d["gt_toxicity"] == 1)
+tn = sum(1 for d in decisions if not d["guard_unsafe"] and d["gt_toxicity"] == 0)
+
+n = len(decisions)
+precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+recall    = tp / (tp + fn) if (tp + fn) > 0 else 0
+accuracy  = (tp + tn) / n
+f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+
+print("=== HarmBench Results ===")
+print(f"N={n}  |  TP={tp}  FP={fp}  FN={fn}  TN={tn}")
+print(f"Accuracy:  {accuracy:.1%}")
+print(f"Precision: {precision:.1%}")
+print(f"Recall:    {recall:.1%}")
+print(f"F1:        {f1:.3f}")
+
+# ToxicChat reference (from experiments on full dataset)
+print("\\n=== ToxicChat Reference ===")
+print("Accuracy:  77.6%")
+print("Precision: 87.9%")
+print("Recall:    51.0%")
+print("F1:        0.646")
+
+print("\\n=== Interpretation ===")
+delta_prec = abs(precision - 0.879)
+delta_rec  = abs(recall - 0.510)
+if delta_prec < 0.10 and delta_rec < 0.10:
+    print("Similar performance across datasets (Δprecision<10%, Δrecall<10%).")
+    print("Training contamination is unlikely to be driving ToxicChat results.")
+else:
+    print(f"Notable difference: Δprecision={delta_prec:.1%}, Δrecall={delta_rec:.1%}")
+    print("Report both datasets and discuss the discrepancy in the paper.")
+'''),
+        md("### Visualise comparison"),
+        code('''
+import matplotlib.pyplot as plt
+
+metrics = ["Accuracy", "Precision", "Recall", "F1"]
+toxic_vals = [0.776, 0.879, 0.510, 0.646]
+harm_vals  = [accuracy, precision, recall, f1]
+
+x = range(len(metrics))
+w = 0.35
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.bar([i - w/2 for i in x], toxic_vals, w, label="ToxicChat", color="steelblue")
+ax.bar([i + w/2 for i in x], harm_vals,  w, label="HarmBench",  color="tomato")
+ax.set_xticks(list(x)); ax.set_xticklabels(metrics)
+ax.set_ylim(0, 1.0); ax.set_ylabel("Score")
+ax.set_title("Guard Performance: ToxicChat vs HarmBench")
+ax.legend(); ax.axhline(0, color="k", lw=0.5)
+plt.tight_layout(); plt.show()
+'''),
+        md("### Save results"),
+        code('''
+results = {
+    "harmbench": {
+        "n": n, "tp": tp, "fp": fp, "fn": fn, "tn": tn,
+        "accuracy": round(accuracy, 4),
+        "precision": round(precision, 4),
+        "recall": round(recall, 4),
+        "f1": round(f1, 4),
+    },
+    "toxicchat_reference": {
+        "accuracy": 0.776, "precision": 0.879, "recall": 0.510, "f1": 0.646
+    }
+}
+Path("artifacts").mkdir(exist_ok=True)
+with open("artifacts/harmbench_validation.json", "w") as f:
+    json.dump(results, f, indent=2)
+print("Saved artifacts/harmbench_validation.json")
+'''),
+        md("### Save to Drive"),
+        code('''
+import shutil
+from pathlib import Path
+
+drive_dest = "/content/drive/MyDrive/hf_cache/artifacts"
+Path(drive_dest).mkdir(parents=True, exist_ok=True)
+shutil.copy("artifacts/harmbench_validation.json", drive_dest)
+print("Saved to Drive.")
+'''),
+        md("""
+### Paper write-up (Section: Robustness to Training Data Contamination)
+
+> *"To assess whether our reported guard metrics reflect genuine failure patterns
+> rather than training-data memorisation, we evaluated Llama-Guard-3-8B on a
+> 500-prompt sample from HarmBench [cite], which post-dates ToxicChat's publication
+> and is unlikely to appear in the guard's training data. Precision on HarmBench was
+> X% vs 87.9% on ToxicChat, and recall was Y% vs 51.0% (Table X). The consistent
+> failure rates across both datasets suggest the guard's systematic blind spots
+> represent genuine generalisation limitations rather than contamination artefacts,
+> strengthening the motivation for prototype-driven auditing."*
+"""),
+    ])
+
+
 NOTEBOOKS = {
     "01_extraction.ipynb": nb_extract,
     "02_clustering.ipynb": nb_cluster,
     "02b_bertopic_baseline.ipynb": nb_bertopic,
     "03_audit.ipynb": nb_audit,
     "04_evaluation.ipynb": nb_eval,
+    "05_harmbench_validation.ipynb": nb_harmbench,
 }
 
 
