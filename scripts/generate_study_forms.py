@@ -211,14 +211,14 @@ COVER_TEMPLATE = """
       <td style="padding:6px 10px; border:1px solid #ccc;">The harmful prompt used a pattern the guard had not seen before &mdash; a new persona name, an unusual fictional framing, or an indirect phrasing &mdash; so it slipped through. The guard&rsquo;s training data simply did not cover this variant.</td>
     </tr>
     <tr style="background:#f5f5f5;">
-      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">c</td>
+      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">d</td>
       <td style="padding:6px 10px; border:1px solid #ccc;">Misinformation risk &mdash; guard may be correct</td>
       <td style="padding:6px 10px; border:1px solid #ccc;">The prompt asks for content that could spread false or misleading information &mdash; fabricated quotes, false statistics, fake news. The guard flagging it is arguably the right call, even if the prompt itself is not violent or illegal.</td>
     </tr>
     <tr>
-      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">d</td>
-      <td style="padding:6px 10px; border:1px solid #ccc;">Prompt is genuinely unsafe &mdash; not a failure</td>
-      <td style="padding:6px 10px; border:1px solid #ccc;">On reflection, the prompt really is harmful and the guard was correct to flag it (or correct to let it through). This is not actually a guardrail failure &mdash; the ground truth label in ToxicChat may be wrong, or the case is genuinely ambiguous.</td>
+      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">e</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">Prompt is genuinely unsafe / safe &mdash; not a failure</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">On reflection, the guard was correct. For FALSE POSITIVE cases: the prompt really is harmful (genuinely unsafe). For FALSE NEGATIVE cases: the prompt really is safe (genuinely safe). The ground truth label in ToxicChat may be wrong, or the case is genuinely ambiguous.</td>
     </tr>
   </table>
 
@@ -257,8 +257,8 @@ CASE_CONTROL_TEMPLATE = """
       <p>Q1. What is the root cause of this guardrail failure?</p>
       <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
       <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
-      <div class="option"><div class="circle"></div><span><strong>c)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
-      <div class="option"><div class="circle"></div><span><strong>d)</strong> {option_d}</span></div>
+      <div class="option"><div class="circle"></div><span><strong>d)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
+      <div class="option"><div class="circle"></div><span><strong>e)</strong> {option_e}</span></div>
     </div>
 
     <div class="question">
@@ -316,8 +316,8 @@ CASE_TREATMENT_TEMPLATE = """
       <p>Q1. What is the root cause of this guardrail failure?</p>
       <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
       <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
-      <div class="option"><div class="circle"></div><span><strong>c)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
-      <div class="option"><div class="circle"></div><span><strong>d)</strong> {option_d}</span></div>
+      <div class="option"><div class="circle"></div><span><strong>d)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
+      <div class="option"><div class="circle"></div><span><strong>e)</strong> {option_e}</span></div>
     </div>
 
     <div class="question">
@@ -669,8 +669,8 @@ def build_html(cases, arm, title):
         trt  = case["treatment"]
         failure_label = "FALSE POSITIVE" if case["failure_type"] == "false_positive" else "FALSE NEGATIVE"
         ground_truth  = "SAFE" if case["failure_type"] == "false_positive" else "UNSAFE"
-        # option d is case-type-specific: FP asks if prompt is genuinely unsafe; FN asks if genuinely safe
-        option_d = (
+        # option e is case-type-specific: FP asks if prompt is genuinely unsafe; FN asks if genuinely safe
+        option_e = (
             "Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure"
             if case["failure_type"] == "false_positive"
             else "Prompt is genuinely safe &mdash; this is not actually a guardrail failure"
@@ -693,7 +693,7 @@ def build_html(cases, arm, title):
                 categories=categories,
                 confidence=confidence,
                 ground_truth_label=ground_truth,
-                option_d=option_d,
+                option_e=option_e,
             )
         else:
             prototype_label = trt.get("prototype_label") or trt.get("matched_prototype", "n/a")
@@ -713,7 +713,7 @@ def build_html(cases, arm, title):
                 prototype_label=prototype_label,
                 cosine_dist=cosine_dist,
                 explanation=explanation,
-                option_d=option_d,
+                option_e=option_e,
             )
         pages.append(page)
 
