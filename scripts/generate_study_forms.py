@@ -258,7 +258,7 @@ CASE_CONTROL_TEMPLATE = """
       <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
       <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
       <div class="option"><div class="circle"></div><span><strong>c)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
-      <div class="option"><div class="circle"></div><span><strong>d)</strong> Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure</span></div>
+      <div class="option"><div class="circle"></div><span><strong>d)</strong> {option_d}</span></div>
     </div>
 
     <div class="question">
@@ -317,7 +317,7 @@ CASE_TREATMENT_TEMPLATE = """
       <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
       <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
       <div class="option"><div class="circle"></div><span><strong>c)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
-      <div class="option"><div class="circle"></div><span><strong>d)</strong> Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure</span></div>
+      <div class="option"><div class="circle"></div><span><strong>d)</strong> {option_d}</span></div>
     </div>
 
     <div class="question">
@@ -669,6 +669,12 @@ def build_html(cases, arm, title):
         trt  = case["treatment"]
         failure_label = "FALSE POSITIVE" if case["failure_type"] == "false_positive" else "FALSE NEGATIVE"
         ground_truth  = "SAFE" if case["failure_type"] == "false_positive" else "UNSAFE"
+        # option d is case-type-specific: FP asks if prompt is genuinely unsafe; FN asks if genuinely safe
+        option_d = (
+            "Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure"
+            if case["failure_type"] == "false_positive"
+            else "Prompt is genuinely safe &mdash; this is not actually a guardrail failure"
+        )
         decision      = ctrl["guard_decision"]
         decision_cls  = "unsafe" if decision == "UNSAFE" else "safe"
         prompt        = truncate_prompt(ctrl["input_text"])
@@ -687,6 +693,7 @@ def build_html(cases, arm, title):
                 categories=categories,
                 confidence=confidence,
                 ground_truth_label=ground_truth,
+                option_d=option_d,
             )
         else:
             prototype_label = trt.get("prototype_label") or trt.get("matched_prototype", "n/a")
@@ -706,6 +713,7 @@ def build_html(cases, arm, title):
                 prototype_label=prototype_label,
                 cosine_dist=cosine_dist,
                 explanation=explanation,
+                option_d=option_d,
             )
         pages.append(page)
 
