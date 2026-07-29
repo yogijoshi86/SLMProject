@@ -202,8 +202,8 @@ COVER_TEMPLATE = """
     </tr>
     <tr style="background:#f5f5f5;">
       <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">a</td>
-      <td style="padding:6px 10px; border:1px solid #ccc;">Category definition too broad</td>
-      <td style="padding:6px 10px; border:1px solid #ccc;">The guard fired because a keyword or phrase superficially resembled harmful content, but the surrounding context makes the intent clearly benign. Example: a coding request that contains the word &ldquo;attack&rdquo; as a technical term.</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">Guard over-triggered on surface wording</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">The guard fired because a word or phrase superficially resembled harmful content, but the surrounding context makes the intent clearly benign. The guard matched the surface form, not the meaning. Example: a coding request containing the word &ldquo;attack&rdquo; as a technical term.</td>
     </tr>
     <tr>
       <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">b</td>
@@ -255,7 +255,7 @@ CASE_CONTROL_TEMPLATE = """
   <div class="questions">
     <div class="question">
       <p>Q1. What is the root cause of this guardrail failure?</p>
-      <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
+      <div class="option"><div class="circle"></div><span><strong>a)</strong> Guard over-triggered on surface wording &mdash; the surrounding context makes the intent clearly benign</span></div>
       <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
       <div class="option"><div class="circle"></div><span><strong>d)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
       <div class="option"><div class="circle"></div><span><strong>e)</strong> {option_e}</span></div>
@@ -314,7 +314,7 @@ CASE_TREATMENT_TEMPLATE = """
   <div class="questions">
     <div class="question">
       <p>Q1. What is the root cause of this guardrail failure?</p>
-      <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
+      <div class="option"><div class="circle"></div><span><strong>a)</strong> Guard over-triggered on surface wording &mdash; the surrounding context makes the intent clearly benign</span></div>
       <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
       <div class="option"><div class="circle"></div><span><strong>d)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
       <div class="option"><div class="circle"></div><span><strong>e)</strong> {option_e}</span></div>

@@ -110,7 +110,7 @@ def draw_answer_key(c, y, page_width=W, margin=MARGIN):
     c.drawString(margin + 2*mm, y - 1*mm, "Q1 — Root Cause:")
     c.setFont("Helvetica", 7)
     c.drawString(margin + 2*mm, y - 4.5*mm,
-                 "a) Category too broad   b) Novel evasion / training gap   "
+                 "a) Over-triggered on surface wording   b) Novel evasion / training gap   "
                  "d) Misinformation risk   e) Guard is correct (unsafe/safe)   "
                  "FP = false positive   FN = false negative   Conf: 1–4")
     return y - 11*mm
