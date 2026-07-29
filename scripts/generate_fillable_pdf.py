@@ -460,8 +460,10 @@ def generate(output_path=OUTPUT_PATH):
     y = draw_answer_key(c, y)
     y = draw_column_legend(c, y)
 
-    # session 1
-    y = draw_section_header(c, y, f"SESSION 1  — 25 cases")
+    # session 1 — force new page so all 25 rows always fit
+    c.showPage()
+    y = H - MARGIN
+    y = draw_section_header(c, y, "SESSION 1  — 25 cases")
     y = draw_meta_row(c, y, [
         ("Form received",    "s1_form",  40),
         ("Session start",    "s1_start", 25),
@@ -469,14 +471,10 @@ def generate(output_path=OUTPUT_PATH):
     ])
     y = draw_session_table(c, y, session_num=1)
 
-    # check if we need page break
-    needed = 7*mm * 27 + 30*mm   # approx height for session 2 + summary
-    if y < needed:
-        c.showPage()
-        y = H - MARGIN
-
-    # session 2
-    y = draw_section_header(c, y, f"SESSION 2  — 25 cases  (min 3 days after Session 1)")
+    # session 2 — always start on a new page
+    c.showPage()
+    y = H - MARGIN
+    y = draw_section_header(c, y, "SESSION 2  — 25 cases  (at least a couple of hours after Session 1)")
     y = draw_meta_row(c, y, [
         ("Form received",    "s2_form",  40),
         ("Session start",    "s2_start", 25),
@@ -484,11 +482,11 @@ def generate(output_path=OUTPUT_PATH):
     ])
     y = draw_session_table(c, y, session_num=2)
 
+    # summary — new page if needed
     if y < 60*mm:
         c.showPage()
         y = H - MARGIN
 
-    # summary
     y = draw_section_header(c, y, "SUMMARY  (filled by researcher after scoring)")
     draw_summary(c, y)
 
