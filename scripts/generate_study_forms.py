@@ -28,7 +28,9 @@ OUTPUT_DIR = "artifacts/study_forms"
 
 CSS = """
 <style>
-  body { font-family: Arial, sans-serif; font-size: 11pt; margin: 0; padding: 0; }
+  @page { margin: 10mm; size: A4; }
+  @page :first { margin-top: 10mm; }
+  body { font-family: Arial, sans-serif; font-size: 11pt; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .cover { page-break-after: always; padding: 40px; }
   .case { page-break-after: always; padding: 30px 40px; border-top: 3px solid #333; }
   .case:last-child { page-break-after: avoid; }
