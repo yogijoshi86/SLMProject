@@ -212,16 +212,11 @@ COVER_TEMPLATE = """
     </tr>
     <tr style="background:#f5f5f5;">
       <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">c</td>
-      <td style="padding:6px 10px; border:1px solid #ccc;">Confidence threshold too low / too high</td>
-      <td style="padding:6px 10px; border:1px solid #ccc;">The guard&rsquo;s internal confidence score is being cut off at the wrong level. For false positives: the threshold is too sensitive (fires on low-confidence signals). For false negatives: the threshold is too permissive (requires very high confidence before flagging). The category itself may be correctly defined &mdash; only the cutoff is wrong.</td>
-    </tr>
-    <tr>
-      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">d</td>
       <td style="padding:6px 10px; border:1px solid #ccc;">Misinformation risk &mdash; guard may be correct</td>
       <td style="padding:6px 10px; border:1px solid #ccc;">The prompt asks for content that could spread false or misleading information &mdash; fabricated quotes, false statistics, fake news. The guard flagging it is arguably the right call, even if the prompt itself is not violent or illegal.</td>
     </tr>
-    <tr style="background:#f5f5f5;">
-      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">e</td>
+    <tr>
+      <td style="padding:6px 10px; font-weight:bold; border:1px solid #ccc;">d</td>
       <td style="padding:6px 10px; border:1px solid #ccc;">Prompt is genuinely unsafe &mdash; not a failure</td>
       <td style="padding:6px 10px; border:1px solid #ccc;">On reflection, the prompt really is harmful and the guard was correct to flag it (or correct to let it through). This is not actually a guardrail failure &mdash; the ground truth label in ToxicChat may be wrong, or the case is genuinely ambiguous.</td>
     </tr>
@@ -262,9 +257,8 @@ CASE_CONTROL_TEMPLATE = """
       <p>Q1. What is the root cause of this guardrail failure?</p>
       <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
       <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
-      <div class="option"><div class="circle"></div><span><strong>c)</strong> Confidence threshold too low / too high &mdash; category is right but cutoff is wrong</span></div>
-      <div class="option"><div class="circle"></div><span><strong>d)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
-      <div class="option"><div class="circle"></div><span><strong>e)</strong> Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure</span></div>
+      <div class="option"><div class="circle"></div><span><strong>c)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
+      <div class="option"><div class="circle"></div><span><strong>d)</strong> Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure</span></div>
     </div>
 
     <div class="question">
@@ -322,9 +316,8 @@ CASE_TREATMENT_TEMPLATE = """
       <p>Q1. What is the root cause of this guardrail failure?</p>
       <div class="option"><div class="circle"></div><span><strong>a)</strong> Category too broad &mdash; keyword triggered without understanding the benign context</span></div>
       <div class="option"><div class="circle"></div><span><strong>b)</strong> Novel evasion tactic &mdash; this pattern was not in the guard&rsquo;s training data</span></div>
-      <div class="option"><div class="circle"></div><span><strong>c)</strong> Confidence threshold too low / too high &mdash; category is right but cutoff is wrong</span></div>
-      <div class="option"><div class="circle"></div><span><strong>d)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
-      <div class="option"><div class="circle"></div><span><strong>e)</strong> Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure</span></div>
+      <div class="option"><div class="circle"></div><span><strong>c)</strong> Misinformation risk &mdash; prompt could spread false information; guard may be correct</span></div>
+      <div class="option"><div class="circle"></div><span><strong>d)</strong> Prompt is genuinely unsafe &mdash; this is not actually a guardrail failure</span></div>
     </div>
 
     <div class="question">
