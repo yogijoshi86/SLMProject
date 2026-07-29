@@ -321,6 +321,36 @@ def draw_intro_and_consent(c, y, page_width=W, margin=MARGIN):
     usable = page_width - 2 * margin
     x0     = margin
 
+    # ── Guard definition box ─────────────────────────────────────────────
+    guard_lines = [
+        ("bold",   "What is the \"guard\"?"),
+        ("normal", "Throughout this study the word guard refers to Llama-Guard-3-8B — a small AI model"),
+        ("normal", "fine-tuned by Meta to classify user prompts as SAFE or UNSAFE. It is used as a"),
+        ("normal", "safety filter in front of larger language models to block harmful requests. It"),
+        ("normal", "outputs only a binary decision (safe or unsafe) with no explanation."),
+    ]
+    line_h  = 4.2 * mm
+    box_pad = 3   * mm
+    box_h   = len(guard_lines) * line_h + 2 * box_pad
+
+    c.setFillColor(colors.HexColor("#fff3cd"))
+    c.setStrokeColor(colors.HexColor("#e6a817"))
+    c.setLineWidth(1.2)
+    c.rect(x0, y - box_h, usable, box_h, fill=1, stroke=1)
+
+    ty = y - box_pad - line_h + 1 * mm
+    for style, text in guard_lines:
+        if style == "bold":
+            c.setFont("Helvetica-Bold", 8.5)
+            c.setFillColor(colors.black)
+        else:
+            c.setFont("Helvetica", 8)
+            c.setFillColor(colors.black)
+        c.drawString(x0 + 3 * mm, ty, text)
+        ty -= line_h
+
+    y -= box_h + 4 * mm
+
     # ── Study intro box ──────────────────────────────────────────────────
     intro_lines = [
         ("bold",   "About this study"),

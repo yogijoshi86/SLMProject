@@ -68,6 +68,16 @@ COVER_TEMPLATE = """
   <h2 style="font-size:14pt; color:#555; margin-top:4px;">{arm_label}</h2>
   <hr style="margin:10px 0;"/>
 
+  <div style="background:#fff3cd; border:1.5px solid #e6a817; padding:10px 16px; margin:12px 0; font-size:10pt; line-height:1.7;">
+    <strong>What is the &ldquo;guard&rdquo;?</strong><br>
+    Throughout this study the word <strong>guard</strong> refers to <strong>Llama-Guard-3-8B</strong> &mdash;
+    a small AI model (8 billion parameters) fine-tuned by Meta specifically to classify user prompts
+    as either <strong>SAFE</strong> or <strong>UNSAFE</strong>. It is used as a safety filter in
+    front of larger language models to block harmful requests. It produces only a binary decision
+    (one word: <em>safe</em> or <em>unsafe</em>) and no explanation. This study investigates
+    whether adding a short explanation helps developers understand when and why it gets things wrong.
+  </div>
+
   <div style="background:#f0f6ff; border-left:4px solid #4a90d9; padding:12px 16px; margin:12px 0; font-size:10pt; line-height:1.7;">
     <strong style="color:#1a5fa8;">About this study</strong><br>
     Thank you for taking part in this research. We are investigating whether short, structured
