@@ -1826,14 +1826,15 @@ try:
     explanations = slm.explain_batch(texts, decisions)
 
     for case, exp in zip(samples, explanations):
+        cid = case["case_id"]
         llama32_explanations.append({
-            "case_id": case["case_id"],
+            "case_id": cid,
             "failure_type": case["failure_type"],
             "text": case["control"]["input_text"][:120],
             "decision": case["control"]["guard_decision"],
             "llama32_explanation": exp.strip(),
         })
-        print(f"[{case[\"case_id\"]}] Phi-3.5 explanation:")
+        print(f"[{cid}] Phi-3.5 explanation:")
         print(f"  {exp.strip()[:300]}")
         print()
 
