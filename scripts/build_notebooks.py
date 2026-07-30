@@ -1842,6 +1842,43 @@ except Exception as e:
     print(f"Phi-3.5-mini not available: {e}")
     llama32_explanations = []
 '''),
+        md("### Step 2c — Ask Phi-3.5 to diagnose with ground truth (fair comparison to participants)"),
+        md("""
+Study form participants are shown the ground truth label before answering Q1.
+This cell gives Phi-3.5 the same information — the guard decision AND the correct label —
+making this a fair apples-to-apples comparison with human diagnostic performance.
+
+This tests: *given that the guard erred, can an SLM identify why?*
+"""),
+        code('''
+diag_explanations = []
+try:
+    # Reuse slm loaded in Step 2b — run Step 2b first
+    texts      = [c["control"]["input_text"] for c in samples]
+    decisions  = [c["control"]["guard_decision"] for c in samples]
+    gt_labels  = ["SAFE" if c["failure_type"] == "false_positive" else "UNSAFE"
+                  for c in samples]
+
+    diagnoses = slm.diagnose_batch(texts, decisions, gt_labels)
+
+    for case, diag in zip(samples, diagnoses):
+        cid = case["case_id"]
+        diag_explanations.append({
+            "case_id": cid,
+            "failure_type": case["failure_type"],
+            "decision": case["control"]["guard_decision"],
+            "ground_truth": "SAFE" if case["failure_type"] == "false_positive" else "UNSAFE",
+            "phi35_diagnosis": diag.strip(),
+        })
+        print(f"[{cid}] Phi-3.5 diagnosis (with ground truth):")
+        print(f"  {diag.strip()[:300]}")
+        print()
+
+except Exception as e:
+    print(f"diagnose_batch failed: {e}")
+    print("Ensure Step 2b ran successfully (slm must be loaded).")
+    diag_explanations = []
+'''),
         md("### Step 3 — Evaluate explanation quality"),
         md("""
 Score each explanation on three dimensions (0/1):
@@ -1878,12 +1915,17 @@ for exp in guard_explanations:
     cid = exp["case_id"]
     gs = GUARD_SCORES.get(cid, {"specific": 0, "accurate": 0, "actionable": 0})
     ps = PROTO_SCORES.get(cid, {"specific": 1, "accurate": 1, "actionable": 0})
-    # Llama-3.2 scores — fill in manually after reviewing Step 2b output
-    # Typical: specific=1 (names category), accurate=0-1, actionable=0
+    # Phi-3.5 scores (Step 2b — no ground truth) — fill in after review
     ls = {"specific": 0, "accurate": 0, "actionable": 0}
     for le in llama32_explanations:
         if le["case_id"] == cid:
             ls = {"specific": 1, "accurate": 1, "actionable": 0}  # update after review
+            break
+    # Phi-3.5 diagnosis scores (Step 2c — with ground truth) — fill in after review
+    ds = {"specific": 0, "accurate": 0, "actionable": 0}
+    for de in diag_explanations:
+        if de["case_id"] == cid:
+            ds = {"specific": 1, "accurate": 1, "actionable": 1}  # update after review
             break
     rows.append({
         "case_id": cid,
@@ -1894,6 +1936,9 @@ for exp in guard_explanations:
         "llama32_specific":   ls.get("specific", 0),
         "llama32_accurate":   ls.get("accurate", 0),
         "llama32_actionable": ls.get("actionable", 0),
+        "diag_specific":      ds.get("specific", 0),
+        "diag_accurate":      ds.get("accurate", 0),
+        "diag_actionable":    ds.get("actionable", 0),
         "proto_specific":     ps.get("specific", 1),
         "proto_accurate":     ps.get("accurate", 1),
         "proto_actionable":   ps.get("actionable", 0),
@@ -1906,8 +1951,11 @@ if len(df) > 0:
     print(f"Guard self-explanation (Llama-Guard): specific={df.guard_specific.mean():.0%}  "
           f"accurate={df.guard_accurate.mean():.0%}  actionable={df.guard_actionable.mean():.0%}")
     if "llama32_specific" in df.columns:
-        print(f"Phi-3.5-mini explanation:             specific={df.llama32_specific.mean():.0%}  "
+        print(f"Phi-3.5 (no ground truth, Step 2b):   specific={df.llama32_specific.mean():.0%}  "
               f"accurate={df.llama32_accurate.mean():.0%}  actionable={df.llama32_actionable.mean():.0%}")
+    if "diag_specific" in df.columns:
+        print(f"Phi-3.5 (with ground truth, Step 2c): specific={df.diag_specific.mean():.0%}  "
+              f"accurate={df.diag_accurate.mean():.0%}  actionable={df.diag_actionable.mean():.0%}")
     print(f"Prototype-based:                      specific={df.proto_specific.mean():.0%}  "
           f"accurate={df.proto_accurate.mean():.0%}  actionable={df.proto_actionable.mean():.0%}")
 else:
