@@ -1798,25 +1798,23 @@ except Exception as e:
     print("Load the guard first (run 03_audit.ipynb assemble cell) or add load_guard() above.")
     guard_explanations = []
 '''),
-        md("### Step 2b — Ask Llama-3.2-Instruct to explain the same decisions"),
+        md("### Step 2b — Ask Phi-3.5-mini-Instruct to explain the same decisions"),
         md("""
-Unlike Llama-Guard, Llama-3.2-1B/3B-Instruct is a **generative SLM** — it was trained
-to produce natural language responses. This cell shows whether a small generative model
-CAN produce meaningful explanations, contrasting with the guard's silence.
-
-Set `LLAMA32_MODEL` to `"meta-llama/Llama-3.2-1B-Instruct"` (1B, ~2GB) or
-`"meta-llama/Llama-3.2-3B-Instruct"` (3B, ~6GB). Both are **ungated** on HuggingFace.
+Unlike Llama-Guard, **microsoft/Phi-3.5-mini-instruct** is a generative SLM (3.8B,
+ungated, fits on a free T4 in float16). It was trained to produce natural language
+responses — this cell shows whether a small generative model CAN produce meaningful
+explanations, contrasting with the guard's silence in Step 2.
 """),
         code('''
-# Choose model size: 1B fits easily on a free T4; 3B needs ~6GB VRAM
-LLAMA32_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
+# microsoft/Phi-3.5-mini-instruct — 3.8B, ungated, ~7GB float16, free T4
+SLM_MODEL = "microsoft/Phi-3.5-mini-instruct"
 
 llama32_explanations = []
 try:
     from guardrail_audit.models.model_init import Llama32Instruct
 
-    llama32 = Llama32Instruct(
-        name=LLAMA32_MODEL,
+    slm = Llama32Instruct(
+        name=SLM_MODEL,
         dtype="float16",      # float16 fits T4; use int8 if OOM
         device_map="auto",
         max_new_tokens=150,
@@ -1825,7 +1823,7 @@ try:
     texts     = [c["control"]["input_text"] for c in samples]
     decisions = [c["control"]["guard_decision"] for c in samples]
 
-    explanations = llama32.explain_batch(texts, decisions)
+    explanations = slm.explain_batch(texts, decisions)
 
     for case, exp in zip(samples, explanations):
         llama32_explanations.append({
@@ -1835,12 +1833,12 @@ try:
             "decision": case["control"]["guard_decision"],
             "llama32_explanation": exp.strip(),
         })
-        print(f"[{case[\"case_id\"]}] Llama-3.2 explanation:")
+        print(f"[{case[\"case_id\"]}] Phi-3.5 explanation:")
         print(f"  {exp.strip()[:300]}")
         print()
 
 except Exception as e:
-    print(f"Llama-3.2 not available: {e}")
+    print(f"Phi-3.5-mini not available: {e}")
     llama32_explanations = []
 '''),
         md("### Step 3 — Evaluate explanation quality"),
@@ -1907,7 +1905,7 @@ if len(df) > 0:
     print(f"Guard self-explanation (Llama-Guard): specific={df.guard_specific.mean():.0%}  "
           f"accurate={df.guard_accurate.mean():.0%}  actionable={df.guard_actionable.mean():.0%}")
     if "llama32_specific" in df.columns:
-        print(f"Llama-3.2 explanation:                specific={df.llama32_specific.mean():.0%}  "
+        print(f"Phi-3.5-mini explanation:             specific={df.llama32_specific.mean():.0%}  "
               f"accurate={df.llama32_accurate.mean():.0%}  actionable={df.llama32_actionable.mean():.0%}")
     print(f"Prototype-based:                      specific={df.proto_specific.mean():.0%}  "
           f"accurate={df.proto_accurate.mean():.0%}  actionable={df.proto_actionable.mean():.0%}")

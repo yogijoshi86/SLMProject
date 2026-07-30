@@ -322,7 +322,7 @@ class Llama32Instruct:
 
     def __init__(
         self,
-        name: str = "meta-llama/Llama-3.2-1B-Instruct",
+        name: str = "microsoft/Phi-3.5-mini-instruct",
         dtype: str = "float16",
         device_map: str = "auto",
         max_new_tokens: int = 64,
@@ -440,7 +440,7 @@ def load_guard(model_cfg) -> WildGuard | TextModerationGuard | LlamaGuard | Llam
             max_new_tokens=getattr(model_cfg, "max_new_tokens", 20),
             hidden_layer=getattr(model_cfg, "hidden_layer", -1),
         )
-    if "llama-3.2" in name or "llama_3.2" in name or "llama-3-2" in name:
+    if "llama-3.2" in name or "llama_3.2" in name or "llama-3-2" in name or "phi-3" in name or "phi-4" in name or "smollm" in name or "qwen2" in name:
         return Llama32Instruct(
             name=model_cfg.name, dtype=model_cfg.dtype,
             device_map=model_cfg.device_map,
