@@ -19,13 +19,18 @@ class AuditRecord:
     is_unsafe: bool
     guard_categories: list[str]
     matched_prototype: str
-    prototype_label: str          # human-readable label (e.g. "Persona and Role-Based Bypass")
+    prototype_label: str
     similarity_score: float
     is_ood: bool
-    second_prototype: str         # runner-up prototype key
-    second_similarity: float      # runner-up cosine similarity
-    margin: float                 # similarity - second_similarity; low = boundary/uncertain case
-    explanation: str
+    second_prototype: str
+    second_similarity: float
+    margin: float
+    # SAFE prototype fields — populated when safe_prototypes present in taxonomy
+    nearest_safe_prototype: str = ""
+    nearest_safe_label: str = ""
+    nearest_safe_similarity: float = 0.0
+    is_ambiguous: bool = False   # φ_ambiguous: equidistant UNSAFE + SAFE → structurally ambiguous
+    explanation: str = ""
     timings: dict[str, float] = field(default_factory=dict)
 
 
@@ -65,6 +70,10 @@ class AuditPipeline:
                 second_prototype="",
                 second_similarity=0.0,
                 margin=0.0,
+                nearest_safe_prototype="",
+                nearest_safe_label="",
+                nearest_safe_similarity=0.0,
+                is_ambiguous=False,
                 explanation="Input classified SAFE; no audit generated.",
                 timings=timings,
             )
@@ -90,6 +99,10 @@ class AuditPipeline:
             second_prototype=match.second_prototype_key,
             second_similarity=match.second_similarity,
             margin=match.margin,
+            nearest_safe_prototype=match.nearest_safe_key,
+            nearest_safe_label=match.nearest_safe_label,
+            nearest_safe_similarity=match.nearest_safe_similarity,
+            is_ambiguous=match.is_ambiguous,
             explanation=explanation,
             timings=timings,
         )
