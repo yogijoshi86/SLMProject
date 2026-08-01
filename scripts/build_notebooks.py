@@ -294,31 +294,61 @@ os.environ["HF_TOKEN"] = token
 login(token=token)   # registers the token with transformers globally
 print("Logged in.")
 '''),
-        md("### Choose dataset"),
+        md("### Choose dataset and guard model"),
         code('''
 # ── Dataset mode selector ────────────────────────────────────────────────────
 # Set DATASET to one of:
-#   "toxicchat"  — lmsys/toxic-chat (default, ~5K prompts, has toxicity + jailbreak labels)
+#   "toxicchat"  — lmsys/toxic-chat (default, ~5K prompts, toxicity + jailbreak labels)
 #   "wildchat"   — allenai/WildChat-1M (English only, ~1M prompts, toxicity label only)
-DATASET = "toxicchat"   # ← change this to "wildchat" to switch datasets
+DATASET = "toxicchat"   # ← change this
+
+# ── Guard model selector ─────────────────────────────────────────────────────
+# Set GUARD_MODEL to one of:
+#   "llamaguard"  — meta-llama/Llama-Guard-3-8B (default, gated — requires HF token)
+#   "wildguard"   — allenai/wildguard (ungated, 7B Mistral fine-tune)
+#   "shieldlm"    — FlagAI/shieldlm-7b-internlm (ungated, Llama-2 fine-tune)
+#   "mdjudge"     — OpenSafetyLab/MD-Judge-v0.1 (ungated, multi-domain judge)
+#   "koala"       — KoalaAI/Text-Moderation (ungated, fast CPU, DeBERTa ~180MB)
+GUARD_MODEL = "llamaguard"   # ← change this
 
 import os, sys
 from pathlib import Path
 sys.path.insert(0, str(Path("src")))
 os.chdir(Path("").resolve())
 
-if DATASET == "wildchat":
-    CONFIG = "config/wildchat.yaml"
-    print("Dataset: WildChat-1M (English, first user turn per conversation)")
-else:
-    CONFIG = "config/colab_smoke.yaml"
-    print("Dataset: ToxicChat (lmsys/toxic-chat, toxicchat0124)")
+# Build config path from selections
+_dataset_cfg = {"toxicchat": "config/colab_smoke.yaml", "wildchat": "config/wildchat.yaml"}
+_model_cfg    = {
+    "llamaguard": None,       # use dataset config as-is (default model is Llama-Guard)
+    "wildguard":  "wildguard",
+    "shieldlm":   "config/shieldlm.yaml",
+    "mdjudge":    "config/mdjudge.yaml",
+    "koala":      "koala",
+}
+
+CONFIG = _dataset_cfg.get(DATASET, "config/colab_smoke.yaml")
+print(f"Dataset: {DATASET}  |  Guard: {GUARD_MODEL}  |  Config: {CONFIG}")
 
 from guardrail_audit.utils import load_config, set_seed
 cfg = load_config(CONFIG)
 set_seed(cfg.seed)
-print(f"Config: {CONFIG}")
-print(f"dataset_name: {cfg.data.dataset_name}  max_samples: {cfg.data.max_samples}")
+
+# Override model name if guard model differs from config default
+_model_overrides = {
+    "wildguard": "allenai/wildguard",
+    "shieldlm":  "FlagAI/shieldlm-7b-internlm",
+    "mdjudge":   "OpenSafetyLab/MD-Judge-v0.1",
+    "koala":     "KoalaAI/Text-Moderation",
+}
+if GUARD_MODEL in _model_overrides:
+    cfg.model.name = _model_overrides[GUARD_MODEL]
+    # Override artifact paths to avoid overwriting Llama-Guard results
+    cfg.paths.embeddings = f"artifacts/unsafe_embeddings_{GUARD_MODEL}.pt"
+    cfg.paths.taxonomy   = f"artifacts/prototypes_taxonomy_{GUARD_MODEL}.json"
+    print(f"Model overridden to: {cfg.model.name}")
+    print(f"Artifacts will be saved with suffix _{GUARD_MODEL}")
+
+print(f"dataset_name: {cfg.data.dataset_name}  model: {cfg.model.name}")
 '''),
         code(CONFIG_CELL),
         md("### Load prompts"),

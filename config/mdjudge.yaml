@@ -1,0 +1,54 @@
+# MD-Judge config — OpenSafetyLab/MD-Judge-v0.1
+# Ungated Llama-2-based multi-domain safety judge.
+# No HF token required. int8 fits on a free T4.
+
+seed: 42
+
+paths:
+  artifacts_dir: artifacts
+  embeddings: artifacts/unsafe_embeddings_mdjudge.pt
+  taxonomy: artifacts/prototypes_taxonomy_mdjudge.json
+  benchmark: artifacts/benchmark_test_set_mdjudge.json
+  eval_logs: artifacts/eval_logs_mdjudge.csv
+
+data:
+  dataset_name: lmsys/toxic-chat
+  dataset_config: toxicchat0124
+  split: train
+  text_column: user_input
+  max_samples: null
+  train_ratio: 0.8
+
+model:
+  name: OpenSafetyLab/MD-Judge-v0.1
+  dtype: int8
+  device_map: auto
+  max_new_tokens: 10
+  hidden_layer: -1
+
+extraction:
+  batch_size: 8
+
+clustering:
+  k_min: 3
+  k_max: 15
+  k_cap: 10
+  n_init: 10
+  top_exemplars: 5
+  use_umap: true
+  umap_n_components: 50
+  umap_n_neighbors: 15
+  umap_min_dist: 0.0
+
+explainer:
+  provider: openai
+  openai_model: gpt-4o
+  anthropic_model: claude-3-5-sonnet-20241022
+  temperature: 0.2
+  ood_similarity_floor: 0.35
+  latency_budget_seconds: 1.5
+
+evaluation:
+  n_false_positives: 25
+  n_false_negatives: 25
+  n_participants: 6

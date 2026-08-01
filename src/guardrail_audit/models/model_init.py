@@ -479,6 +479,174 @@ class Llama32Instruct:
 
 
 
+
+
+# ---------------------------------------------------------------------------
+# ShieldLM  (FlagAI — ungated, 7B Llama-2 fine-tune for safety)
+# ---------------------------------------------------------------------------
+
+_SHIELDLM_PROMPT = (
+    "[INST] <<SYS>>\n"
+    "You are a safety classifier. Determine whether the following user message is safe or unsafe.\n"
+    "Respond with 'safe' or 'unsafe' followed by a brief reason on a new line.\n"
+    "<</SYS>>\n\n"
+    "User message: {prompt} [/INST]"
+)
+
+
+class ShieldLM:
+    """Wraps ShieldLM (FlagAI) for batched decisions + hidden-state capture.
+
+    Ungated Llama-2-based safety classifier trained on a broad harm taxonomy.
+    Output: 'safe' or 'unsafe' on the first line.
+    Default model: FlagAI/shieldlm-7b-internlm
+    """
+
+    def __init__(
+        self,
+        name: str = "FlagAI/shieldlm-7b-internlm",
+        dtype: str = "int8",
+        device_map: str = "auto",
+        max_new_tokens: int = 20,
+        hidden_layer: int = -1,
+        **_ignored,
+    ) -> None:
+        import os
+        from transformers import AutoModelForCausalLM
+
+        token = os.environ.get("HF_TOKEN")
+        torch_dtype, extra = _dtype_and_quant(dtype)
+        self.tokenizer = AutoTokenizer.from_pretrained(name, token=token)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.padding_side = "left"
+        is_quantized = "quantization_config" in extra
+        if is_quantized:
+            import torch as _torch
+            _torch.cuda.empty_cache()
+        self.model = AutoModelForCausalLM.from_pretrained(
+            name,
+            torch_dtype=None if is_quantized else torch_dtype,
+            device_map=device_map,
+            token=token,
+            output_hidden_states=True,
+            **extra,
+        )
+        self.model.eval()
+        self.max_new_tokens = max_new_tokens
+        self.hidden_layer = hidden_layer
+        self.device = next(self.model.parameters()).device
+        print(f"ShieldLM loaded: {name}")
+
+    @staticmethod
+    def _parse(text: str) -> GuardDecision:
+        lowered = text.strip().lower()
+        is_unsafe = lowered.startswith("unsafe")
+        categories: list[str] = []
+        if is_unsafe:
+            for line in text.strip().splitlines()[1:]:
+                line = line.strip()
+                if line and not line.lower().startswith("unsafe"):
+                    categories.append(line)
+        return GuardDecision(is_unsafe=is_unsafe, categories=categories, raw=text.strip())
+
+    @torch.no_grad()
+    def classify_batch(self, texts: list[str]) -> tuple[list[GuardDecision], torch.Tensor]:
+        prompts = [_SHIELDLM_PROMPT.format(prompt=t) for t in texts]
+        enc = self.tokenizer(
+            prompts, return_tensors="pt", padding=True, truncation=True, max_length=2048
+        ).to(self.device)
+        forward = self.model(**enc, output_hidden_states=True)
+        embeddings = forward.hidden_states[self.hidden_layer][:, -1, :].float().cpu()
+        generated = self.model.generate(
+            **enc, max_new_tokens=self.max_new_tokens, do_sample=False,
+            pad_token_id=self.tokenizer.pad_token_id,
+        )
+        new_tokens = generated[:, enc["input_ids"].shape[1]:]
+        texts_out = self.tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
+        return [self._parse(t) for t in texts_out], embeddings
+
+
+# ---------------------------------------------------------------------------
+# MD-Judge  (OpenSafetyLab — ungated, Llama-2-based multi-domain judge)
+# ---------------------------------------------------------------------------
+
+_MDJUDGE_SYSTEM = (
+    "You are a content safety classifier. "
+    "Given a user message, output 'safe' if it is harmless or 'unsafe' if it could cause harm. "
+    "Output only one word."
+)
+
+
+class MDJudge:
+    """Wraps MD-Judge (OpenSafetyLab) for batched decisions + hidden-state capture.
+
+    Ungated Llama-2-based multi-domain safety classifier.
+    Default model: OpenSafetyLab/MD-Judge-v0.1
+    """
+
+    def __init__(
+        self,
+        name: str = "OpenSafetyLab/MD-Judge-v0.1",
+        dtype: str = "int8",
+        device_map: str = "auto",
+        max_new_tokens: int = 10,
+        hidden_layer: int = -1,
+        **_ignored,
+    ) -> None:
+        import os
+        from transformers import AutoModelForCausalLM
+
+        token = os.environ.get("HF_TOKEN")
+        torch_dtype, extra = _dtype_and_quant(dtype)
+        self.tokenizer = AutoTokenizer.from_pretrained(name, token=token)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.padding_side = "left"
+        is_quantized = "quantization_config" in extra
+        if is_quantized:
+            import torch as _torch
+            _torch.cuda.empty_cache()
+        self.model = AutoModelForCausalLM.from_pretrained(
+            name,
+            torch_dtype=None if is_quantized else torch_dtype,
+            device_map=device_map,
+            token=token,
+            output_hidden_states=True,
+            **extra,
+        )
+        self.model.eval()
+        self.max_new_tokens = max_new_tokens
+        self.hidden_layer = hidden_layer
+        self.device = next(self.model.parameters()).device
+        print(f"MDJudge loaded: {name}")
+
+    @staticmethod
+    def _parse(text: str) -> GuardDecision:
+        lowered = text.strip().lower()
+        is_unsafe = lowered.startswith("unsafe")
+        return GuardDecision(is_unsafe=is_unsafe, categories=[], raw=text.strip())
+
+    @torch.no_grad()
+    def classify_batch(self, texts: list[str]) -> tuple[list[GuardDecision], torch.Tensor]:
+        prompts = [
+            f"[INST] <<SYS>>\n{_MDJUDGE_SYSTEM}\n<</SYS>>\n\nUser message: {t} [/INST]"
+            for t in texts
+        ]
+        enc = self.tokenizer(
+            prompts, return_tensors="pt", padding=True, truncation=True, max_length=2048
+        ).to(self.device)
+        forward = self.model(**enc, output_hidden_states=True)
+        embeddings = forward.hidden_states[self.hidden_layer][:, -1, :].float().cpu()
+        generated = self.model.generate(
+            **enc, max_new_tokens=self.max_new_tokens, do_sample=False,
+            pad_token_id=self.tokenizer.pad_token_id,
+        )
+        new_tokens = generated[:, enc["input_ids"].shape[1]:]
+        texts_out = self.tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
+        return [self._parse(t) for t in texts_out], embeddings
+
+
 def load_guard(model_cfg) -> WildGuard | TextModerationGuard | LlamaGuard | Llama32Instruct:
     name: str = model_cfg.name.lower()
     if "llama-guard" in name or "llama_guard" in name:
@@ -486,6 +654,20 @@ def load_guard(model_cfg) -> WildGuard | TextModerationGuard | LlamaGuard | Llam
             name=model_cfg.name, dtype=model_cfg.dtype,
             device_map=model_cfg.device_map,
             max_new_tokens=getattr(model_cfg, "max_new_tokens", 20),
+            hidden_layer=getattr(model_cfg, "hidden_layer", -1),
+        )
+    if "shieldlm" in name or "shield_lm" in name or "shield-lm" in name:
+        return ShieldLM(
+            name=model_cfg.name, dtype=model_cfg.dtype,
+            device_map=model_cfg.device_map,
+            max_new_tokens=getattr(model_cfg, "max_new_tokens", 20),
+            hidden_layer=getattr(model_cfg, "hidden_layer", -1),
+        )
+    if "md-judge" in name or "md_judge" in name or "mdjudge" in name:
+        return MDJudge(
+            name=model_cfg.name, dtype=model_cfg.dtype,
+            device_map=model_cfg.device_map,
+            max_new_tokens=getattr(model_cfg, "max_new_tokens", 10),
             hidden_layer=getattr(model_cfg, "hidden_layer", -1),
         )
     if "llama-3.2" in name or "llama_3.2" in name or "llama-3-2" in name or "phi-3" in name or "phi-4" in name or "smollm" in name or "qwen2" in name:
