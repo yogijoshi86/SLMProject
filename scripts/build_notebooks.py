@@ -684,7 +684,13 @@ prompts = [
 for p in prompts:
     r = pipeline.audit_dict(p)
     flag = "UNSAFE" if r["is_unsafe"] else "safe"
-    print(f"[{flag}] sim={r['similarity_score']:.3f} proto={r['matched_prototype']}")
+    ambig = " [AMBIGUOUS]" if r.get("is_ambiguous") else ""
+    safe_label = r.get("nearest_safe_label", "")
+    print(f"[{flag}]{ambig} proto={r['matched_prototype']} safe_nearest={safe_label or 'n/a'}")
+    if r.get("is_ambiguous"):
+        print(f"  ⚠ Ambiguous: sim_unsafe={r['similarity_score']:.5f}  "
+              f"sim_safe={r.get('nearest_safe_similarity', 0):.5f}  "
+              f"nearest_safe={r.get('nearest_safe_prototype', 'n/a')}")
     print("   ", r["explanation"][:200].replace("\\n", " "), "\\n")
 '''),
         md("**Next:** open `04_evaluation.ipynb` once you've collected A/B latency logs."),
@@ -804,6 +810,11 @@ def generate_cases(samples, id_offset=0):
             "top_exemplars": [],
             "explanation": result["explanation"],
             "gt_toxicity": sample["gt_toxicity"],
+            # SAFE prototype fields — populated when safe_prototypes present in taxonomy
+            "nearest_safe_prototype": result.get("nearest_safe_prototype", ""),
+            "nearest_safe_label": result.get("nearest_safe_label", ""),
+            "nearest_safe_similarity": round(result.get("nearest_safe_similarity", 0.0), 6),
+            "is_ambiguous": result.get("is_ambiguous", False),
         })
         print(f"[{i+1}/{len(samples)}] {case_id} ({failure_type}) — {result['matched_prototype']}")
     return results
