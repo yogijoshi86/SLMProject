@@ -489,6 +489,55 @@ with open(cfg.paths.taxonomy, "w") as f:
 print("Saved.")
 '''),
         md("**Next:** open `03_audit.ipynb`."),
+        md("### SAFE Prototype Discovery — Benign Content Clusters"),
+        md("""
+Cluster SAFE-classified embeddings to discover what benign content looks like in
+the guard's embedding space. SAFE prototypes complement the UNSAFE taxonomy:
+
+- **UNSAFE prototypes** explain what pattern caused a false positive (guard over-triggered)
+- **SAFE prototypes** confirm which benign cluster the prompt resembles, anchoring the FP diagnosis
+
+Requires `01_extraction.ipynb` to have been run with `record_safe=True` so that
+`safe_embeddings` and `safe_metadata` are present in the `.pt` file.
+"""),
+        code('''
+from guardrail_audit.clustering.cluster_prototypes import build_safe_prototypes
+
+safe_taxonomy = build_safe_prototypes(
+    data_path=cfg.paths.embeddings,
+    taxonomy_path=cfg.paths.taxonomy,
+    k_min=cfg.clustering.k_min,
+    k_max=cfg.clustering.k_cap,
+    n_init=cfg.clustering.n_init,
+    seed=cfg.seed,
+    top_exemplars=cfg.clustering.top_exemplars,
+    umap_n_components=cfg.clustering.get("umap_n_components", 50),
+    umap_n_neighbors=cfg.clustering.get("umap_n_neighbors", 15),
+    umap_min_dist=cfg.clustering.get("umap_min_dist", 0.0),
+)
+print(f"SAFE clusters found: {safe_taxonomy['safe_meta']['best_k']}")
+print(f"SAFE silhouette: {safe_taxonomy['safe_meta']['best_silhouette']:.4f}")
+'''),
+        md("""
+**Label the SAFE prototypes** — fill in labels and descriptions after reviewing exemplars above,
+then save back to taxonomy.
+"""),
+        code('''
+# Optional helper: label SAFE prototypes after reviewing exemplars
+import json
+with open(cfg.paths.taxonomy) as f:
+    tax = json.load(f)
+
+# Example — edit these after reviewing the printed exemplars above:
+# tax["safe_prototypes"]["safe_prototype_0"]["label"] = "Technical / Coding Requests"
+# tax["safe_prototypes"]["safe_prototype_0"]["description"] = "Benign technical requests..."
+# tax["safe_prototypes"]["safe_prototype_1"]["label"] = "General Conversation"
+
+with open(cfg.paths.taxonomy, "w") as f:
+    json.dump(tax, f, indent=2)
+print("SAFE prototype labels saved.")
+'''),
+        md("**Next:** open `03_audit.ipynb`."),
         md("### Appendix A — UMAP dimensionality reduction comparison (curse-of-dimensionality mitigation)"),
         code('''
 # Compare K-means silhouette on full 4096-dim embeddings vs UMAP-reduced 50-dim embeddings.

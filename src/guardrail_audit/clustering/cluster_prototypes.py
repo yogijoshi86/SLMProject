@@ -188,3 +188,115 @@ def _rank_categories(categories: list[str]) -> list[str]:
     for c in categories:
         counts[c] = counts.get(c, 0) + 1
     return [c for c, _ in sorted(counts.items(), key=lambda kv: kv[1], reverse=True)]
+
+
+def build_safe_prototypes(
+    data_path: str | Path,
+    taxonomy_path: str | Path,
+    k_min: int = 3,
+    k_max: int = 10,
+    n_init: int = 10,
+    seed: int = 42,
+    top_exemplars: int = 5,
+    k_cap: int | None = 8,
+    umap_n_components: int = 50,
+    umap_n_neighbors: int = 15,
+    umap_min_dist: float = 0.0,
+) -> dict:
+    """Cluster SAFE-classified embeddings to discover benign content prototypes.
+
+    Reads safe_embeddings + safe_metadata from the .pt file produced by
+    extract_unsafe_embeddings(record_safe=True). Uses the UNSAFE UMAP reducer
+    already fitted in build_prototypes() to project SAFE embeddings into the
+    same 50-dim space, then runs K-means to find k* SAFE clusters.
+
+    The SAFE centroids are appended to the existing taxonomy JSON under
+    a top-level "safe_prototypes" key so DistanceEngine can compare a new
+    prompt against both UNSAFE and SAFE centroids simultaneously.
+    """
+    checkpoint = torch.load(data_path, map_location="cpu")
+
+    safe_emb = checkpoint.get("safe_embeddings")
+    safe_meta = checkpoint.get("safe_metadata", [])
+
+    if safe_emb is None or len(safe_meta) == 0:
+        raise ValueError(
+            "No SAFE embeddings found in .pt file. "
+            "Re-run 01_extraction.ipynb with record_safe=True."
+        )
+
+    safe_emb_np = safe_emb.numpy().astype(np.float64)
+    print(f"SAFE embeddings loaded: {safe_emb_np.shape}")
+
+    # Load existing taxonomy to reuse the UNSAFE UMAP reducer
+    taxonomy_path = Path(taxonomy_path)
+    with open(taxonomy_path, "r", encoding="utf-8") as f:
+        taxonomy = json.load(f)
+
+    meta = taxonomy.get("meta", {})
+    umap_enabled = meta.get("umap_enabled", False)
+
+    embeddings_norm = l2_normalize(safe_emb_np)
+
+    if umap_enabled:
+        import joblib
+        reducer_path = meta.get("reducer_path")
+        if reducer_path is None:
+            raise ValueError("taxonomy meta.reducer_path missing — re-run build_prototypes() first.")
+        reducer_path = Path(reducer_path)
+        if not reducer_path.is_absolute():
+            reducer_path = taxonomy_path.parent / reducer_path.name
+        reducer = joblib.load(reducer_path)
+        print(f"Loaded UMAP reducer from {reducer_path.name}")
+
+        # Project SAFE embeddings into same space as UNSAFE prototypes
+        reduced = reducer.transform(embeddings_norm)
+        embeddings_fit = l2_normalize(reduced.astype(np.float64))
+        print(f"SAFE embeddings projected: {embeddings_norm.shape} → {embeddings_fit.shape}")
+    else:
+        embeddings_fit = embeddings_norm
+
+    print(f"\nK-means sweep on SAFE embeddings...")
+    results = sweep_k(embeddings_fit, k_min, k_max, n_init, seed, k_cap)
+    best_k = select_best_k(results)
+    best_score = next(r.silhouette for r in results if r.k == best_k)
+    print(f"\nSelected k*={best_k} (silhouette={best_score:.4f})")
+
+    km = KMeans(n_clusters=best_k, random_state=seed, n_init=n_init)
+    labels = km.fit_predict(embeddings_fit)
+    centroids_fit = km.cluster_centers_
+
+    safe_prototypes: dict[str, dict] = {}
+    for cluster_idx in range(best_k):
+        centroid_fit = centroids_fit[cluster_idx]
+        sims = cosine_similarity(centroid_fit, embeddings_fit)
+        top = np.argsort(sims)[::-1][:top_exemplars]
+
+        member_mask = labels == cluster_idx
+        full_centroid = embeddings_norm[member_mask].mean(axis=0).tolist()
+
+        safe_prototypes[f"safe_prototype_{cluster_idx}"] = {
+            "centroid_vector": full_centroid,
+            "umap_centroid_vector": centroid_fit.tolist(),
+            "cluster_size": int(member_mask.sum()),
+            "top_exemplars": [safe_meta[int(i)]["text"] for i in top],
+            "label": "TODO: assign after thematic review",
+            "description": "TODO",
+        }
+        print(f"\n=== safe_prototype_{cluster_idx}  (size={member_mask.sum()}) ===")
+        for j, idx in enumerate(top[:3], 1):
+            print(f"  {j}. {safe_meta[int(idx)]['text'][:100]}")
+
+    # Append SAFE prototypes to existing taxonomy
+    taxonomy["safe_prototypes"] = safe_prototypes
+    taxonomy["safe_meta"] = {
+        "best_k": best_k,
+        "best_silhouette": best_score,
+        "n_safe": int(safe_emb_np.shape[0]),
+        "sweep": [asdict(r) for r in results],
+    }
+
+    with open(taxonomy_path, "w", encoding="utf-8") as f:
+        json.dump(taxonomy, f, indent=2)
+    print(f"\nAppended {best_k} SAFE prototypes to {taxonomy_path}")
+    return taxonomy
