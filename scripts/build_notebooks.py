@@ -479,6 +479,13 @@ silhouette, and writes the prototype taxonomy. **CPU-only — no GPU needed.**
         code('''
 from guardrail_audit.clustering import build_prototypes
 
+# ── Clustering mode selector ─────────────────────────────────────────────────
+# Set INCLUDE_SAFE=True to merge SAFE embeddings into clustering alongside UNSAFE.
+# Produces mixed clusters annotated with dominant_decision ("UNSAFE" or "SAFE").
+# Requires 01_extraction.ipynb to have been run with record_safe=True.
+# Set INCLUDE_SAFE=False (default) to cluster UNSAFE-only — original behaviour.
+INCLUDE_SAFE = False   # ← change to True to include SAFE cases
+
 taxonomy = build_prototypes(
     data_path=cfg.paths.embeddings,
     taxonomy_path=cfg.paths.taxonomy,
@@ -492,9 +499,16 @@ taxonomy = build_prototypes(
     umap_n_components=cfg.clustering.get("umap_n_components", 50),
     umap_n_neighbors=cfg.clustering.get("umap_n_neighbors", 15),
     umap_min_dist=cfg.clustering.get("umap_min_dist", 0.0),
+    include_safe=INCLUDE_SAFE,
 )
 umap_on = taxonomy["meta"]["umap_enabled"]
 print(f"best k*: {taxonomy['meta']['best_k']} | silhouette: {round(taxonomy['meta']['best_silhouette'], 4)} | umap={umap_on}")
+if INCLUDE_SAFE:
+    print("\\nCluster composition (UNSAFE vs SAFE members):")
+    for k, v in taxonomy["prototypes"].items():
+        print(f"  {k}: size={v['cluster_size']} "
+              f"unsafe={v['n_unsafe']} safe={v['n_safe']} "
+              f"dominant={v['dominant_decision']}")
 '''),
         md("### Plot the silhouette / inertia sweep"),
         code('''

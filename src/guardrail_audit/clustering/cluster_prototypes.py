@@ -67,12 +67,18 @@ def build_prototypes(
     umap_n_components: int = 50,
     umap_n_neighbors: int = 15,
     umap_min_dist: float = 0.0,
+    include_safe: bool = False,
 ) -> dict:
     """End-to-end Phase 2: normalize, (optionally reduce), sweep, select k*, extract centroids.
 
     When use_umap=True (default), fits UMAP on the L2-normalised embeddings and runs
     K-means in the reduced space. This dramatically improves silhouette scores by
     mitigating the curse of dimensionality in 4096-dim hidden-state space.
+
+    When include_safe=True, SAFE-classified embeddings (safe_embeddings key in the .pt
+    file) are merged with the UNSAFE train split before clustering. Each prototype is
+    then annotated with its dominant_decision ("UNSAFE" or "SAFE") based on which type
+    of prompt majority-votes into that cluster.
 
     The fitted UMAP reducer is saved to <taxonomy_path_parent>/umap_reducer.pkl so
     DistanceEngine can project new query embeddings at inference time.
@@ -84,11 +90,26 @@ def build_prototypes(
     train_indices = checkpoint.get("train_indices", list(range(len(all_metadata))))
     if "train_indices" in checkpoint:
         n_test = len(checkpoint.get("test_indices", []))
-        print(f"Using train split: {len(train_indices)} embeddings "
+        print(f"Using train split: {len(train_indices)} UNSAFE embeddings "
               f"(held out {n_test} for A/B benchmark)")
 
     embeddings = all_embeddings[train_indices]
     metadata = [all_metadata[i] for i in train_indices]
+
+    # Optionally merge SAFE embeddings into clustering
+    if include_safe:
+        safe_emb = checkpoint.get("safe_embeddings")
+        safe_meta = checkpoint.get("safe_metadata", [])
+        if safe_emb is not None and len(safe_meta) > 0:
+            safe_np = safe_emb.numpy().astype(np.float64)
+            # Use all SAFE embeddings (no train/test split applied to SAFE)
+            embeddings = np.vstack([embeddings, safe_np])
+            metadata = metadata + list(safe_meta)
+            print(f"Merged SAFE embeddings: {safe_np.shape[0]} → "
+                  f"total {embeddings.shape[0]} embeddings for clustering")
+        else:
+            print("WARNING: include_safe=True but no safe_embeddings found in .pt file. "
+                  "Re-run 01_extraction.ipynb with record_safe=True.")
     embeddings_norm = l2_normalize(embeddings)
 
     reducer_path: str | None = None
@@ -149,10 +170,22 @@ def build_prototypes(
         # Full-dim centroid for backward-compat (mean of assigned embeddings_norm)
         full_centroid = embeddings_norm[member_mask].mean(axis=0).tolist()
 
+        # When include_safe=True, annotate each cluster with its dominant decision
+        member_decisions = [
+            metadata[int(m)].get("guard_decision", "UNSAFE")
+            for m in np.where(member_mask)[0]
+        ]
+        n_unsafe = sum(1 for d in member_decisions if d == "UNSAFE")
+        n_safe   = len(member_decisions) - n_unsafe
+        dominant_decision = "UNSAFE" if n_unsafe >= n_safe else "SAFE"
+
         prototypes[f"prototype_{cluster_idx}"] = {
-            "centroid_vector": full_centroid,              # 4096-dim, backward-compat
-            "umap_centroid_vector": centroid_fit.tolist(), # reduced-dim, used when umap_enabled
+            "centroid_vector": full_centroid,
+            "umap_centroid_vector": centroid_fit.tolist(),
             "cluster_size": int(member_mask.sum()),
+            "n_unsafe": n_unsafe,
+            "n_safe": n_safe,
+            "dominant_decision": dominant_decision,
             "top_exemplars": [metadata[int(i)]["text"] for i in top],
             "exemplar_categories": [metadata[int(i)].get("categories", []) for i in top],
             "dominant_categories": _rank_categories(member_cats),
