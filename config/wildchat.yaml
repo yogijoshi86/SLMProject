@@ -1,0 +1,54 @@
+# WildChat config — run the full pipeline on allenai/WildChat-1M.
+# WildChat is multilingual; this config filters to English-only conversations.
+# The `toxic` field (bool) maps to gt_toxicity; there is no jailbreak label.
+
+seed: 42
+
+paths:
+  artifacts_dir: artifacts
+  embeddings: artifacts/unsafe_embeddings_wildchat.pt
+  taxonomy: artifacts/prototypes_taxonomy_wildchat.json
+  benchmark: artifacts/benchmark_test_set_wildchat.json
+  eval_logs: artifacts/eval_logs_wildchat.csv
+
+data:
+  dataset_name: allenai/WildChat-1M
+  dataset_config: null          # WildChat has no config variant
+  split: train
+  text_column: conversation     # loader extracts first user turn automatically
+  max_samples: 5000             # start with 5K; set null for full ~1M (very slow)
+  train_ratio: 0.8
+
+model:
+  name: meta-llama/Llama-Guard-3-8B
+  dtype: int8
+  device_map: auto
+  max_new_tokens: 20
+  hidden_layer: -1
+
+extraction:
+  batch_size: 8
+
+clustering:
+  k_min: 3
+  k_max: 15
+  k_cap: 10
+  n_init: 10
+  top_exemplars: 5
+  use_umap: true
+  umap_n_components: 50
+  umap_n_neighbors: 15
+  umap_min_dist: 0.0
+
+explainer:
+  provider: openai
+  openai_model: gpt-4o
+  anthropic_model: claude-3-5-sonnet-20241022
+  temperature: 0.2
+  ood_similarity_floor: 0.35
+  latency_budget_seconds: 1.5
+
+evaluation:
+  n_false_positives: 25
+  n_false_negatives: 25
+  n_participants: 6

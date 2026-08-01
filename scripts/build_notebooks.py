@@ -294,6 +294,32 @@ os.environ["HF_TOKEN"] = token
 login(token=token)   # registers the token with transformers globally
 print("Logged in.")
 '''),
+        md("### Choose dataset"),
+        code('''
+# ── Dataset mode selector ────────────────────────────────────────────────────
+# Set DATASET to one of:
+#   "toxicchat"  — lmsys/toxic-chat (default, ~5K prompts, has toxicity + jailbreak labels)
+#   "wildchat"   — allenai/WildChat-1M (English only, ~1M prompts, toxicity label only)
+DATASET = "toxicchat"   # ← change this to "wildchat" to switch datasets
+
+import os, sys
+from pathlib import Path
+sys.path.insert(0, str(Path("src")))
+os.chdir(Path("").resolve())
+
+if DATASET == "wildchat":
+    CONFIG = "config/wildchat.yaml"
+    print("Dataset: WildChat-1M (English, first user turn per conversation)")
+else:
+    CONFIG = "config/colab_smoke.yaml"
+    print("Dataset: ToxicChat (lmsys/toxic-chat, toxicchat0124)")
+
+from guardrail_audit.utils import load_config, set_seed
+cfg = load_config(CONFIG)
+set_seed(cfg.seed)
+print(f"Config: {CONFIG}")
+print(f"dataset_name: {cfg.data.dataset_name}  max_samples: {cfg.data.max_samples}")
+'''),
         code(CONFIG_CELL),
         md("### Load prompts"),
         code('''
