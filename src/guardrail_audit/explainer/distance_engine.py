@@ -141,7 +141,7 @@ class DistanceEngine:
     def match(self, query_embedding: np.ndarray) -> PrototypeMatch:
         query = self._project(query_embedding)
 
-        # ── UNSAFE prototype matching ─────────────────────────────────────
+        # ── UNSAFE prototype similarities ─────────────────────────────────
         sims = cosine_similarity(query, self.centroids)
         ranked = np.argsort(sims)[::-1]
         best   = int(ranked[0])
@@ -156,21 +156,47 @@ class DistanceEngine:
         proto = self.prototypes[key]
         is_ood = best_sim < self.ood_floor
 
-        # ── SAFE prototype matching (if available) ────────────────────────
-        nearest_safe_key = ""
-        nearest_safe_sim = 0.0
+        # ── SAFE prototype similarities (if available) ────────────────────
+        nearest_safe_key   = ""
+        nearest_safe_sim   = 0.0
         nearest_safe_label = ""
-        is_ambiguous = False
+        is_ambiguous       = False
 
         if self.safe_centroids is not None and len(self.safe_keys) > 0:
-            safe_sims = cosine_similarity(query, self.safe_centroids)
-            best_safe = int(np.argmax(safe_sims))
-            nearest_safe_sim = float(safe_sims[best_safe])
-            nearest_safe_key = self.safe_keys[best_safe]
-            nearest_safe_label = self.safe_prototypes[nearest_safe_key].get("label", nearest_safe_key)
+            safe_sims     = cosine_similarity(query, self.safe_centroids)
+            best_safe_idx = int(np.argmax(safe_sims))
+            nearest_safe_sim   = float(safe_sims[best_safe_idx])
+            nearest_safe_key   = self.safe_keys[best_safe_idx]
+            nearest_safe_label = self.safe_prototypes[nearest_safe_key].get(
+                "label", nearest_safe_key
+            )
 
-            # φ_ambiguous: |sim_unsafe - sim_safe| < threshold → structurally ambiguous
+            # φ_ambiguous: |sim_unsafe - sim_safe| < threshold
             is_ambiguous = abs(best_sim - nearest_safe_sim) < self.ambiguity_threshold
+
+            # ── Merged nearest-prototype: consider SAFE + UNSAFE together ──
+            # If the nearest SAFE centroid is closer than the nearest UNSAFE centroid,
+            # override the matched prototype with the SAFE one so that the
+            # downstream LTL monitor and audit record reflect the actual nearest cluster.
+            if nearest_safe_sim > best_sim:
+                # SAFE centroid wins — swap primary match to SAFE prototype
+                safe_proto = self.safe_prototypes[nearest_safe_key]
+                return PrototypeMatch(
+                    prototype_key=nearest_safe_key,
+                    similarity=nearest_safe_sim,
+                    is_ood=False,
+                    label=safe_proto.get("label", nearest_safe_key),
+                    failure_mode=safe_proto.get("description", ""),
+                    top_exemplars=safe_proto.get("top_exemplars", []),
+                    dominant_categories=[],
+                    second_prototype_key=key,           # best UNSAFE is now runner-up
+                    second_similarity=best_sim,
+                    margin=nearest_safe_sim - best_sim,
+                    nearest_safe_key=nearest_safe_key,
+                    nearest_safe_similarity=nearest_safe_sim,
+                    nearest_safe_label=nearest_safe_label,
+                    is_ambiguous=is_ambiguous,
+                )
 
         return PrototypeMatch(
             prototype_key=key,
