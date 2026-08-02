@@ -124,91 +124,117 @@ except Exception as e:
 os.kill(os.getpid(), 9)
 '''
 
-DRIVE_CACHE = r'''
-# Mount Google Drive and redirect HuggingFace cache there.
-# The 16 GB model downloads once to Drive; future sessions load it in ~2 min instead of re-downloading.
-# Skip this cell if you don't want Drive persistence (model re-downloads every session).
+DRIVE_MOUNT = r'''
+# ── Connect to Google Drive ───────────────────────────────────────────────────
+# Run once per Colab session. Mounts Drive and sets up shared artifact folder.
+# All notebooks read/write artifacts to the same Drive path so state persists
+# across sessions and is shared between notebooks without re-running upstream ones.
 from google.colab import drive
 from pathlib import Path
-import os
+import os, shutil
 
-drive.mount("/content/drive")
+try:
+    drive.mount("/content/drive")
+    MOUNTED = True
+except Exception as e:
+    print(f"Drive mount skipped ({e}) — artifacts will not persist across sessions.")
+    MOUNTED = False
 
-# Adjust this path if you want the cache in a different Drive folder.
-HF_CACHE = "/content/drive/MyDrive/hf_cache"
-Path(HF_CACHE).mkdir(parents=True, exist_ok=True)
-os.environ["HF_HOME"] = HF_CACHE
-os.environ["TRANSFORMERS_CACHE"] = HF_CACHE
-print(f"HF cache → {HF_CACHE}")
+DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
+DRIVE_FIGURES   = "/content/drive/MyDrive/hf_cache/figures"
+DRIVE_FORMS     = "/content/drive/MyDrive/hf_cache/study_forms"
+
+if MOUNTED:
+    Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
+    Path(DRIVE_FIGURES).mkdir(parents=True, exist_ok=True)
+    Path(DRIVE_FORMS).mkdir(parents=True, exist_ok=True)
+    # Also redirect HuggingFace cache so 16GB model downloads persist
+    HF_CACHE = "/content/drive/MyDrive/hf_cache"
+    os.environ["HF_HOME"] = HF_CACHE
+    os.environ["TRANSFORMERS_CACHE"] = HF_CACHE
+    print(f"Drive mounted ✓  artifacts={DRIVE_ARTIFACTS}")
+else:
+    DRIVE_ARTIFACTS = "artifacts"   # fallback: local only
+    print("Drive not mounted — using local artifacts/ only")
 '''
 
-DRIVE_BACKUP_01 = r'''
-# Save artifacts to Google Drive so they survive runtime resets.
-# Skip if Drive is not mounted (run the DRIVE_CACHE cell first).
+# ── Per-notebook save/load cells ──────────────────────────────────────────────
+# Each notebook saves its outputs and loads what it needs from upstream notebooks.
+
+DRIVE_SAVE_01 = r'''
+# ── Save notebook 01 outputs to Drive ────────────────────────────────────────
 import shutil
 from pathlib import Path
 
 DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
 Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
 
-files = [
+# Embeddings .pt file — consumed by 02_clustering and 06_decision_analysis
+saves = [
     "artifacts/unsafe_embeddings_smoke.pt",
     "artifacts/unsafe_embeddings.pt",
 ]
-for f in files:
+for f in saves:
     if Path(f).exists():
         shutil.copy(f, DRIVE_ARTIFACTS)
-        print(f"Saved {f} → Drive")
+        print(f"Saved {Path(f).name} → Drive")
     else:
         print(f"Skipped {f} (not found)")
+print("Notebook 01 outputs saved. Downstream notebooks (02, 06) can now restore these.")
 '''
 
-DRIVE_BACKUP_02 = r'''
-# Save taxonomy + UMAP reducer to Google Drive.
+DRIVE_SAVE_02 = r'''
+# ── Save notebook 02 outputs to Drive ────────────────────────────────────────
 import shutil
 from pathlib import Path
 
 DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
 Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
 
-files = [
+# Taxonomy + UMAP reducer — consumed by 03_audit, 04_evaluation, 06, 07
+saves = [
     "artifacts/prototypes_taxonomy_smoke.json",
     "artifacts/prototypes_taxonomy.json",
-    "artifacts/umap_reducer.pkl",   # required for DistanceEngine at inference time
+    "artifacts/umap_reducer.pkl",
 ]
-for f in files:
+for f in saves:
     if Path(f).exists():
         shutil.copy(f, DRIVE_ARTIFACTS)
-        print(f"Saved {f} → Drive")
+        print(f"Saved {Path(f).name} → Drive")
     else:
         print(f"Skipped {f} (not found)")
+print("Notebook 02 outputs saved. Downstream notebooks (03, 04, 06, 07) can now restore these.")
 '''
 
-DRIVE_BACKUP_04 = r'''
-# Save benchmark + evaluation artifacts to Google Drive.
+DRIVE_SAVE_04 = r'''
+# ── Save notebook 04 outputs to Drive ────────────────────────────────────────
 import shutil
 from pathlib import Path
 
 DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
 Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
 
-files = [
+saves = [
     "artifacts/benchmark_test_set.json",
     "artifacts/eval_logs.csv",
     "artifacts/counterfactual_results.csv",
     "artifacts/guard_classification_metrics.json",
+    "artifacts/decision_analysis.json",
+    "artifacts/slm_explainability.json",
 ]
-for f in files:
+for f in saves:
     if Path(f).exists():
         shutil.copy(f, DRIVE_ARTIFACTS)
-        print(f"Saved {f} → Drive")
+        print(f"Saved {Path(f).name} → Drive")
     else:
         print(f"Skipped {f} (not found)")
+print("Notebook 04 outputs saved.")
 '''
 
 DRIVE_RESTORE = r'''
-# Restore artifacts from Google Drive at the start of a new session.
-# Run this instead of re-running the extraction/clustering notebooks.
+# ── Restore artifacts from Drive ─────────────────────────────────────────────
+# Run this at the start of any notebook to reload outputs from prior notebooks
+# without re-running them. Copies everything from Drive artifacts/ to local.
 import shutil
 from pathlib import Path
 
@@ -216,14 +242,19 @@ DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
 LOCAL_ARTIFACTS = Path("artifacts")
 LOCAL_ARTIFACTS.mkdir(exist_ok=True)
 
-restored = []
-for f in Path(DRIVE_ARTIFACTS).glob("*"):
-    dest = LOCAL_ARTIFACTS / f.name
-    shutil.copy(f, dest)
-    restored.append(dest.name)
-
-print(f"Restored {len(restored)} files:", restored)
+if not Path(DRIVE_ARTIFACTS).exists():
+    print("Drive artifacts folder not found — run notebook 01 first to create it.")
+else:
+    restored = []
+    for f in Path(DRIVE_ARTIFACTS).glob("*"):
+        dest = LOCAL_ARTIFACTS / f.name
+        shutil.copy(f, dest)
+        restored.append(dest.name)
+    print(f"Restored {len(restored)} files from Drive:")
+    for name in sorted(restored):
+        print(f"  {name}")
 '''
+
 
 GPU_CHECK = r'''
 import os, torch
@@ -280,7 +311,7 @@ import torch; assert torch.cuda.is_available()
 print("numpy", np.__version__, "| torch", torch.__version__, "| CUDA OK")
 '''),
         md("### (Optional) Cache model to Google Drive — avoids re-downloading 16 GB each session"),
-        code(DRIVE_CACHE),
+        code(DRIVE_MOUNT),
         code(GPU_CHECK),
         md("### Hugging Face auth"),
         code('''
@@ -450,7 +481,7 @@ with open("artifacts/guard_classification_metrics.json", "w") as f:
 print("\\nSaved to artifacts/guard_classification_metrics.json")
 '''),
         md("### Save artifacts to Google Drive (run before closing runtime)"),
-        code(DRIVE_BACKUP_01),
+        code(DRIVE_SAVE_01),
     ])
 
 
@@ -677,7 +708,7 @@ else:
 '''),
         md("**Next:** open `03_audit.ipynb`."),
         md("### Save taxonomy to Google Drive (run before closing runtime)"),
-        code(DRIVE_BACKUP_02),
+        code(DRIVE_SAVE_02),
     ])
 
 
@@ -706,7 +737,7 @@ import torch; assert torch.cuda.is_available()
 print("numpy", np.__version__, "| torch", torch.__version__, "| CUDA OK")
 '''),
         md("### (Optional) Cache model to Google Drive — avoids re-downloading 16 GB each session"),
-        code(DRIVE_CACHE),
+        code(DRIVE_MOUNT),
         code(GPU_CHECK),
         md("### Hugging Face auth"),
         code('''
@@ -765,7 +796,7 @@ for p in prompts:
 '''),
         md("**Next:** open `04_evaluation.ipynb` once you've collected A/B latency logs."),
         md("### Save artifacts to Google Drive (run before closing runtime)"),
-        code(DRIVE_BACKUP_04),
+        code(DRIVE_SAVE_04),
     ])
 
 
@@ -1080,7 +1111,7 @@ if stats.accuracy_treatment is not None:
     print(f"accuracy: control {stats.accuracy_control:.1%} | treatment {stats.accuracy_treatment:.1%} (target >= 85%)")
 '''),
         md("### Save all evaluation artifacts to Google Drive"),
-        code(DRIVE_BACKUP_04),
+        code(DRIVE_SAVE_04),
         md("### Generate A/B Study Forms from benchmark_test_set.json"),
         code('''
 # ── Regenerate all printable study forms ─────────────────────────────────────
@@ -1191,6 +1222,10 @@ Uses pre-computed hidden-state embeddings (no sentence-transformer re-embedding 
 '''),
         code(RESTART),
         md("### After restart — re-run from here"),
+        code(LOCATE),
+        md("### Connect to Drive and restore artifacts"),
+        code(DRIVE_MOUNT),
+        code(DRIVE_RESTORE),
         code(LOCATE),
         code('''
 # Sanity check
@@ -1376,6 +1411,7 @@ memorisation artefacts.
         code(RESTART),
         md("### After restart — re-run from the LOCATE cell below"),
         code(LOCATE),
+        code(DRIVE_MOUNT),
         code('''
 import numpy as np; np.random.seed(0)
 print("packages OK")
@@ -1619,6 +1655,8 @@ so that SAFE-classified embeddings are also saved in the `.pt` file.
         code('''
 %pip install -q -e ".[dev]" umap-learn joblib matplotlib seaborn pandas
 '''),
+        code(DRIVE_MOUNT),
+        code(DRIVE_RESTORE),
         code(CONFIG_CELL),
         md("### Step 1 — Load all-quadrant embeddings from .pt file"),
         code('''
@@ -1850,6 +1888,8 @@ This explainability gap is what the prototype-based audit system addresses.
         code(RESTART),
         md("### ↑ After restart, start from LOCATE below ↓"),
         code(LOCATE),
+        code(DRIVE_MOUNT),
+        code(DRIVE_RESTORE),
         code(CONFIG_CELL),
         md("### Step 1 — Load benchmark cases (FPs and FNs)"),
         code('''
