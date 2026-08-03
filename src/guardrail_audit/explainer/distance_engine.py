@@ -50,6 +50,11 @@ class PrototypeMatch:
 # Default δ = 0.001 — calibrated to the UMAP embedding scale (all sims ~0.999x)
 AMBIGUITY_THRESHOLD = 0.001
 
+# When is_ambiguous=True, UNSAFE exemplar vote similarity is multiplied by this
+# factor before comparing against the SAFE exemplar vote. Values > 1.0 bias toward
+# UNSAFE (fewer false negatives, more false positives). Default 1.05 = 5% bias.
+UNSAFE_VOTE_WEIGHT = 1.05
+
 
 class DistanceEngine:
     """Loads a taxonomy once and matches query embeddings to nearest prototype.
@@ -68,6 +73,7 @@ class DistanceEngine:
         taxonomy_path: str | Path,
         ood_similarity_floor: float = 0.35,
         ambiguity_threshold: float = AMBIGUITY_THRESHOLD,
+        unsafe_vote_weight: float = UNSAFE_VOTE_WEIGHT,
     ) -> None:
         taxonomy_path = Path(taxonomy_path)
         with open(taxonomy_path, "r", encoding="utf-8") as f:
@@ -77,6 +83,7 @@ class DistanceEngine:
         self.keys = list(self.prototypes.keys())
         self.ood_floor = ood_similarity_floor
         self.ambiguity_threshold = ambiguity_threshold
+        self.unsafe_vote_weight = unsafe_vote_weight
         meta = payload.get("meta", {})
 
         # Load SAFE prototypes if present
@@ -236,16 +243,60 @@ class DistanceEngine:
 
             # ── Merged nearest-prototype: consider SAFE + UNSAFE together ──
             # If the nearest SAFE centroid is closer than the nearest UNSAFE centroid,
-            # override the matched prototype with the SAFE one so that the
-            # downstream LTL monitor and audit record reflect the actual nearest cluster.
+            # run a cross-domain exemplar vote when is_ambiguous=True so that
+            # boundary-case prompts (e.g. DAN jailbreaks) are not misclassified SAFE.
             if nearest_safe_sim > best_sim:
-                # SAFE centroid wins — swap primary match to SAFE prototype
                 safe_proto = self.safe_prototypes[nearest_safe_key]
                 s_ev_sim, s_ev_text, s_ev_best = self._exemplar_vote(
                     query, best_safe_idx,
                     safe_proto.get("top_exemplars", []),
                     self.safe_exemplar_matrices
                 )
+
+                if is_ambiguous and s_ev_sim > 0.0:
+                    # Find UNSAFE prototype with highest mean exemplar similarity
+                    best_unsafe_ev_sim = 0.0
+                    best_unsafe_ev_idx = best
+                    best_unsafe_ev_text = ""
+                    best_unsafe_ev_best_sim = 0.0
+                    for i in range(len(self.keys)):
+                        v_sim, v_text, v_bs = self._exemplar_vote(
+                            query, i,
+                            self.prototypes[self.keys[i]].get("top_exemplars", []),
+                            self.exemplar_matrices
+                        )
+                        if v_sim > best_unsafe_ev_sim:
+                            best_unsafe_ev_sim = v_sim
+                            best_unsafe_ev_idx = i
+                            best_unsafe_ev_text = v_text
+                            best_unsafe_ev_best_sim = v_bs
+
+                    # Apply UNSAFE weight bias: UNSAFE wins if weighted_score > SAFE score
+                    if best_unsafe_ev_sim * self.unsafe_vote_weight > s_ev_sim:
+                        voted_key = self.keys[best_unsafe_ev_idx]
+                        voted_proto = self.prototypes[voted_key]
+                        voted_sim = float(sims[best_unsafe_ev_idx])
+                        return PrototypeMatch(
+                            prototype_key=voted_key,
+                            similarity=voted_sim,
+                            is_ood=voted_sim < self.ood_floor,
+                            label=voted_proto.get("label", voted_key),
+                            failure_mode=voted_proto.get("failure_mode", ""),
+                            top_exemplars=voted_proto.get("top_exemplars", []),
+                            dominant_categories=voted_proto.get("dominant_categories", []),
+                            second_prototype_key=nearest_safe_key,
+                            second_similarity=nearest_safe_sim,
+                            margin=voted_sim - nearest_safe_sim,
+                            nearest_safe_key=nearest_safe_key,
+                            nearest_safe_similarity=nearest_safe_sim,
+                            nearest_safe_label=nearest_safe_label,
+                            is_ambiguous=True,
+                            exemplar_vote_similarity=best_unsafe_ev_sim,
+                            best_matching_exemplar=best_unsafe_ev_text,
+                            best_exemplar_similarity=best_unsafe_ev_best_sim,
+                        )
+
+                # SAFE exemplar vote wins (or no exemplar embeddings) — return SAFE prototype
                 return PrototypeMatch(
                     prototype_key=nearest_safe_key,
                     similarity=nearest_safe_sim,
@@ -254,7 +305,7 @@ class DistanceEngine:
                     failure_mode=safe_proto.get("description", ""),
                     top_exemplars=safe_proto.get("top_exemplars", []),
                     dominant_categories=[],
-                    second_prototype_key=key,           # best UNSAFE is now runner-up
+                    second_prototype_key=key,
                     second_similarity=best_sim,
                     margin=nearest_safe_sim - best_sim,
                     nearest_safe_key=nearest_safe_key,
