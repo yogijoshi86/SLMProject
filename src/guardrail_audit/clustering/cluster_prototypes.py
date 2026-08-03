@@ -187,6 +187,7 @@ def build_prototypes(
             "n_safe": n_safe,
             "dominant_decision": dominant_decision,
             "top_exemplars": [metadata[int(i)]["text"] for i in top],
+            "top_exemplar_embeddings": embeddings_fit[top].tolist(),  # (top_k, 50) UMAP space
             "exemplar_categories": [metadata[int(i)].get("categories", []) for i in top],
             "dominant_categories": _rank_categories(member_cats),
             "label": "TODO: assign after thematic review",
@@ -313,6 +314,7 @@ def build_safe_prototypes(
             "umap_centroid_vector": centroid_fit.tolist(),
             "cluster_size": int(member_mask.sum()),
             "top_exemplars": [safe_meta[int(i)]["text"] for i in top],
+            "top_exemplar_embeddings": embeddings_fit[top].tolist(),  # (top_k, 50) UMAP space
             "label": "TODO: assign after thematic review",
             "description": "TODO",
         }

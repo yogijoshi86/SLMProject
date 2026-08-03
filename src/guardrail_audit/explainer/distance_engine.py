@@ -39,6 +39,10 @@ class PrototypeMatch:
     nearest_safe_similarity: float = 0.0
     nearest_safe_label: str = ""
     is_ambiguous: bool = False   # True when |unsafe_sim - safe_sim| < ambiguity_threshold
+    # Exemplar-level voting fields — populated when top_exemplar_embeddings present in taxonomy
+    exemplar_vote_similarity: float = 0.0   # mean cosine sim of query to top exemplars
+    best_matching_exemplar: str = ""        # text of closest exemplar to the query
+    best_exemplar_similarity: float = 0.0  # cosine sim to that exemplar
 
 
 # LTL property φ_ambiguous:
@@ -129,6 +133,19 @@ class DistanceEngine:
                     dtype=np.float64
                 )
 
+        # Load per-prototype exemplar embedding matrices for voting.
+        # Each entry is shape (n_exemplars, dim) or empty if not present (old taxonomy).
+        centroid_key = "umap_centroid_vector" if self.umap_enabled else "centroid_vector"
+        ex_key = "top_exemplar_embeddings"
+        self.exemplar_matrices: list[np.ndarray] = [
+            np.array(self.prototypes[k].get(ex_key, []), dtype=np.float64)
+            for k in self.keys
+        ]
+        self.safe_exemplar_matrices: list[np.ndarray] = [
+            np.array(self.safe_prototypes[k].get(ex_key, []), dtype=np.float64)
+            for k in self.safe_keys
+        ]
+
     def _project(self, query_embedding: np.ndarray) -> np.ndarray:
         """Project query to UMAP space if enabled, otherwise return as-is."""
         if self.umap_enabled and self.reducer is not None:
@@ -137,6 +154,25 @@ class DistanceEngine:
             )[0]
             return l2_normalize(reduced.astype(np.float64))
         return query_embedding
+
+    def _exemplar_vote(
+        self, query: np.ndarray, proto_idx: int, proto_texts: list[str],
+        ex_matrices: list[np.ndarray]
+    ) -> tuple[float, str, float]:
+        """Compute mean exemplar similarity and locate the closest exemplar.
+
+        Returns (vote_similarity, best_exemplar_text, best_exemplar_similarity).
+        Returns (0.0, "", 0.0) when no exemplar embeddings are stored.
+        """
+        ex = ex_matrices[proto_idx]
+        if ex.size == 0:
+            return 0.0, "", 0.0
+        ex_sims = cosine_similarity(query, ex)
+        best_ex_idx = int(np.argmax(ex_sims))
+        vote_sim = float(ex_sims.mean())
+        best_sim = float(ex_sims[best_ex_idx])
+        best_text = proto_texts[best_ex_idx] if best_ex_idx < len(proto_texts) else ""
+        return vote_sim, best_text, best_sim
 
     def match(self, query_embedding: np.ndarray) -> PrototypeMatch:
         query = self._project(query_embedding)
@@ -151,10 +187,34 @@ class DistanceEngine:
         second_sim = float(sims[second])
         margin     = best_sim - second_sim
 
+        # ── Exemplar-level voting: override centroid winner when margin is low ─
+        # When top-2 prototypes are within the ambiguity threshold of each other,
+        # re-rank them by their mean exemplar similarity to the query.
+        # This removes the centroid-averaging artifact for boundary-case prompts.
+        if margin < self.ambiguity_threshold and len(ranked) > 1:
+            vote0, ex_text0, ex_sim0 = self._exemplar_vote(
+                query, best, self.prototypes[self.keys[best]].get("top_exemplars", []),
+                self.exemplar_matrices
+            )
+            vote1, ex_text1, ex_sim1 = self._exemplar_vote(
+                query, second, self.prototypes[self.keys[second]].get("top_exemplars", []),
+                self.exemplar_matrices
+            )
+            if vote0 > 0.0 and vote1 > 0.0 and vote1 > vote0:
+                # exemplar vote overrides centroid — swap best and second
+                best, second = second, best
+                best_sim, second_sim = second_sim, best_sim
+                margin = best_sim - second_sim
+
         key   = self.keys[best]
         key2  = self.keys[second]
         proto = self.prototypes[key]
         is_ood = best_sim < self.ood_floor
+
+        # Exemplar vote for the winner
+        ev_sim, ev_text, ev_best = self._exemplar_vote(
+            query, best, proto.get("top_exemplars", []), self.exemplar_matrices
+        )
 
         # ── SAFE prototype similarities (if available) ────────────────────
         nearest_safe_key   = ""
@@ -181,6 +241,11 @@ class DistanceEngine:
             if nearest_safe_sim > best_sim:
                 # SAFE centroid wins — swap primary match to SAFE prototype
                 safe_proto = self.safe_prototypes[nearest_safe_key]
+                s_ev_sim, s_ev_text, s_ev_best = self._exemplar_vote(
+                    query, best_safe_idx,
+                    safe_proto.get("top_exemplars", []),
+                    self.safe_exemplar_matrices
+                )
                 return PrototypeMatch(
                     prototype_key=nearest_safe_key,
                     similarity=nearest_safe_sim,
@@ -196,6 +261,9 @@ class DistanceEngine:
                     nearest_safe_similarity=nearest_safe_sim,
                     nearest_safe_label=nearest_safe_label,
                     is_ambiguous=is_ambiguous,
+                    exemplar_vote_similarity=s_ev_sim,
+                    best_matching_exemplar=s_ev_text,
+                    best_exemplar_similarity=s_ev_best,
                 )
 
         return PrototypeMatch(
@@ -213,5 +281,8 @@ class DistanceEngine:
             nearest_safe_similarity=nearest_safe_sim,
             nearest_safe_label=nearest_safe_label,
             is_ambiguous=is_ambiguous,
+            exemplar_vote_similarity=ev_sim,
+            best_matching_exemplar=ev_text,
+            best_exemplar_similarity=ev_best,
         )
 
