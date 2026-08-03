@@ -177,9 +177,14 @@ saves = list({
     "artifacts/unsafe_embeddings.pt",
 })
 for f in saves:
-    if Path(f).exists():
-        shutil.copy(f, DRIVE_ARTIFACTS)
-        print(f"Saved {Path(f).name} → Drive")
+    src = Path(f)
+    dst = Path(DRIVE_ARTIFACTS) / src.name
+    if src.exists():
+        if dst.exists():
+            dst.unlink()
+            print(f"Deleted old {dst.name} from Drive")
+        shutil.copy(src, DRIVE_ARTIFACTS)
+        print(f"Saved {src.name} → Drive")
     else:
         print(f"Skipped {f} (not found)")
 print("Notebook 01 outputs saved. Downstream notebooks (02, 06) can now restore these.")
