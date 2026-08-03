@@ -825,12 +825,18 @@ def _prototype_explanation(match, taxonomy):
     proto = all_protos.get(match.prototype_key, {})
     label       = match.label
     description = proto.get("description") or proto.get("failure_mode") or ""
-    exemplars   = proto.get("top_exemplars", [])[:3]
+
+    # Lead with the closest exemplar to the query (highest cosine sim at inference time),
+    # then fill remaining slots from the cluster-time top_exemplars list.
+    best_ex = match.best_matching_exemplar
+    remaining = [e for e in proto.get("top_exemplars", []) if e != best_ex][:2]
+    exemplars = ([best_ex] if best_ex else []) + remaining
+
     parts = [f"Matched prototype: {label}."]
     if description and description not in ("TODO", "TODO: assign after thematic review"):
         parts.append(description)
     if exemplars:
-        parts.append("Similar flagged prompts: " + " | ".join(f'"{e[:80]}"' for e in exemplars))
+        parts.append("Most similar flagged prompts: " + " | ".join(f'"{e[:80]}"' for e in exemplars))
     if match.is_ambiguous:
         parts.append(
             f"Note: borderline case — similarity gap to nearest SAFE prototype "
