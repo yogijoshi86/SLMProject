@@ -395,7 +395,6 @@ if GUARD_MODEL in _model_overrides:
 
 print(f"dataset_name: {cfg.data.dataset_name}  model: {cfg.model.name}")
 '''),
-        code(CONFIG_CELL),
         md("### Load prompts"),
         code('''
 from guardrail_audit.data import load_prompts
