@@ -274,6 +274,10 @@ class LlamaGuard:
         attention_mask = (prompt_ids != pad_id).long()
         forward = self.model(input_ids=prompt_ids, attention_mask=attention_mask, output_hidden_states=True)
         embeddings = forward.hidden_states[self.hidden_layer][:, -1, :].float().cpu()
+        # Release all 33 hidden-state layers before generate() allocates its KV cache.
+        # Without this, both allocations coexist on GPU and cause OOM on long batches.
+        del forward
+        torch.cuda.empty_cache()
         generated = self.model.generate(
             input_ids=prompt_ids, attention_mask=attention_mask,
             max_new_tokens=self.max_new_tokens, do_sample=False,
