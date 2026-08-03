@@ -289,13 +289,27 @@ cfg
 def nb_extract():
     return notebook([
         md("""
-# Phase 1 — Extract UNSAFE Embeddings (Days 1–5)
+# Notebook 01 — Extract Hidden States from Safety Guard
 
-Loads ToxicChat, runs **Llama-Guard-3-8B** (int8, ~9 GB on a free T4),
-and saves terminal hidden states (dim=4096) for every prompt flagged **UNSAFE**.
+## What this notebook does
+Runs every ToxicChat prompt through **Llama-Guard-3-8B**, captures the
+terminal hidden-state embedding (4,096-dim) from the final transformer layer,
+and saves both UNSAFE-flagged and SAFE-flagged embeddings to a `.pt` file.
 
-> **GPU required.** Runtime → Change runtime type → T4 GPU.
-> **HF token required.** Paste a token with access to `meta-llama/Llama-Guard-3-8B`.
+## Prerequisites
+- GPU runtime (T4/A100) — Runtime → Change runtime type → GPU
+- HuggingFace token with access to `meta-llama/Llama-Guard-3-8B`
+- Nothing from other notebooks needed
+
+## Outputs saved to Drive
+| File | Used by |
+|---|---|
+| `unsafe_embeddings_smoke.pt` | 02_clustering, 06_decision_analysis |
+
+## Key parameters to change
+- `DATASET` — `"toxicchat"` (default) or `"wildchat"`
+- `GUARD_MODEL` — `"llamaguard"` (default), `"wildguard"`, `"shieldlm"`, `"mdjudge"`
+- `max_samples` in config — `null` for full dataset, integer for a subset
 """),
         md("### Step 0 — get the repo onto this runtime\n\nRun once per session; pulls latest if the repo already exists."),
         code(CLONE),
@@ -491,10 +505,26 @@ print("\\nSaved to artifacts/guard_classification_metrics.json")
 def nb_cluster():
     return notebook([
         md("""
-# Phase 2 — Clustering & Prototype Discovery (Days 6–10)
+# Notebook 02 — Prototype Discovery via UMAP + K-Means
 
-L2-normalizes the UNSAFE embeddings, sweeps K-means over `k`, selects `k*` by
-silhouette, and writes the prototype taxonomy. **CPU-only — no GPU needed.**
+## What this notebook does
+Takes the UNSAFE hidden-state embeddings from notebook 01, applies UMAP
+dimensionality reduction (4096→50), sweeps K-means over k=3..10, selects k*
+by silhouette score, and writes the prototype taxonomy with exemplars.
+Optionally clusters SAFE embeddings separately to build benign prototypes.
+
+## Prerequisites
+- **CPU-only** — no GPU required
+- `unsafe_embeddings_smoke.pt` from notebook 01 (restored from Drive automatically)
+
+## Outputs saved to Drive
+| File | Used by |
+|---|---|
+| `prototypes_taxonomy_smoke.json` | 03_audit, 04_evaluation, 06, 07 |
+| `umap_reducer.pkl` | 03_audit, 04_evaluation, 06 |
+
+## Key parameters to change
+- `INCLUDE_SAFE` — `False` (UNSAFE-only, default) or `True` (merge SAFE embeddings)
 """),
         md("### Step 0 — get the repo onto this runtime"),
         code(CLONE),
@@ -718,10 +748,27 @@ else:
 def nb_audit():
     return notebook([
         md("""
-# Phase 3 — Real-Time Audit Pipeline (Days 11–15)
+# Notebook 03 — Real-Time Audit Pipeline
 
-End-to-end: prompt → Llama-Guard-3-8B decision → nearest prototype (cosine) → reasoning-LLM
-justification. Needs a **HF token** (for the guard) and an **explainer API key**.
+## What this notebook does
+Assembles the end-to-end pipeline: guard model → hidden state → UMAP projection
+→ nearest prototype (cosine similarity) → structured explanation. Demonstrates
+the system on example prompts and shows how `is_ambiguous` flags boundary cases.
+
+## Prerequisites
+- GPU runtime (T4/A100) — guard model requires GPU
+- HuggingFace token (for Llama-Guard-3-8B)
+- Explainer API key (OpenAI or Anthropic) — optional, skip to see prototype-only output
+- Restored from Drive: `prototypes_taxonomy_smoke.json`, `umap_reducer.pkl`
+
+## Outputs
+- Live audit results printed to screen
+- No Drive save needed (this notebook is interactive/demo only)
+
+## Key concepts demonstrated
+- `AuditPipeline.audit_dict()` — single call returns guard decision + prototype match + explanation
+- `is_ambiguous=True` — prompt sits equidistant between SAFE and UNSAFE centroids
+- `nearest_safe_prototype` — nearest benign cluster (when SAFE prototypes are built)
 """),
         md("### Step 0 — get the repo onto this runtime"),
         code(CLONE),
@@ -806,15 +853,29 @@ for p in prompts:
 def nb_eval():
     return notebook([
         md("""
-# Phase 4 — A/B Evaluation & Statistics (Days 16–18)
+# Notebook 04 — A/B Study Benchmark & Evaluation
 
-Paired analysis of developer diagnostic latency: **Control** (flag + confidence) vs.
-**Treatment** (prototype + similarity + justification). **CPU-only.**
+## What this notebook does
+Curates the 50-case A/B benchmark (25 FP + 25 FN) from the test split,
+generates prototype-based explanations for each case, produces printable
+study forms for human participants, and analyses diagnostic latency results.
 
-- **H1:** ≥ 30% latency reduction.  **H0:** no significant difference (p > 0.05).
+## Prerequisites
+- **CPU-only** — no GPU required
+- Restored from Drive: `prototypes_taxonomy_smoke.json`, `umap_reducer.pkl`
+- Guard model loaded from 03_audit session (or re-assembled here)
+- Explainer API key (OpenAI or Anthropic) for LLM explanations
 
-Expects `artifacts/eval_logs.csv` with columns:
-`participant, case_id, arm, seconds, correct` (arm ∈ {control, treatment}).
+## Outputs saved to Drive
+| File | Used by |
+|---|---|
+| `benchmark_test_set.json` | 07_slm_explainability, study forms |
+| `guard_classification_metrics.json` | reporting |
+| `artifacts/study_forms/*.html` | human participants |
+
+## Key parameters
+- `n_false_positives`, `n_false_negatives` in config (default 25 each)
+- `INCLUDE_SAFE` flag affects which prototypes appear in explanations
 """),
         md("### Step 0 — get the repo onto this runtime"),
         code(CLONE),
@@ -1204,8 +1265,23 @@ def nb_bertopic():
         md("""
 # Notebook 02b — BERTopic Baseline Clustering
 
-Runs **BERTopic** on the same UNSAFE embeddings used in `02_clustering.ipynb`.
-Used as a **baseline comparison** against K-means prototype clustering.
+## What this notebook does
+Runs BERTopic on the same UNSAFE embeddings as notebook 02 and compares
+silhouette score and outlier rate against UMAP + K-means. Validates that
+K-means is the better clustering method for this task.
+
+## Prerequisites
+- **CPU-only** — no GPU required
+- Restored from Drive: `unsafe_embeddings_smoke.pt`, `prototypes_taxonomy_smoke.json`
+
+## Outputs saved to Drive
+| File | Used by |
+|---|---|
+| `bertopic_baseline.json` | reporting / paper |
+
+## Key finding
+BERTopic silhouette=0.029 vs K-means silhouette=0.411; 41.8% outlier rate vs 0%.
+K-means with UMAP is the correct choice for prototype discovery.
 
 **Research question:** Do BERTopic's keyword-level topic descriptions produce
 better or worse developer diagnostic performance than K-means prototype explanations?
@@ -1393,9 +1469,23 @@ def nb_harmbench():
         md("""
 # Notebook 05 — HarmBench Cross-Dataset Validation
 
-Runs Llama-Guard-3-8B on a sample of **HarmBench** (a dataset that post-dates
-ToxicChat and is unlikely to overlap with the guard's training data) and compares
-the FP/FN rates to those observed on ToxicChat.
+## What this notebook does
+Runs Llama-Guard-3-8B on HarmBench (post-dates ToxicChat, no training overlap)
+and compares precision/recall to ToxicChat results. Confirms that the guard's
+failure patterns are genuine generalisation gaps, not memorisation artefacts.
+
+## Prerequisites
+- GPU runtime (T4/A100)
+- HuggingFace token for Llama-Guard-3-8B
+- Nothing from Drive needed (HarmBench loaded directly from HuggingFace)
+
+## Outputs saved to Drive
+| File | Used by |
+|---|---|
+| `harmbench_validation.json` | reporting |
+
+## Key finding
+Precision=99.3% on HarmBench vs 49.1% on ToxicChat — failures are real gaps.
 
 **Purpose:** Address training-data contamination concern.
 If precision/recall on HarmBench is similar to ToxicChat (precision≈88%, recall≈51%),
@@ -1635,10 +1725,25 @@ def nb_decision_analysis():
         md("""
 # Notebook 06 — Decision Geometry Analysis
 
-Compares the embedding geometry of all four guard decision quadrants:
-- **TP** — guard correctly flagged a harmful prompt
-- **TN** — guard correctly passed a safe prompt
-- **FP** — guard wrongly flagged a safe prompt (false alarm)
+## What this notebook does
+Compares embedding geometry across all four guard decision quadrants (TP/TN/FP/FN).
+Tests whether cosine distance and margin can distinguish correct from incorrect
+decisions. Key finding: they cannot — geometry is identical across quadrants.
+
+## Prerequisites
+- **CPU-only** — no GPU required
+- Restored from Drive: `unsafe_embeddings_smoke.pt`, `prototypes_taxonomy_smoke.json`
+- Requires `safe_embeddings` key in `.pt` file (run 01 with `record_safe=True`)
+
+## Outputs saved to Drive
+| File | Used by |
+|---|---|
+| `decision_analysis.json` | reporting |
+
+## Key finding
+FP/FN/TP/TN embeddings are geometrically indistinguishable (margin diff < 0.0002).
+Prototype identity, not geometry, is the reliable diagnostic signal.
+
 - **FN** — guard missed a harmful prompt (false negative)
 
 **Research question:** Do incorrect decisions (FP/FN) sit closer to prototype
@@ -1860,12 +1965,27 @@ print("\\nSaved artifacts/decision_analysis.json")
 def nb_slm_explainability():
     return notebook([
         md("""
-# Notebook 07 — SLM Explainability Gap on ToxicChat
+# Notebook 07 — SLM Explainability Gap
 
-**Research question:** Can Llama-Guard-3-8B explain *why* it flagged a prompt as unsafe?
+## What this notebook does
+Proves that Llama-Guard-3-8B cannot explain its own decisions (0% specificity).
+Compares three explanation approaches: guard self-explanation, Phi-3.5 without
+ground truth, Phi-3.5 with ground truth, and prototype-based attribution.
 
-This notebook demonstrates the core motivating claim of the project:
-SLMs (Small Language Models) used as safety guards produce binary decisions
+## Prerequisites
+- GPU runtime (T4/A100) — Llama-Guard + Phi-3.5 require GPU
+- HuggingFace token for Llama-Guard-3-8B
+- Restored from Drive: `benchmark_test_set.json`
+- microsoft/Phi-3.5-mini-instruct (~7GB float16, ungated)
+
+## Outputs saved to Drive
+| File | Used by |
+|---|---|
+| `slm_explainability.json` | reporting |
+
+## Key finding
+Guard: 0% accurate. Phi-3.5 no GT: 4%. Phi-3.5 with GT: 52%. Prototype: 90%.
+
 (SAFE / UNSAFE) but cannot generate meaningful explanations of those decisions.
 This explainability gap is what the prototype-based audit system addresses.
 
