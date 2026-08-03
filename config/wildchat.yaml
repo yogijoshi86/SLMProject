@@ -16,7 +16,7 @@ data:
   dataset_config: null          # WildChat has no config variant
   split: train
   text_column: conversation     # loader extracts first user turn automatically
-  max_samples: 5000             # start with 5K; set null for full ~1M (very slow)
+  max_samples: 10000            # ~750 UNSAFE flags expected; ~35 min on A100
   train_ratio: 0.8
 
 model:
