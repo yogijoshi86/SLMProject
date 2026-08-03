@@ -53,7 +53,7 @@ AMBIGUITY_THRESHOLD = 0.001
 # When is_ambiguous=True, UNSAFE exemplar vote similarity is multiplied by this
 # factor before comparing against the SAFE exemplar vote. Values > 1.0 bias toward
 # UNSAFE (fewer false negatives, more false positives). Default 1.05 = 5% bias.
-UNSAFE_VOTE_WEIGHT = 1.05
+UNSAFE_VOTE_WEIGHT = 1.0
 
 
 class DistanceEngine:
