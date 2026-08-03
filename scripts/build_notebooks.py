@@ -806,20 +806,39 @@ if not os.environ.get("OPENAI_API_KEY"):
         code(CONFIG_CELL),
         md("### Restore artifacts from Drive (skip if already present)"),
         code(DRIVE_RESTORE),
-        md("### Assemble the pipeline"),
+        md("### Assemble the pipeline (no LLM API key required)"),
         code('''
+import json
 from guardrail_audit.models import load_guard
-from guardrail_audit.explainer import AuditPipeline, DistanceEngine, Explainer
+from guardrail_audit.explainer import DistanceEngine
 
 guard = load_guard(cfg.model)
 engine = DistanceEngine(cfg.paths.taxonomy, ood_similarity_floor=cfg.explainer.ood_similarity_floor)
-explainer = Explainer(
-    provider=cfg.explainer.provider,
-    openai_model=cfg.explainer.openai_model,
-    anthropic_model=cfg.explainer.anthropic_model,
-    temperature=cfg.explainer.temperature,
-)
-pipeline = AuditPipeline(guard, engine, explainer, cfg.explainer.latency_budget_seconds)
+
+# Load taxonomy once so generate_cases can read labels + exemplars without an LLM call
+with open(cfg.paths.taxonomy) as f:
+    _taxonomy = json.load(f)
+
+def _prototype_explanation(match, taxonomy):
+    """Build a structured explanation from prototype metadata — zero LLM calls."""
+    all_protos = {**taxonomy.get("prototypes", {}), **taxonomy.get("safe_prototypes", {})}
+    proto = all_protos.get(match.prototype_key, {})
+    label       = match.label
+    description = proto.get("description") or proto.get("failure_mode") or ""
+    exemplars   = proto.get("top_exemplars", [])[:3]
+    parts = [f"Matched prototype: {label}."]
+    if description and description not in ("TODO", "TODO: assign after thematic review"):
+        parts.append(description)
+    if exemplars:
+        parts.append("Similar flagged prompts: " + " | ".join(f'"{e[:80]}"' for e in exemplars))
+    if match.is_ambiguous:
+        parts.append(
+            f"Note: borderline case — similarity gap to nearest SAFE prototype "
+            f"({match.nearest_safe_label}) is < 0.001."
+        )
+    return " ".join(parts)
+
+print("Guard and DistanceEngine loaded. No LLM API key required.")
 print("Pipeline ready.")
 '''),
         md("### Audit a prompt"),
@@ -946,45 +965,50 @@ print(f"Full analysis set  — FPs: {len(fps_all)}, FNs: {len(fns_all)} ({len(fp
 print("\\nSample FP:", fps_study[0]["text"][:120])
 print("Sample FN:", fns_study[0]["text"][:120])
 '''),
-        md("### Generate both packages per case using the audit pipeline"),
+        md("### Generate prototype explanations per case (no LLM calls)"),
         code('''
-# NOTE: requires guard + pipeline from 03_audit to be loaded in this session.
-# If running standalone, load them first (see 03_audit.ipynb assemble cell).
+import time
 
 def generate_cases(samples, id_offset=0):
-    """Run pipeline on a list of samples, return list of case dicts."""
+    """Run guard + DistanceEngine on each sample; build explanation from prototype metadata."""
     results = []
     for i, sample in enumerate(samples):
         case_id = f"c{i+1+id_offset:03d}"
         text = sample["text"]
         failure_type = sample["failure_type"]
-        result = pipeline.audit_dict(text, explain_safe=True)
 
-        cos_sim  = result["similarity_score"]
+        t0 = time.perf_counter()
+        decisions, embeddings = guard.classify_batch([text])
+        decision = decisions[0]
+        match = engine.match(embeddings[0].numpy())
+        elapsed = time.perf_counter() - t0
+
+        cos_sim  = match.similarity
         cos_dist = round(1.0 - cos_sim, 4)
+        explanation = _prototype_explanation(match, _taxonomy)
 
         results.append({
             "case_id": case_id,
             "failure_type": failure_type,
             "input_text": text,
-            "guard_decision": "UNSAFE" if result["is_unsafe"] else "SAFE",
-            "guard_categories": result.get("guard_categories", []),
+            "guard_decision": "UNSAFE" if decision.is_unsafe else "SAFE",
+            "guard_categories": decision.categories,
             "cosine_similarity": round(cos_sim, 4),
             "cosine_distance": cos_dist,
             "confidence": round(cos_sim, 4),
-            "matched_prototype": result["matched_prototype"],
-            "prototype_label": result.get("prototype_label", result["matched_prototype"]),
+            "matched_prototype": match.prototype_key,
+            "prototype_label": match.label,
             "similarity_score": round(cos_sim, 4),
-            "top_exemplars": [],
-            "explanation": result["explanation"],
+            "top_exemplars": match.top_exemplars[:3],
+            "explanation": explanation,
             "gt_toxicity": sample["gt_toxicity"],
-            # SAFE prototype fields — populated when safe_prototypes present in taxonomy
-            "nearest_safe_prototype": result.get("nearest_safe_prototype", ""),
-            "nearest_safe_label": result.get("nearest_safe_label", ""),
-            "nearest_safe_similarity": round(result.get("nearest_safe_similarity", 0.0), 6),
-            "is_ambiguous": result.get("is_ambiguous", False),
+            "nearest_safe_prototype": match.nearest_safe_key,
+            "nearest_safe_label": match.nearest_safe_label,
+            "nearest_safe_similarity": round(match.nearest_safe_similarity, 6),
+            "is_ambiguous": match.is_ambiguous,
+            "latency_seconds": round(elapsed, 3),
         })
-        print(f"[{i+1}/{len(samples)}] {case_id} ({failure_type}) — {result['matched_prototype']}")
+        print(f"[{i+1}/{len(samples)}] {case_id} ({failure_type}) — {match.label} ({elapsed:.2f}s)")
     return results
 
 # Generate A/B study subset (50 cases)
