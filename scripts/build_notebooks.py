@@ -169,11 +169,13 @@ from pathlib import Path
 DRIVE_ARTIFACTS = "/content/drive/MyDrive/hf_cache/artifacts"
 Path(DRIVE_ARTIFACTS).mkdir(parents=True, exist_ok=True)
 
-# Embeddings .pt file — consumed by 02_clustering and 06_decision_analysis
-saves = [
+# Always save the file cfg pointed at (wildchat, smoke, or default)
+# plus the two legacy names so downstream notebooks can find it.
+saves = list({
+    str(cfg.paths.embeddings),           # dataset-specific path
     "artifacts/unsafe_embeddings_smoke.pt",
     "artifacts/unsafe_embeddings.pt",
-]
+})
 for f in saves:
     if Path(f).exists():
         shutil.copy(f, DRIVE_ARTIFACTS)
