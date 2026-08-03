@@ -1023,6 +1023,15 @@ def generate_cases(samples, id_offset=0):
             "nearest_safe_similarity": round(match.nearest_safe_similarity, 6),
             "is_ambiguous": match.is_ambiguous,
             "latency_seconds": round(elapsed, 3),
+            # Top-3 prototype breakdown — stored separately for analysis
+            "second_prototype": match.second_prototype_key,
+            "second_prototype_label": match.second_prototype_label,
+            "second_similarity": round(match.second_similarity, 6),
+            "second_best_exemplar": match.second_best_exemplar,
+            "third_prototype": match.third_prototype_key,
+            "third_prototype_label": match.third_prototype_label,
+            "third_similarity": round(match.third_similarity, 6),
+            "third_best_exemplar": match.third_best_exemplar,
         })
         print(f"[{i+1}/{len(samples)}] {case_id} ({failure_type}) — {match.label} ({elapsed:.2f}s)")
     return results
