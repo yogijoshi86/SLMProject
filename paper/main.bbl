@@ -1,0 +1,80 @@
+\begin{thebibliography}{10}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bansal et~al.(2021)Bansal, Nushi, Kamar, Horvitz, and
+  Weld]{bansal2021aaai}
+Gagan Bansal, Besmira Nushi, Ece Kamar, Eric Horvitz, and Daniel~S. Weld.
+\newblock Is the most accurate ai the best teammate? optimizing ai for
+  teamwork.
+\newblock In \emph{Proceedings of the Thirty-Fifth AAAI Conference on
+  Artificial Intelligence}, pages 11405--11414, 2021.
+
+\bibitem[Das~Antar et~al.(2025)]{dasantar2025aies}
+Amrita Das~Antar et~al.
+\newblock Human review of ai safety decisions: Structured diagnostic templates
+  reduce review latency.
+\newblock In \emph{Proceedings of the AAAI/ACM Conference on AI, Ethics, and
+  Society}, 2025.
+
+\bibitem[Gehman et~al.(2020)Gehman, Gururangan, Sap, Choi, and
+  Smith]{gehman2020realtoxicity}
+Samuel Gehman, Suchin Gururangan, Maarten Sap, Yejin Choi, and Noah~A. Smith.
+\newblock {RealToxicityPrompts}: Evaluating neural toxic degeneration in
+  language models.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  EMNLP 2020}, 2020.
+
+\bibitem[Grootendorst(2022)]{grootendorst2022bertopic}
+Maarten Grootendorst.
+\newblock {BERTopic}: Neural topic modeling with a class-based {TF-IDF}
+  procedure.
+\newblock 2022.
+
+\bibitem[Han et~al.(2024)Han, Kim, Yun, et~al.]{wildguard2024}
+Seungju Han, Kavel Kim, Jaehyun Yun, et~al.
+\newblock {WildGuard}: Open one-stop moderation tools for safety risks,
+  jailbreaks, and refusals of llms.
+\newblock \emph{arXiv preprint arXiv:2406.18495}, 2024.
+
+\bibitem[Inan et~al.(2023)Inan, Upasani, Chi, Rungta, Iyer, Mao, Tontchev, Hu,
+  Fuller, Testuggine, and Khabsa]{inan2023llamaguard}
+Hakan Inan, Kartikeya Upasani, Jianfeng Chi, Rashi Rungta, Krithika Iyer,
+  Yuning Mao, Michael Tontchev, Qing Hu, Brian Fuller, Davide Testuggine, and
+  Madian Khabsa.
+\newblock Llama guard: Llm-based input-output safeguard for human-ai
+  conversations.
+\newblock 2023.
+
+\bibitem[Lin et~al.(2023)Lin, Wang, Tong, Wang, Guo, Wang, and
+  Sheng]{lin2023toxicchat}
+Zi~Lin, Zihan Wang, Yongqi Tong, Yangkun Wang, Yuxin Guo, Yujia Wang, and
+  Jingbo Sheng.
+\newblock Toxicchat: Unveiling hidden challenges of toxicity detection in
+  real-world user-ai conversation.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  EMNLP 2023}, 2023.
+
+\bibitem[Lundberg and Lee(2017)]{lundberg2017shap}
+Scott~M. Lundberg and Su-In Lee.
+\newblock A unified approach to interpreting model predictions.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~30, 2017.
+
+\bibitem[McInnes et~al.(2018)McInnes, Healy, and Melville]{mcinnes2018umap}
+Leland McInnes, John Healy, and James Melville.
+\newblock {UMAP}: Uniform manifold approximation and projection for dimension
+  reduction.
+\newblock \emph{arXiv preprint arXiv:1802.03426}, 2018.
+
+\bibitem[Ribeiro et~al.(2016)Ribeiro, Singh, and Guestrin]{ribeiro2016lime}
+Marco~Tulio Ribeiro, Sameer Singh, and Carlos Guestrin.
+\newblock "why should i trust you?": Explaining the predictions of any
+  classifier.
+\newblock In \emph{Proceedings of the 22nd ACM SIGKDD International Conference
+  on Knowledge Discovery and Data Mining}, pages 1135--1144, 2016.
+
+\end{thebibliography}

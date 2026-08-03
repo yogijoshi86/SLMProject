@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2021/TeX Live for SUSE Linux)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+The style file: plainnat.bst
+Database file #1: references.bib
+Warning--empty booktitle in grootendorst2022bertopic
+Warning--empty booktitle in inan2023llamaguard
+You've used 10 entries,
+            2773 wiz_defined-function locations,
+            643 strings with 7073 characters,
+and the built_in function-call counts, 5483 in all, are:
+= -- 439
+> -- 413
+< -- 6
++ -- 139
+- -- 129
+* -- 435
+:= -- 837
+add.period$ -- 30
+call.type$ -- 10
+change.case$ -- 71
+chr.to.int$ -- 10
+cite$ -- 22
+duplicate$ -- 251
+empty$ -- 419
+format.name$ -- 142
+if$ -- 1152
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 10
+newline$ -- 58
+num.names$ -- 40
+pop$ -- 175
+preamble$ -- 1
+purify$ -- 61
+quote$ -- 0
+skip$ -- 203
+stack$ -- 0
+substring$ -- 108
+swap$ -- 41
+text.length$ -- 3
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 110
+warning$ -- 2
+while$ -- 36
+width$ -- 0
+write$ -- 128
+(There were 2 warnings)
