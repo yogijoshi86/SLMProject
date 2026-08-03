@@ -33,7 +33,14 @@ class PrototypeMatch:
     # second-best UNSAFE prototype — useful for margin/uncertainty analysis
     second_prototype_key: str = ""
     second_similarity: float = 0.0
+    second_prototype_label: str = ""
+    second_best_exemplar: str = ""
     margin: float = 0.0          # similarity - second_similarity; low = boundary case
+    # third-best UNSAFE prototype
+    third_prototype_key: str = ""
+    third_similarity: float = 0.0
+    third_prototype_label: str = ""
+    third_best_exemplar: str = ""
     # SAFE prototype fields — populated when safe_prototypes present in taxonomy
     nearest_safe_key: str = ""
     nearest_safe_similarity: float = 0.0
@@ -189,9 +196,11 @@ class DistanceEngine:
         ranked = np.argsort(sims)[::-1]
         best   = int(ranked[0])
         second = int(ranked[1]) if len(ranked) > 1 else best
+        third  = int(ranked[2]) if len(ranked) > 2 else second
 
         best_sim   = float(sims[best])
         second_sim = float(sims[second])
+        third_sim  = float(sims[third])
         margin     = best_sim - second_sim
 
         # ── Exemplar-level voting: override centroid winner when margin is low ─
@@ -215,12 +224,22 @@ class DistanceEngine:
 
         key   = self.keys[best]
         key2  = self.keys[second]
-        proto = self.prototypes[key]
+        key3  = self.keys[third]
+        proto  = self.prototypes[key]
+        proto2 = self.prototypes[key2]
+        proto3 = self.prototypes[key3]
         is_ood = best_sim < self.ood_floor
 
-        # Exemplar vote for the winner
+        # Exemplar vote for the winner (best_matching_exemplar for explanation)
         ev_sim, ev_text, ev_best = self._exemplar_vote(
             query, best, proto.get("top_exemplars", []), self.exemplar_matrices
+        )
+        # Best exemplar for 2nd and 3rd prototypes (for explanation surface)
+        _, ev_text2, _ = self._exemplar_vote(
+            query, second, proto2.get("top_exemplars", []), self.exemplar_matrices
+        )
+        _, ev_text3, _ = self._exemplar_vote(
+            query, third, proto3.get("top_exemplars", []), self.exemplar_matrices
         )
 
         # ── SAFE prototype similarities (if available) ────────────────────
@@ -286,7 +305,13 @@ class DistanceEngine:
                             dominant_categories=voted_proto.get("dominant_categories", []),
                             second_prototype_key=nearest_safe_key,
                             second_similarity=nearest_safe_sim,
+                            second_prototype_label=nearest_safe_label,
+                            second_best_exemplar=s_ev_text,
                             margin=voted_sim - nearest_safe_sim,
+                            third_prototype_key=key2,
+                            third_similarity=second_sim,
+                            third_prototype_label=proto2.get("label", key2),
+                            third_best_exemplar=ev_text2,
                             nearest_safe_key=nearest_safe_key,
                             nearest_safe_similarity=nearest_safe_sim,
                             nearest_safe_label=nearest_safe_label,
@@ -307,7 +332,13 @@ class DistanceEngine:
                     dominant_categories=[],
                     second_prototype_key=key,
                     second_similarity=best_sim,
+                    second_prototype_label=proto.get("label", key),
+                    second_best_exemplar=ev_text,
                     margin=nearest_safe_sim - best_sim,
+                    third_prototype_key=key2,
+                    third_similarity=second_sim,
+                    third_prototype_label=proto2.get("label", key2),
+                    third_best_exemplar=ev_text2,
                     nearest_safe_key=nearest_safe_key,
                     nearest_safe_similarity=nearest_safe_sim,
                     nearest_safe_label=nearest_safe_label,
@@ -327,7 +358,13 @@ class DistanceEngine:
             dominant_categories=proto.get("dominant_categories", []),
             second_prototype_key=key2,
             second_similarity=second_sim,
+            second_prototype_label=proto2.get("label", key2),
+            second_best_exemplar=ev_text2,
             margin=margin,
+            third_prototype_key=key3,
+            third_similarity=third_sim,
+            third_prototype_label=proto3.get("label", key3),
+            third_best_exemplar=ev_text3,
             nearest_safe_key=nearest_safe_key,
             nearest_safe_similarity=nearest_safe_sim,
             nearest_safe_label=nearest_safe_label,

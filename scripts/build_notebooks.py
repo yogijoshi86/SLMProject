@@ -822,21 +822,31 @@ with open(cfg.paths.taxonomy) as f:
 def _prototype_explanation(match, taxonomy):
     """Build a structured explanation from prototype metadata — zero LLM calls."""
     all_protos = {**taxonomy.get("prototypes", {}), **taxonomy.get("safe_prototypes", {})}
-    proto = all_protos.get(match.prototype_key, {})
-    label       = match.label
-    description = proto.get("description") or proto.get("failure_mode") or ""
 
-    # Lead with the closest exemplar to the query (highest cosine sim at inference time),
-    # then fill remaining slots from the cluster-time top_exemplars list.
-    best_ex = match.best_matching_exemplar
-    remaining = [e for e in proto.get("top_exemplars", []) if e != best_ex][:2]
-    exemplars = ([best_ex] if best_ex else []) + remaining
+    def _proto_block(key, label, best_ex, sim, taxonomy_protos):
+        proto = taxonomy_protos.get(key, {})
+        description = proto.get("description") or proto.get("failure_mode") or ""
+        ex_text = f' Closest example: "{best_ex[:80]}"' if best_ex else ""
+        desc_text = ""
+        if description and description not in ("TODO", "TODO: assign after thematic review"):
+            desc_text = f" {description}"
+        return f"[{sim:.4f}] {label}.{desc_text}{ex_text}"
 
-    parts = [f"Matched prototype: {label}."]
-    if description and description not in ("TODO", "TODO: assign after thematic review"):
-        parts.append(description)
-    if exemplars:
-        parts.append("Most similar flagged prompts: " + " | ".join(f'"{e[:80]}"' for e in exemplars))
+    parts = ["Top 3 matched prototypes:"]
+    parts.append("1. " + _proto_block(
+        match.prototype_key, match.label,
+        match.best_matching_exemplar, match.similarity, all_protos
+    ))
+    if match.second_prototype_key:
+        parts.append("2. " + _proto_block(
+            match.second_prototype_key, match.second_prototype_label,
+            match.second_best_exemplar, match.second_similarity, all_protos
+        ))
+    if match.third_prototype_key:
+        parts.append("3. " + _proto_block(
+            match.third_prototype_key, match.third_prototype_label,
+            match.third_best_exemplar, match.third_similarity, all_protos
+        ))
     if match.is_ambiguous:
         parts.append(
             f"Note: borderline case — similarity gap to nearest SAFE prototype "
