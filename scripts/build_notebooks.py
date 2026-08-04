@@ -894,29 +894,30 @@ for p in prompts:
 def nb_eval():
     return notebook([
         md("""
-# Notebook 04 — A/B Study Benchmark & Evaluation
+# Notebook 04 — Cross-Dataset Evaluation: ToxicChat Prototypes on WildChat
 
 ## What this notebook does
-Curates the 50-case A/B benchmark (25 FP + 25 FN) from the test split,
-generates prototype-based explanations for each case, produces printable
-study forms for human participants, and analyses diagnostic latency results.
+Samples 200 random prompts from WildChat (100 safe + 100 toxic), runs Llama-Guard-3-8B
+on each, keeps **only the misclassified cases** (FP + FN), and generates prototype-based
+explanations using the **ToxicChat-derived taxonomy**.
+
+This is a cross-dataset evaluation: prototypes discovered from ToxicChat are used to
+explain guard failures on out-of-distribution WildChat prompts.
 
 ## Prerequisites
-- **CPU-only** — no GPU required
+- **GPU runtime** (T4/A100) — guard inference required for the 200 WildChat prompts
 - Restored from Drive: `prototypes_taxonomy_smoke.json`, `umap_reducer.pkl`
-- Guard model loaded from 03_audit session (or re-assembled here)
-- Explainer API key (OpenAI or Anthropic) for LLM explanations
+  (ToxicChat prototypes — **not** WildChat prototypes)
 
 ## Outputs saved to Drive
 | File | Used by |
 |---|---|
-| `benchmark_test_set.json` | 07_slm_explainability, study forms |
-| `guard_classification_metrics.json` | reporting |
-| `artifacts/study_forms/*.html` | human participants |
+| `benchmark_wildchat_misclassified.json` | analysis, study forms |
 
 ## Key parameters
-- `n_false_positives`, `n_false_negatives` in config (default 25 each)
-- `INCLUDE_SAFE` flag affects which prototypes appear in explanations
+- `WILDCHAT_SAMPLE_SIZE = 200` (100 safe + 100 toxic)
+- Only wrong guard decisions are included (FP + FN)
+- Taxonomy: ToxicChat-derived (cfg.paths.taxonomy = prototypes_taxonomy_smoke.json)
 """),
         md("### Step 0 — get the repo onto this runtime"),
         code(CLONE),
@@ -926,67 +927,106 @@ study forms for human participants, and analyses diagnostic latency results.
         md("### ↑ After that cell restarts the kernel, start from the LOCATE cell below ↓"),
         code(LOCATE),
         code(CONFIG_CELL),
-        md("### Day 16 — Curate 30 test cases from real embeddings"),
+        md("### Curate misclassification cases from WildChat (200-sample cross-dataset evaluation)"),
         code('''
-import torch, json
+import torch, json, random
 from pathlib import Path
 from datasets import load_dataset
 
-# Load what the guard actually processed
-payload = torch.load(cfg.paths.embeddings, map_location="cpu")
-metadata = payload["metadata"]
-test_indices = payload.get("test_indices", list(range(len(metadata))))
-train_indices = payload.get("train_indices", [])
+# ── Configuration ─────────────────────────────────────────────────────────────
+# Prototypes: ToxicChat-derived (loaded via cfg.paths.taxonomy + umap_reducer.pkl)
+# Evaluation prompts: 200 random WildChat samples (100 safe + 100 toxic)
+# Cases: only prompts where guard decision != ground truth (FP or FN)
+WILDCHAT_SAMPLE_SIZE = 200   # total prompts to draw from WildChat
+SAFE_SAMPLE   = 100          # how many of the 200 should have toxic=False
+UNSAFE_SAMPLE = 100          # how many should have toxic=True
+SEED = 42
+random.seed(SEED)
 
-print(f"Total UNSAFE flags: {len(metadata)}")
-print(f"Train split (used for clustering): {len(train_indices)}")
-print(f"Test split (held out for benchmark): {len(test_indices)}")
+print("Loading WildChat (English, first user turn)...")
+wc = load_dataset("allenai/WildChat-1M", split="train", streaming=True)
 
-# Use ONLY test split — avoids contamination with prototype exemplars
-test_metadata = [metadata[i] for i in test_indices]
+safe_pool, unsafe_pool = [], []
+for row in wc:
+    conv = row.get("conversation", [])
+    if not conv:
+        continue
+    lang = row.get("language", "")
+    if lang and lang.lower() != "english":
+        continue
+    first_user = next((t["content"] for t in conv if t.get("role") == "user"), None)
+    if not first_user or len(first_user.strip()) < 20:
+        continue
+    gt = 1 if row.get("toxic", False) else 0
+    entry = {"text": first_user.strip(), "gt_toxicity": gt,
+             "categories": [], "gt_jailbreak": 0}
+    if gt == 0 and len(safe_pool) < SAFE_SAMPLE * 4:
+        safe_pool.append(entry)
+    elif gt == 1 and len(unsafe_pool) < UNSAFE_SAMPLE * 4:
+        unsafe_pool.append(entry)
+    if len(safe_pool) >= SAFE_SAMPLE * 4 and len(unsafe_pool) >= UNSAFE_SAMPLE * 4:
+        break
 
-# FALSE POSITIVES from test split: guard said UNSAFE but ground truth says safe
-fps = [m for m in test_metadata if m["gt_toxicity"] == 0]
-print(f"False positives available (test split): {len(fps)}")
+safe_sample   = random.sample(safe_pool,   min(SAFE_SAMPLE,   len(safe_pool)))
+unsafe_sample = random.sample(unsafe_pool, min(UNSAFE_SAMPLE, len(unsafe_pool)))
+wc_prompts = safe_sample + unsafe_sample
+random.shuffle(wc_prompts)
+print(f"Sampled {len(wc_prompts)} WildChat prompts "
+      f"(safe={len(safe_sample)}, toxic={len(unsafe_sample)})")
 
-# FALSE NEGATIVES: ground truth toxic but guard missed them
-# Re-load full dataset and find toxic prompts not flagged by guard
-flagged_texts = {m["text"] for m in metadata}
-ds = load_dataset(cfg.data.dataset_name, cfg.data.dataset_config, split=cfg.data.split)
-fns = [
-    {"text": r["user_input"], "gt_toxicity": 1, "gt_jailbreak": int(r.get("jailbreaking", 0) or 0),
-     "categories": [], "index": i}
-    for i, r in enumerate(ds)
-    if r.get("toxicity") == 1
-    and (r.get("user_input") or "").strip() not in flagged_texts
-    and len((r.get("user_input") or "").strip()) > 20              # exclude empty/very short
-    and "THIS IS THE END OF THE CONVERSATION" not in (r.get("user_input") or "")  # exclude delimiter artifacts
-    and "A NEW CONVERSATION WILL NOW BEGIN" not in (r.get("user_input") or "")
-]
-print(f"False negatives available (after filtering artifacts): {len(fns)}")
+# ── Run guard on all 200 prompts ──────────────────────────────────────────────
+print("\\nRunning guard on WildChat sample...")
+from guardrail_audit.models import load_guard
 
-# A/B study subset: sampled for human study (manageable participant burden)
-import random; random.seed(42)
-n_fp = cfg.evaluation.n_false_positives   # 25
-n_fn = cfg.evaluation.n_false_negatives   # 25
-fps_study = random.sample(fps, min(n_fp, len(fps)))
-fns_study = random.sample(fns, min(n_fn, len(fns)))
+guard = load_guard(cfg.model)
+texts = [p["text"] for p in wc_prompts]
+# Process in batches to avoid OOM
+BATCH = cfg.extraction.batch_size
+all_decisions = []
+for i in range(0, len(texts), BATCH):
+    decs, _ = guard.classify_batch(texts[i:i+BATCH])
+    all_decisions.extend(decs)
+    print(f"  {min(i+BATCH, len(texts))}/{len(texts)} done", end="\\r")
+print()
 
-# Full set: all available cases for automated analysis
-fps_all = fps                              # all FPs from test split
-fns_all = fns                             # all filtered FNs
+# ── Keep only misclassified cases ─────────────────────────────────────────────
+fps, fns = [], []
+for prompt, decision in zip(wc_prompts, all_decisions):
+    guard_unsafe = decision.is_unsafe
+    gt_unsafe    = prompt["gt_toxicity"] == 1
 
-print(f"\\nA/B study subset — FPs: {len(fps_study)}, FNs: {len(fns_study)} ({len(fps_study)+len(fns_study)} total)")
-print(f"Full analysis set  — FPs: {len(fps_all)}, FNs: {len(fns_all)} ({len(fps_all)+len(fns_all)} total)")
-print("\\nSample FP:", fps_study[0]["text"][:120])
-print("Sample FN:", fns_study[0]["text"][:120])
+    if guard_unsafe and not gt_unsafe:          # guard said UNSAFE, truth = SAFE → FP
+        fps.append({**prompt, "failure_type": "false_positive",
+                    "guard_categories": decision.categories})
+    elif not guard_unsafe and gt_unsafe:        # guard said SAFE, truth = UNSAFE → FN
+        fns.append({**prompt, "failure_type": "false_negative",
+                    "guard_categories": []})
+
+print(f"\\nGuard errors on WildChat-200:")
+print(f"  False Positives (guard=UNSAFE, truth=SAFE): {len(fps)}")
+print(f"  False Negatives (guard=SAFE, truth=UNSAFE): {len(fns)}")
+print(f"  Total misclassified: {len(fps)+len(fns)}")
+print(f"  Correct decisions (not used): "
+      f"{len(wc_prompts) - len(fps) - len(fns)}")
+
+fps_study = fps
+fns_study = fns
+fps_all   = fps
+fns_all   = fns
+
+if len(fps) + len(fns) == 0:
+    print("\\nWARNING: No misclassifications found in this sample.")
+    print("Try a larger WILDCHAT_SAMPLE_SIZE or a different seed.")
+else:
+    print(f"\\nSample FP: {fps[0]['text'][:120]}" if fps else "")
+    print(f"Sample FN: {fns[0]['text'][:120]}" if fns else "")
 '''),
-        md("### Generate prototype explanations per case (no LLM calls)"),
+        md("### Generate prototype explanations for all misclassified cases"),
         code('''
 import time
 
 def generate_cases(samples, id_offset=0):
-    """Run guard + DistanceEngine on each sample; build explanation from prototype metadata."""
+    """Match each misclassified WildChat prompt to ToxicChat prototypes."""
     results = []
     for i, sample in enumerate(samples):
         case_id = f"c{i+1+id_offset:03d}"
@@ -1009,6 +1049,7 @@ def generate_cases(samples, id_offset=0):
             "input_text": text,
             "guard_decision": "UNSAFE" if decision.is_unsafe else "SAFE",
             "guard_categories": decision.categories,
+            "gt_toxicity": sample["gt_toxicity"],
             "cosine_similarity": round(cos_sim, 4),
             "cosine_distance": cos_dist,
             "confidence": round(cos_sim, 4),
@@ -1017,13 +1058,11 @@ def generate_cases(samples, id_offset=0):
             "similarity_score": round(cos_sim, 4),
             "top_exemplars": match.top_exemplars[:3],
             "explanation": explanation,
-            "gt_toxicity": sample["gt_toxicity"],
             "nearest_safe_prototype": match.nearest_safe_key,
             "nearest_safe_label": match.nearest_safe_label,
             "nearest_safe_similarity": round(match.nearest_safe_similarity, 6),
             "is_ambiguous": match.is_ambiguous,
             "latency_seconds": round(elapsed, 3),
-            # Top-3 prototype breakdown — stored separately for analysis
             "second_prototype": match.second_prototype_key,
             "second_prototype_label": match.second_prototype_label,
             "second_similarity": round(match.second_similarity, 6),
@@ -1032,53 +1071,52 @@ def generate_cases(samples, id_offset=0):
             "third_prototype_label": match.third_prototype_label,
             "third_similarity": round(match.third_similarity, 6),
             "third_best_exemplar": match.third_best_exemplar,
+            "dataset": "wildchat",
+            "taxonomy_source": "toxicchat",
         })
-        print(f"[{i+1}/{len(samples)}] {case_id} ({failure_type}) — {match.label} ({elapsed:.2f}s)")
+        print(f"[{i+1}/{len(samples)}] {case_id} ({failure_type}) "
+              f"— {match.label} ({elapsed:.2f}s)")
     return results
 
-# Generate A/B study subset (50 cases)
-print("=== Generating A/B study subset (50 cases) ===")
-study_samples = (
-    [{"failure_type": "false_positive", **m} for m in fps_study] +
-    [{"failure_type": "false_negative", **m} for m in fns_study]
-)
-study_cases = generate_cases(study_samples)
-print(f"\\nStudy subset: {len(study_cases)} cases generated.")
-
-# Generate full set (all FPs + all FNs)
-print("\\n=== Generating full analysis set (all cases) ===")
+# All misclassified WildChat cases (FP + FN only)
 all_samples = (
     [{"failure_type": "false_positive", **m} for m in fps_all] +
     [{"failure_type": "false_negative", **m} for m in fns_all]
 )
-all_cases = generate_cases(all_samples)
-print(f"\\nFull set: {len(all_cases)} cases generated.")
+
+if all_samples:
+    print(f"=== Generating explanations for {len(all_samples)} misclassified cases ===")
+    all_cases = generate_cases(all_samples)
+    print(f"\\nDone: {len(all_cases)} cases generated.")
+else:
+    all_cases = []
+    print("No misclassified cases to process.")
 '''),
-        md("### Save both benchmark files"),
+        md("### Save misclassified WildChat cases"),
         code('''
 from guardrail_audit.evaluation import write_benchmark
-import json
+import json, shutil
 from pathlib import Path
 
-# A/B study subset (25 FP + 25 FN) — used for human study
-write_benchmark(study_cases, cfg.paths.benchmark)
-print(f"Study subset saved to {cfg.paths.benchmark} ({len(study_cases)} cases)")
+out_path = "artifacts/benchmark_wildchat_misclassified.json"
+Path("artifacts").mkdir(exist_ok=True)
 
-# Full analysis set (all FPs + all FNs) — used for automated analysis
-full_path = cfg.paths.benchmark.replace(".json", "_full.json")
-write_benchmark(all_cases, full_path)
-print(f"Full set saved to {full_path} ({len(all_cases)} cases)")
-print(f"Saved to {cfg.paths.benchmark}")
+if all_cases:
+    write_benchmark(all_cases, out_path)
+    print(f"Saved {len(all_cases)} cases → {out_path}")
+    print(f"  FP: {sum(1 for c in all_cases if c['failure_type']=='false_positive')}")
+    print(f"  FN: {sum(1 for c in all_cases if c['failure_type']=='false_negative')}")
 
-# Preview one study case
-with open(cfg.paths.benchmark) as f:
-    bench = json.load(f)
-
-print(f"\\nStudy subset: {len(bench)} cases")
-print("\\n--- Control package sample ---")
-print(json.dumps(bench[0]["control"], indent=2))
-print("\\n--- Treatment package sample ---")
-print(json.dumps(bench[0]["treatment"], indent=2))
+    # Preview one case
+    print("\\n--- Sample case ---")
+    sample = all_cases[0]
+    print(f"ID: {sample['case_id']}  type={sample['failure_type']}")
+    print(f"Prompt: {sample['input_text'][:120]}")
+    print(f"Guard: {sample['guard_decision']}  GT: {'UNSAFE' if sample['gt_toxicity'] else 'SAFE'}")
+    print(f"Prototype: {sample['prototype_label']}")
+    print(f"Explanation: {sample['explanation'][:300]}")
+else:
+    print("No cases to save.")
 '''),
         md("""
 ### Section 4.4 — Counterfactual Validation
