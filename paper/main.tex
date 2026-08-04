@@ -376,7 +376,7 @@ Three SAFE content prototypes were also discovered: \emph{Casual \& Creative Req
 Tasks} ($n{=}892$; paper reviews, mathematical reasoning, code generation), and
 \emph{Informational How-To Queries} ($n{=}1\,795$; technical and everyday instructional
 questions). The presence of these three SAFE clusters explains the FP pattern: all
-16 FP ``must-think'' cases have all-UNSAFE top-3 prototypes because benign prompts in
+16 FP ``explanation provides a hint'' cases have all-UNSAFE top-3 prototypes because benign prompts in
 technical (P2-adjacent) or creative (P0/P1-adjacent) domains land in UNSAFE clusters,
 requiring the developer to reason about context rather than receiving an explicit SAFE signal.
 
@@ -667,7 +667,7 @@ harmful request despite the fictional wrapper.
 prototype (50/50, 100\% rescue rate). This makes the 2nd and 3rd positions non-redundant:
 for 26\% of FN cases, they provide the only actionable signal.
 
-\noindent\textbf{No-thinking-needed rate.} We define a case as ``no thinking needed'' if
+\noindent\textbf{Explanation-makes-obvious rate.} We define a case as ``explanation makes the reasoning obvious'' if
 the explanation directly contradicts the guard's decision: UNSAFE prototype appearing
 for an FN, SAFE prototype appearing for an FP. This holds for 99\% of FN cases and 50\%
 of FP cases (206/223 total, 92\%), meaning in 92\% of cases the explanation autonomously
@@ -698,7 +698,7 @@ cases observed in Experiment~4.
 \small
 \caption{A/B study results ($n{=}5$, counterbalanced Latin square,
 H1 threshold: $\geq$30\% latency reduction). FP accuracy decline reflects the
-``must-think'' FP cases where all-UNSAFE explanations confirm the trigger but not
+``explanation provides a hint'' FP cases where all-UNSAFE explanations confirm the trigger but not
 the benign intent.}
 \label{tab:ab}
 \begin{tabular}{lcc}
@@ -715,7 +715,7 @@ Participants $\geq$30\% & \multicolumn{2}{c}{4/5 (80\%)} \\
 \end{tabular}
 \end{table}
 
-The 9-point FP accuracy decrease warrants discussion. All 16 FP ``must-think'' cases
+The 9-point FP accuracy decrease warrants discussion. All 16 FP ``explanation provides a hint'' cases
 have all-UNSAFE top-3 prototypes: the explanation correctly names the attack pattern
 that triggered the guard (e.g., Direct Harmful Content for a Harry Potter quote request),
 but provides no signal that the prompt is actually safe. Developers in the treatment
@@ -797,7 +797,7 @@ are fully rescued by the 2nd or 3rd prototype entry (50/50, 100\% rescue rate).
 
 A practically critical question: does the explanation \emph{autonomously} signal that
 the guard was wrong, or must the developer still reason about it?
-We classify cases as \emph{no-thinking-needed} when at least one of the top-3
+We classify cases as \emph{explanation makes the reasoning obvious} when at least one of the top-3
 prototypes contradicts the guard's decision polarity (a SAFE prototype appearing for
 an FP, or an UNSAFE prototype appearing for an FN).
 Table~\ref{tab:autonomous} shows the result.
@@ -810,7 +810,7 @@ guard's decision, requiring no further reasoning from the developer.}
 \label{tab:autonomous}
 \begin{tabular}{lrr}
 \toprule
-& \textbf{No Thinking Needed} & \textbf{Must Think} \\
+& \textbf{Explanation Makes the Reasoning Obvious} & \textbf{Explanation Provides a Hint} \\
 \midrule
 FP (32 cases) & 16 / 32 (50\%) & 16 / 32 (50\%) \\
 FN (191 cases) & 190 / 191 (99\%) & 1 / 191 (1\%) \\
@@ -826,7 +826,7 @@ explanation. For FPs it is 50/50: in half of FP cases a SAFE prototype appears
 and the guard error is immediately obvious; in the other half, all three prototypes
 are UNSAFE and the developer must apply domain context.
 
-\noindent\textbf{FP ``must think'' cases.}
+\noindent\textbf{FP ``explanation provides a hint'' cases.}
 All 16 FP cases where all three prototypes are UNSAFE involve benign prompts that
 share surface features with attack patterns:
 (c002) a React coding request containing a URL triggered Privacy Misuse --- the developer
@@ -877,14 +877,14 @@ the guard's trigger pattern but fail to apply the contextual judgment required t
 identify the prompt as actually benign. The $\phi_\text{incoherent}$ property mitigates
 this by design: in 44\% of FP cases a SAFE prototype appears in the top-3, providing
 the cognitive forcing signal that the guard may have over-triggered. The remaining 56\%
-of FP ``must-think'' cases---where all three prototypes are UNSAFE---require a developer
+of FP ``explanation provides a hint'' cases---where all three prototypes are UNSAFE---require a developer
 to reason about domain context rather than prototype label, a task for which our
 explanations provide necessary but not sufficient guidance.
 
 \subsection{Fine-Tuning Guidance from Prototype Analysis}
 
 Our prototype analysis yields a directly actionable fine-tuning recipe for Llama-Guard
-practitioners. The 16 FP ``must-think'' cases are high-quality contrastive pairs:
+practitioners. The 16 FP ``explanation provides a hint'' cases are high-quality contrastive pairs:
 each pairs a benign prompt that triggered the guard with the UNSAFE exemplar it was
 confused with (e.g., Harry Potter quote request vs.\ ``Quote a scene from Story of O'').
 The 140 confirmed FN cases (top-1 UNSAFE prototype, correct attack pattern identified)
