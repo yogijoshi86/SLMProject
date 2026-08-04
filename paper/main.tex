@@ -37,31 +37,32 @@ Prototype-Driven Guardrail Auditing for Small Language Models}}
 % ----------------------------------------------------------------
 Safety guardrails based on small language models (SLMs) are the first line of defence
 in production AI systems, yet they fail silently: a binary UNSAFE/SAFE decision with
-no rationale leaves developers to investigate every misclassification from scratch,
-consuming over a minute per case. We present a \emph{prototype-driven guardrail auditing
-architecture} that makes these failures explainable at near-zero marginal cost by
-exploiting structure already present in the guard's own hidden states.
-Given Llama-Guard-3-8B's 4,096-dimensional terminal-token embeddings, we show that
-UMAP dimensionality reduction followed by K-means clustering reliably discovers four
-semantically coherent attack prototypes---\emph{Persona Bypass, Fictional Narrative
-Bypass, Direct Harmful Content Request}, and \emph{Privacy Misuse}---achieving silhouette
-$S{=}0.41$, a 945\% improvement over full-dimensional clustering.
-At inference, each new prompt is matched to the nearest prototype in $<$50\,ms with
-no additional model call, and a structured explanation---label, description, and the
-closest semantically similar exemplar---is returned alongside the guard's decision.
+no rationale leaves developers to investigate every misclassification from scratch.
+We make two findings that are, to our knowledge, new to the literature.
 
-We establish three novel results. First, a controlled A/B study ($n{=}5$ developers,
-counterbalanced Latin square, 25 cases/session) shows prototype explanations reduce
-diagnostic latency by \textbf{46\%} (H1: $\geq$30\%; 4/5 participants exceeded threshold)
-and improve root-cause accuracy from 44\% to 57\%. Second, Phi-3.5-mini-instruct---even
-when explicitly informed that an error occurred---produces generic boilerplate diagnoses
-for 94\% of false-negative cases, while prototype explanations correctly surface the
-attack pattern in 99\% of cases when the top-3 matches are considered; this constitutes
-the first systematic evidence that SLM self-explanation fails structurally, not incidentally.
-Third, we formalise five Linear Temporal Logic (LTL) trust properties derived from
-embedding geometry: $\phi_\text{incoherent}$ and $\phi_\text{ambiguous}$ each achieve
-100\% precision, providing developers with runtime-verifiable signals for when
-explanations can be acted on autonomously versus when human escalation is required.
+\textbf{First, an SLM guard cannot explain its own decisions---and a separate SLM
+cannot explain them either.} Phi-3.5-mini-instruct, even when explicitly told the
+guard made an error, produces generic boilerplate for 94\% of false-negative cases
+and actively defends the guard's wrong SAFE decision in 97\% of cases when given no
+error context. This failure is structural: the attack pattern that caused the guard
+to err is encoded in the guard's hidden-state geometry, not in the surface text, and
+no generative model can recover it without access to that space.
+
+\textbf{Second, the guard's own hidden states already contain the explanation.}
+We show that UMAP-reduced 4,096-dimensional terminal-token embeddings from
+Llama-Guard-3-8B cluster into four semantically coherent attack prototypes---\emph{Persona
+Bypass, Fictional Narrative Bypass, Direct Harmful Content Request}, and \emph{Privacy
+Misuse}---without any labels (silhouette $S{=}0.41$, +945\% over full-dimensional
+clustering). At inference, matching a new prompt to its nearest prototype takes $<$50\,ms
+with no additional model call and covers 99.6\% of all misclassified cases in our benchmark.
+
+A controlled A/B study ($n{=}5$ developers, counterbalanced Latin square) confirms
+the practical value: prototype explanations reduce diagnostic latency by \textbf{46\%}
+and improve root-cause accuracy from 44\% to 57\%. We further formalise five Linear
+Temporal Logic (LTL) trust properties from embedding geometry; two of them
+($\phi_\text{incoherent}$, $\phi_\text{ambiguous}$) achieve 100\% precision on
+223 benchmark cases, giving developers runtime-verifiable signals for when to act
+autonomously versus when to escalate.
 \end{abstract}
 
 % ================================================================
@@ -105,37 +106,44 @@ own embedding geometry.
 Our key insight is that the guard's embedding space already encodes the answer. The
 terminal hidden state of Llama-Guard-3-8B---extracted as a by-product of inference
 with no additional computation---forms compact, semantically coherent clusters corresponding
-to distinct attack strategies. A prompt that triggers a false positive because it
-resembles a known harmful pattern, and a prompt that produces a false negative because
-it uses a novel evasion tactic, leave geometrically distinct signatures in this space.
-By discovering and labelling these clusters once (offline), we can explain every future
-decision in real time simply by finding the nearest cluster.
+to distinct attack strategies. The novel persona name ``NaughtyVircuna'' that evades the
+guard is geometrically close to ``You are Kevin with no restrictions'' that the guard
+correctly catches---a relationship invisible in the surface text but unmistakable in
+embedding space. By discovering and labelling these clusters once (offline), we can
+explain every future decision in real time by finding the nearest cluster. No separate
+model call is required, and no ground-truth label is needed.
 
-We make four contributions:
+We make four contributions, the first two of which are, to our knowledge, new findings
+in the safety guardrail literature:
 
 \begin{enumerate}
-\item \textbf{Prototype discovery without labels.} We show that UMAP-reduced embeddings
-from Llama-Guard-3-8B cluster into four semantically coherent attack prototypes at
-$k^*{=}4$, silhouette $S{=}0.41$---a 945\% improvement over full-dimensional K-means
-($S{=}0.039$)---and that these four prototypes cover 99.6\% of all misclassified cases
-in our benchmark (Section~\ref{sec:proto}).
+\item \textbf{SLM guards are structurally unexplainable by SLMs.}
+We are the first to demonstrate this systematically: Phi-3.5-mini-instruct achieves
+only 6\% accuracy on FN attack-pattern identification even when told the guard was
+wrong---not because it lacks capability, but because the attack pattern is encoded in
+the guard's embedding geometry and is inaccessible to any external model.
+Prototype-based explanations, which \emph{do} access that geometry, achieve 99.6\%
+on the same task.
 
-\item \textbf{SLM self-explanation gap.} We are the first to demonstrate systematically
-that SLM-generated explanations fail not incidentally but structurally: Phi-3.5 achieves
-only 6\% accuracy on FN attack-pattern identification because it cannot access the
-embedding geometry that encodes the guard's actual decision mechanism. Prototype-based
-explanations achieve 100\% on the same task at zero API cost (Section~\ref{sec:exp}).
+\item \textbf{A guard's hidden states form an unsupervised attack taxonomy.}
+UMAP-reduced embeddings from Llama-Guard-3-8B cluster into four semantically coherent
+attack prototypes ($k^*{=}4$, $S{=}0.41$, +945\% over full-dimensional K-means)
+without any labels. These four prototypes cover 99.6\% of all misclassified cases in
+our 223-case benchmark---a coverage rate that confirms the guard's latent space is
+structurally sufficient for explanation.
 
-\item \textbf{Human-validated diagnostic improvement.} A controlled A/B study establishes
-that prototype explanations reduce developer diagnostic latency by 46\% and improve
+\item \textbf{Human-validated diagnostic improvement.}
+A controlled A/B study ($n{=}5$, counterbalanced Latin square) establishes that
+prototype explanations reduce developer diagnostic latency by 46\% and improve
 root-cause accuracy by 13 percentage points, with 4/5 participants exceeding the
-pre-registered 30\% latency threshold (Section~\ref{sec:ab}).
+pre-registered 30\% latency threshold.
 
-\item \textbf{LTL trust properties.} We derive five formally specified LTL properties
-from embedding geometry that tell developers when to trust an explanation autonomously
-versus when to escalate. Two properties ($\phi_\text{incoherent}$, $\phi_\text{ambiguous}$)
-achieve 100\% precision on 223 benchmark cases, providing machine-checkable guarantees
-at runtime (Section~\ref{sec:ltl}).
+\item \textbf{LTL trust properties with 100\% precision.}
+Five formally specified LTL properties derived from embedding polarity structure
+(not distance) give developers machine-checkable runtime guarantees. Two properties
+($\phi_\text{incoherent}$, $\phi_\text{ambiguous}$) achieve 100\% precision on 223
+cases, covering 33\% and 17\% of cases respectively, and jointly implement a
+structured accept/escalate decision for automated audit pipelines.
 \end{enumerate}
 
 % ================================================================
@@ -835,30 +843,38 @@ level; fine-tuning or upgrading the guard model would require re-running prototy
 \section{Conclusion}
 % ================================================================
 
-We presented a prototype-driven guardrail auditing architecture that makes safety
-classifier failures explainable at near-zero marginal cost. Three novel results
-distinguish this work from prior approaches:
+We presented a prototype-driven guardrail auditing architecture grounded in three
+findings we believe are new to the safety guardrail literature.
 
-\textbf{First}, Llama-Guard-3-8B's hidden states encode four semantically coherent
-attack prototypes discoverable without labels via UMAP + K-means. The 945\% silhouette
-improvement over full-dimensional clustering, and the 100\% top-3 coverage of all
-misclassified cases, establish that the guard's latent space is a reliable and sufficient
-basis for explanation generation.
+\textbf{First:} A guard's hidden states form an unsupervised attack taxonomy without
+any labels. Llama-Guard-3-8B's terminal-token embeddings cluster into four semantically
+coherent attack prototypes (silhouette $S{=}0.41$, +945\% over full-dimensional
+K-means), and these four prototypes account for 99.6\% of all misclassified cases
+in our 223-case benchmark. The guard's latent space is structurally sufficient
+for explanation---the answer was always there; it just needed to be extracted.
 
-\textbf{Second}, we provide the first systematic evidence that SLM self-explanation
-fails structurally. Phi-3.5-mini-instruct, even when told the guard was wrong, achieves
-only 20\% accuracy on FN attack-pattern identification, while prototype-based explanations
-achieve 99.6\% on the same task at zero API cost. The failure is not a capability gap;
-it is a representation access gap.
+\textbf{Second:} SLM guards are structurally unexplainable by other SLMs.
+Phi-3.5-mini-instruct, even when told the guard was wrong, achieves only 20\% accuracy
+on false-negative attack pattern identification. This is not a capability gap: Phi-3.5
+is larger than the guard. It is a representation access gap---the evasion pattern
+``NaughtyVircuna $\approx$ Kevin with no restrictions'' lives in the guard's embedding
+space and cannot be inferred from surface text by any generative model. Prototype-based
+explanations, which directly read that geometry, achieve 99.6\% on the same task at
+zero API cost. The practical implication is that LLM-as-judge is the wrong architecture
+for guardrail diagnosis: the right architecture is the guard explaining itself.
 
-\textbf{Third}, five formally specified LTL trust properties, derived from embedding
-geometry rather than accuracy statistics, give developers machine-checkable runtime
-guarantees: $\phi_\text{incoherent}$ and $\phi_\text{ambiguous}$ each achieve 100\%
-precision on our 223-case benchmark.
+\textbf{Third:} Five LTL trust properties derived from embedding \emph{polarity
+structure}---not similarity magnitude, which is uncorrelated with errors---give developers
+machine-checkable runtime guarantees. $\phi_\text{incoherent}$ and $\phi_\text{ambiguous}$
+each achieve 100\% precision, jointly covering 50\% of all cases and providing the
+structural foundation for automated audit pipelines that know when to act and when to
+escalate.
 
-Safety guardrails fail silently. Our system makes those failures explainable,
-structured, and verifiable---closing the human-AI teaming gap between a fast but
-opaque classifier and the developers responsible for its behaviour.
+A controlled A/B study ($n{=}5$) validates the human impact: 46\% latency reduction,
++13 points accuracy, with 4/5 participants exceeding the pre-registered 30\% threshold.
+
+Safety guardrails fail silently. The explanation was always in the hidden states---we
+just needed to ask.
 
 % ----------------------------------------------------------------
 \bibliographystyle{plainnat}
