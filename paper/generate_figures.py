@@ -1,9 +1,20 @@
-"""Generate all figures for the paper — black and white / grayscale only."""
+"""Generate all figures for the paper — true grayscale output."""
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
+from PIL import Image
+
+def save_grayscale(filename):
+    """Save current figure as true grayscale PNG."""
+    plt.savefig(filename, bbox_inches='tight')
+    plt.close()
+    # Convert to true grayscale and back to RGB so LaTeX renders correctly
+    img = Image.open(filename).convert('L').convert('RGB')
+    img.save(filename)
+    print(f'Saved {filename} (grayscale)')
+
 
 # ── Shared style — grayscale only ────────────────────────────────────────────
 plt.rcParams.update({
@@ -76,9 +87,7 @@ ax.text(0, 47 + 18.2 + 2, '47.0%\n±18.2', ha='center', va='bottom', fontsize=8)
 ax.legend(fontsize=7)
 
 plt.tight_layout()
-plt.savefig('ab_results.png', bbox_inches='tight')
-plt.close()
-print('Saved ab_results.png')
+save_grayscale('ab_results.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 2: K-means sweep
@@ -100,9 +109,7 @@ ax.legend(fontsize=8)
 ax.set_ylim(-0.05, 0.55)
 ax.set_xticks(ks)
 plt.tight_layout()
-plt.savefig('clustering_sweep.png', bbox_inches='tight')
-plt.close()
-print('Saved clustering_sweep.png')
+save_grayscale('clustering_sweep.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 3: Explainability comparison
@@ -136,9 +143,7 @@ for bars in [b1, b2, b3]:
                 ha='center', va='bottom', fontsize=7)
 
 plt.tight_layout()
-plt.savefig('explainability_comparison.png', bbox_inches='tight')
-plt.close()
-print('Saved explainability_comparison.png')
+save_grayscale('explainability_comparison.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 4: Decision geometry (box per quadrant)
@@ -165,9 +170,7 @@ ax.set_title('Prototype Margin by Quadrant')
 plt.suptitle('Decision Geometry: TP/TN/FP/FN are Geometrically Indistinguishable',
              fontsize=10, fontweight='bold')
 plt.tight_layout()
-plt.savefig('decision_geometry.png', bbox_inches='tight')
-plt.close()
-print('Saved decision_geometry.png')
+save_grayscale('decision_geometry.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 5: LTL trust property coverage / precision
@@ -201,9 +204,7 @@ for bar, val in zip(b2, precision):
             ha='center', va='bottom', fontsize=8)
 
 plt.tight_layout()
-plt.savefig('ltl_properties.png', bbox_inches='tight')
-plt.close()
-print('Saved ltl_properties.png')
+save_grayscale('ltl_properties.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 6: Architecture diagram (black and white)
@@ -275,9 +276,7 @@ ax.text(4.5, 1.3, 'flagged case', fontsize=7, color='black')
 plt.title('Prototype-Driven Guardrail Auditing Architecture',
           fontsize=13, fontweight='bold', y=1.01)
 plt.tight_layout()
-plt.savefig('architecture.png', bbox_inches='tight', dpi=150)
-plt.close()
-print('Saved architecture.png')
+save_grayscale('architecture.png')
 
 print('\nAll figures generated (black and white).')
 
@@ -348,9 +347,7 @@ ax.text(0, 47 + 18.2 + 2, '47.0%\n±18.2', ha='center', va='bottom', fontsize=8)
 ax.legend(fontsize=7)
 
 plt.tight_layout()
-plt.savefig('ab_results.png', bbox_inches='tight')
-plt.close()
-print('Saved ab_results.png')
+save_grayscale('ab_results.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 2: K-means sweep (silhouette vs k)
@@ -371,9 +368,7 @@ ax.legend(fontsize=8)
 ax.set_ylim(-0.05, 0.55)
 ax.set_xticks(ks)
 plt.tight_layout()
-plt.savefig('clustering_sweep.png', bbox_inches='tight')
-plt.close()
-print('Saved clustering_sweep.png')
+save_grayscale('clustering_sweep.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 3: Explainability comparison bar chart
@@ -404,9 +399,7 @@ for bars in [b1, b2, b3]:
                 ha='center', va='bottom', fontsize=7)
 
 plt.tight_layout()
-plt.savefig('explainability_comparison.png', bbox_inches='tight')
-plt.close()
-print('Saved explainability_comparison.png')
+save_grayscale('explainability_comparison.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 4: Decision geometry (violin / box per quadrant)
@@ -438,9 +431,7 @@ for bar, val in zip(bars, mean_margin):
 plt.suptitle('Decision Geometry: TP/TN/FP/FN are Geometrically Indistinguishable',
              fontsize=10, fontweight='bold')
 plt.tight_layout()
-plt.savefig('decision_geometry.png', bbox_inches='tight')
-plt.close()
-print('Saved decision_geometry.png')
+save_grayscale('decision_geometry.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 5: LTL trust property coverage / precision
@@ -472,9 +463,7 @@ for bar, val in zip(b2, precision):
             ha='center', va='bottom', fontsize=8)
 
 plt.tight_layout()
-plt.savefig('ltl_properties.png', bbox_inches='tight')
-plt.close()
-print('Saved ltl_properties.png')
+save_grayscale('ltl_properties.png')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 6: Architecture diagram (programmatic)
@@ -549,8 +538,6 @@ ax.text(4.5, 1.3, 'flagged case', fontsize=7, color='#b85450')
 
 plt.title('Prototype-Driven Guardrail Auditing Architecture', fontsize=13, fontweight='bold', y=1.01)
 plt.tight_layout()
-plt.savefig('architecture.png', bbox_inches='tight', dpi=150)
-plt.close()
-print('Saved architecture.png')
+save_grayscale('architecture.png')
 
 print('\nAll figures generated successfully.')
