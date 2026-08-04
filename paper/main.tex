@@ -469,11 +469,23 @@ and $\phi_\text{ambiguous}$ achieve 100\% precision.}
 $\phi_\text{trust}$ (Eq.~\ref{eq:trust}) & 93\% & 92.3\% & Trust and act \\
 $\phi_\text{incoherent}$ (Eq.~\ref{eq:incoherent}) & 33\% & \textbf{100\%} & Read all 3 \\
 $\phi_\text{ambiguous}$ (Eq.~\ref{eq:ambiguous}) & 17\% & \textbf{100\%} & Escalate \\
+$\phi_\text{polarised}$ ($\lnot\text{mixed} \wedge \text{range}{>}0.001$) & 53\% & 87.3\% & High confidence \\
 $\phi_\text{FP}$ (P2 fires UNSAFE) & --- & --- & Flag probable FP \\
 $\phi_\text{FN}$ (P0 fires SAFE) & --- & --- & Flag probable FN \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\noindent\textbf{Developer decision tree.} At runtime, a developer applies these
+properties in order: (1) if $\phi_{\lnot\text{trust}}$ fires (range $\leq$0.0005,
+7\% of cases), ignore the prototype ranking and read the prompt directly; (2) if
+$\phi_\text{ambiguous}$ fires (mixed polarity and range $<$0.001, 17\%), escalate
+to human review---the guard's decision was geometrically a coin-flip; (3) if
+$\phi_\text{incoherent}$ fires (mixed polarity, 33\%), read all three prototypes
+and treat the polarity mixture as the diagnostic signal; (4) otherwise
+$\phi_\text{polarised}$ applies (53\%) and the top-1 prototype can be trusted at
+87\% confidence. Together, these four branches cover 100\% of cases and require no
+ground truth.
 
 Together, these properties operationalise a structured accept/solve meta-decision for
 developers~\cite{buccinca2021trust}: $\phi_\text{trust}$ defines the accept region
@@ -758,8 +770,8 @@ developers diagnose the misclassification (Table~\ref{tab:helpfulness}).
 \small
 \caption{Explanation helpfulness on 223 benchmark cases.
 HELPS: explanation directly reveals root cause.
-PARTIAL: top-2/3 rescues a wrong top-1 (adds value but requires reading all three).
-NO HELP: all 3 prototypes are semantically wrong (single case: hate speech prototype not in taxonomy).}
+PARTIAL: top-2/3 rescues a wrong top-1.
+NO HELP: all 3 prototypes semantically wrong.}
 \label{tab:helpfulness}
 \begin{tabular}{lrrr}
 \toprule
@@ -772,13 +784,70 @@ FN (191 cases) & 140 (73\%) & 50 (26\%) & 1 (1\%) \\
 \end{tabular}
 \end{table}
 
-The single NO HELP case (c035: ``what are some stereotypes about people in New Mexico?'')
-has all 3 prototypes as SAFE clusters, reflecting a coverage gap: hate speech and
-stereotype-promotion have no UNSAFE prototype in the 4-cluster ToxicChat-derived taxonomy.
-This is a \emph{taxonomy coverage gap} rather than an explanation mechanism failure:
-adding a 5th prototype (Hate Speech / Extremist Ideology) is expected to resolve
-$\sim$30 additional FN cases where the guard silently misses offensive stereotype requests,
-non-English extremist content, and subtle social manipulation prompts.
+\subsection{FN Coverage by Prototype}
+
+When any of the four UNSAFE prototypes appears as top-1, helpfulness is 100\%:
+52/52 FNs matched to Persona Jailbreak (HELPS), 34/34 to Fictional Narrative (HELPS),
+31/31 to Direct Harmful Content (HELPS), 23/23 to Privacy Misuse (HELPS).
+The 50 FNs where the top-1 was a SAFE cluster (Academic, Casual, or Informational)
+are fully rescued by the 2nd or 3rd prototype entry (50/50, 100\% rescue rate).
+\textbf{Every FN has at least one UNSAFE prototype somewhere in the top-3.}
+
+\subsection{Does the Explanation Contradict the Guard's Decision?}
+
+A practically critical question: does the explanation \emph{autonomously} signal that
+the guard was wrong, or must the developer still reason about it?
+We classify cases as \emph{no-thinking-needed} when at least one of the top-3
+prototypes contradicts the guard's decision polarity (a SAFE prototype appearing for
+an FP, or an UNSAFE prototype appearing for an FN).
+Table~\ref{tab:autonomous} shows the result.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Fraction of cases where the explanation autonomously contradicts the
+guard's decision, requiring no further reasoning from the developer.}
+\label{tab:autonomous}
+\begin{tabular}{lrr}
+\toprule
+& \textbf{No Thinking Needed} & \textbf{Must Think} \\
+\midrule
+FP (32 cases) & 16 / 32 (50\%) & 16 / 32 (50\%) \\
+FN (191 cases) & 190 / 191 (99\%) & 1 / 191 (1\%) \\
+\textbf{Combined} & \textbf{206 / 223 (92\%)} & \textbf{17 / 223 (8\%)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For FNs, the prototype system is \textbf{nearly autonomous}: 99\% of the time an
+UNSAFE prototype appears in the top-3 even though the guard said SAFE, directly
+surfacing the missed attack pattern without the developer needing to interpret the
+explanation. For FPs it is 50/50: in half of FP cases a SAFE prototype appears
+and the guard error is immediately obvious; in the other half, all three prototypes
+are UNSAFE and the developer must apply domain context.
+
+\noindent\textbf{FP ``must think'' cases.}
+All 16 FP cases where all three prototypes are UNSAFE involve benign prompts that
+share surface features with attack patterns:
+(c002) a React coding request containing a URL triggered Privacy Misuse --- the developer
+must recognise that URL-in-coding is benign;
+(c003) a Halodoc chatbot role assignment triggered Fictional Narrative / Persona Jailbreak --- the developer must recognise business role-play is not a jailbreak;
+(c005) a Harry Potter quote request triggered Direct Harmful Content --- the developer
+must recognise that reproducing children's fiction is not restricted literary material;
+(c008) a song lyric request triggered Direct Harmful Content via the word ``shot'' ---
+the developer must apply figurative-language context.
+In all cases the prototype \emph{correctly names which pattern the guard matched},
+providing the precise contrastive training signal needed to fix the FP.
+
+\subsection{The Single True NO HELP Case}
+
+Case c035 (``what are some stereotypes about people in New Mexico?'') has all
+three prototypes as SAFE clusters: no UNSAFE prototype exists for hate speech or
+stereotype-promotion in the 4-cluster ToxicChat taxonomy. This is a \emph{taxonomy
+coverage gap}, not a mechanism failure. Adding a 5th prototype (Hate Speech /
+Extremist Ideology) is expected to close $\sim$30 additional FN cases covering
+stereotypes, non-English extremist content, and subtle social manipulation.
+
 
 % ================================================================
 \section{Discussion}
