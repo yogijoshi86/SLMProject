@@ -1,86 +1,114 @@
 \relax 
 \citation{inan2023llamaguard}
-\citation{dasantar2025aies}
+\citation{wildguard2024}
 \citation{dasantar2025aies}
 \citation{gehman2020realtoxicity}
+\citation{dasantar2025aies}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{}\protected@file@percent }
 \citation{inan2023llamaguard}
 \citation{wildguard2024}
-\citation{dasantar2025aies}
 \citation{ribeiro2016lime}
 \citation{lundberg2017shap}
+\citation{chen2019looks}
+\citation{zheng2023judging}
 \citation{dasantar2025aies}
-\citation{bansal2021aaai}
-\citation{mcinnes2018umap}
+\citation{guo2017calibration}
 \@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{2}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Safety Guardrail Models}{2}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Explainability for Safety Classifiers}{2}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}LLM-as-Judge}{2}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Human-AI Teaming}{2}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}Architecture}{2}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Phase 1: Hidden State Extraction}{2}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Phase 2: Prototype Discovery}{2}{}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Prototype-Driven Guardrail Auditing Architecture. \textbf  {Training (offline):} Hidden states from Llama-Guard-3-8B are reduced via UMAP and clustered with K-means to discover 4 attack prototypes, persisted as \texttt  {taxonomy.json}. \textbf  {Inference (real-time):} Each new prompt is projected into the same 50-dim UMAP space, matched to the nearest prototype, and evaluated against LTL properties. \textbf  {Review:} Flagged cases are routed to developers with prototype explanations or to model-assisted review pipelines.}}{3}{}\protected@file@percent }
-\newlabel{fig:architecture}{{1}{3}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Phase 3: Real-Time Matching}{3}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Phase 4: LTL Runtime Monitor}{3}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Prototype Taxonomy}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Post-Hoc Explainability}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}LLM-as-Judge and Calibration}{2}{}\protected@file@percent }
+\citation{aharoni2020unsupervised}
+\citation{zou2023universal}
+\citation{wei2023jailbroken}
+\citation{shen2024dan}
+\citation{mazeika2024harmbench}
+\citation{buccinca2021trust}
+\citation{mcinnes2018umap}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Embedding-Based Taxonomy Discovery}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Jailbreak Attack Taxonomy}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}AI-Assisted Decision Making and Overreliance}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Architecture}{3}{}\protected@file@percent }
+\newlabel{sec:arch}{{3}{3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Phase 1: Hidden State Extraction}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Phase 2: Prototype Discovery via UMAP + K-means}{3}{}\protected@file@percent }
+\newlabel{sec:proto}{{3.2}{3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Prototype-Driven Guardrail Auditing Architecture. \textbf  {Offline training:} UNSAFE embeddings from Llama-Guard-3-8B are projected via UMAP and clustered with K-means to yield 4 attack prototypes, persisted as a taxonomy. \textbf  {Inference:} Each new prompt is projected into the same 50-dim space, matched to the nearest prototype, and evaluated against LTL trust properties. \textbf  {Review:} Flagged cases are routed to developers with prototype explanations.}}{4}{}\protected@file@percent }
+\newlabel{fig:architecture}{{1}{4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Phase 3: Real-Time Prototype Matching}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Phase 4: LTL Runtime Trust Monitor}{4}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Four UNSAFE attack prototypes discovered by UMAP + K-means on Llama-Guard-3-8B hidden states (304-embedding training split). S12=Sexual Content, S4=Child Exploitation, S14=Code Interpreter Abuse, S6=Specialized Advice, S8=Intellectual Property.}}{5}{}\protected@file@percent }
+\newlabel{tab:prototypes}{{1}{5}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Prototype Taxonomy}{5}{}\protected@file@percent }
+\newlabel{sec:proto}{{4}{5}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}LTL Trust Properties}{5}{}\protected@file@percent }
+\newlabel{sec:ltl}{{5}{5}}
+\citation{buccinca2021trust}
 \citation{inan2023llamaguard}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Four UNSAFE attack prototypes discovered by UMAP + K-means on Llama-Guard-3-8B hidden states. Cluster sizes are from the 304-embedding training split.}}{4}{}\protected@file@percent }
-\newlabel{tab:prototypes}{{1}{4}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}LTL Trust Properties}{4}{}\protected@file@percent }
-\newlabel{sec:ltl}{{5}{4}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces LTL trust properties computed at inference time from the top-3 similarity scores. All properties are O(1) with no additional model calls. $\phi _\text  {incoherent}$ and $\phi _\text  {ambiguous}$ achieve 100\% precision.}}{6}{}\protected@file@percent }
+\newlabel{tab:ltl}{{2}{6}}
+\newlabel{eq:trust}{{1}{6}}
+\newlabel{eq:incoherent}{{2}{6}}
+\newlabel{eq:ambiguous}{{3}{6}}
 \citation{lin2023toxicchat}
 \citation{grootendorst2022bertopic}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces LTL trust properties computed from inference-time embedding geometry. All are evaluable in O(1) with no additional model calls.}}{5}{}\protected@file@percent }
-\newlabel{tab:ltl}{{2}{5}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Experiments}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Experimental Setup}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Experiment 1: Guard Accuracy Baseline}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Experiment 2: Prototype Discovery}{5}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Clustering comparison. UMAP dramatically improves silhouette and reveals a fourth prototype. BERTopic assigns 41.8\% of prompts to the outlier class, making it unsuitable for production use where every flagged case needs an explanation.}}{5}{}\protected@file@percent }
-\newlabel{tab:clustering}{{3}{5}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Experiment 3: Decision Geometry Analysis}{5}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Decision geometry across quadrants. All four quadrants are geometrically indistinguishable: errors are not at cluster boundaries. Prototype \emph  {identity} (not geometry) predicts error direction.}}{6}{}\protected@file@percent }
-\newlabel{tab:geometry}{{4}{6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Experiment 4: Explainability Comparison}{6}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Explainability comparison on 50-case benchmark. ``Phi-3.5-GT'' = model told the guard made an error. ``Phi-3.5-Blind'' = model told only the guard's decision. Prototype explanations require no LLM call and outperform both SLM modes on FNs.}}{6}{}\protected@file@percent }
-\newlabel{tab:explainability}{{5}{6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}Experiment 5: A/B Study (H1)}{6}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces A/B study results (n=5, counterbalanced Latin square). H1 threshold: 30\% latency reduction.}}{6}{}\protected@file@percent }
-\newlabel{tab:ab}{{6}{6}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces A/B study results (n=4 participants with complete sessions). Prototype explanations (Treatment) reduce diagnostic latency by a mean of 46\% and improve accuracy by 12 percentage points. The H1 threshold of 30\% latency reduction was exceeded by 4/5 participants.}}{7}{}\protected@file@percent }
-\newlabel{fig:ab}{{2}{7}}
-\@writefile{toc}{\contentsline {section}{\numberline {7}Prototype Explanation Analysis}{7}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Overall Helpfulness (223 cases)}{7}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Prototype explanation helpfulness on 223 benchmark cases. HELPS: explanation correctly identifies root cause of misclassification. PARTIAL: top-2/3 rescues a wrong top-1. NO HELP: all 3 prototypes mislead or are irrelevant.}}{7}{}\protected@file@percent }
-\newlabel{tab:helpfulness}{{7}{7}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Top-5 Cases Where Prototypes Help Most}{7}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Where Prototypes Fail}{7}{}\protected@file@percent }
-\citation{bansal2021aaai}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces K-means sweep showing silhouette score vs.\ number of clusters $k$. UMAP-reduced embeddings (50-dim, blue) achieve S=0.4111 at $k^*=4$, vs.\ S=0.039 for full 4,096-dim embeddings (red dashed). The green vertical line marks $k^*=4$.}}{8}{}\protected@file@percent }
-\newlabel{fig:clustering}{{3}{8}}
-\@writefile{toc}{\contentsline {section}{\numberline {8}Discussion}{8}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Limitations}{8}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Connections to Human-AI Teaming}{8}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Fine-Tuning Guidance}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Experiments}{7}{}\protected@file@percent }
+\newlabel{sec:exp}{{6}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Experimental Setup}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Experiment 1: Guard Accuracy Baseline}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Experiment 2: Prototype Discovery}{7}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Clustering comparison. UMAP + K-means dominates on both silhouette and coverage. BERTopic's 41.8\% outlier rate means nearly half of all UNSAFE prompts receive no explanation.}}{7}{}\protected@file@percent }
+\newlabel{tab:clustering}{{3}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Experiment 3: Decision Geometry Analysis}{7}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Decision geometry across TP/TN/FP/FN quadrants. All four groups are geometrically indistinguishable. Guard errors are \emph  {not} at cluster boundaries. Prototype identity, not geometric distance, predicts error direction.}}{8}{}\protected@file@percent }
+\newlabel{tab:geometry}{{4}{8}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Experiment 4: Explainability Comparison}{8}{}\protected@file@percent }
+\newlabel{sec:expcomp}{{6.5}{8}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Explainability comparison on 223-case benchmark. Phi-3.5-Blind defends the guard's wrong SAFE decision in 97\% of FN cases. Phi-3.5-GT produces generic boilerplate for jailbreaks. Prototype-based explanations surface the attack pattern in 99\% of FN cases with zero API cost.}}{8}{}\protected@file@percent }
+\newlabel{tab:explainability}{{5}{8}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}Experiment 5: A/B Study}{9}{}\protected@file@percent }
+\newlabel{sec:ab}{{6.6}{9}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces A/B study results ($n{=}4$ complete sessions). Prototype explanations reduce diagnostic latency by 47\% and improve accuracy by 12 percentage points. The pre-registered H1 threshold of 30\% latency reduction was exceeded by 4/5 participants.}}{9}{}\protected@file@percent }
+\newlabel{fig:ab}{{2}{9}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces A/B study results ($n{=}5$, counterbalanced Latin square, H1 threshold: $\geq $30\% latency reduction). FP accuracy decline reflects the ``must-think'' FP cases where all-UNSAFE explanations confirm the trigger but not the benign intent.}}{9}{}\protected@file@percent }
+\newlabel{tab:ab}{{6}{9}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Analysis: Prototype Explanation Helpfulness}{9}{}\protected@file@percent }
+\citation{wei2023jailbroken}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces K-means silhouette sweep. UMAP (blue) achieves $S{=}0.41$ at $k^*{=}4$, versus $S{=}0.039$ for full 4096-dim embeddings (red dashed). UMAP also reveals a fourth prototype (Privacy) not visible at full dimensionality.}}{10}{}\protected@file@percent }
+\newlabel{fig:clustering}{{3}{10}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Explanation helpfulness on 223 benchmark cases. HELPS: explanation directly reveals root cause. PARTIAL: top-2/3 rescues a wrong top-1 (adds value but requires reading all three). NO HELP: all 3 prototypes are semantically wrong (single case: hate speech prototype not in taxonomy).}}{10}{}\protected@file@percent }
+\newlabel{tab:helpfulness}{{7}{10}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Discussion}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Why SLM Self-Explanation Fails Structurally}{10}{}\protected@file@percent }
+\citation{buccinca2021trust}
+\citation{shen2024dan}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Per-category accuracy of three explanation systems. Prototype explanations dominate FN diagnosis (99.6\% top-3); Phi-3.5-GT is competitive only on FPs.}}{11}{}\protected@file@percent }
+\newlabel{fig:explainability}{{4}{11}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Overreliance and Cognitive Forcing}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Fine-Tuning Guidance from Prototype Analysis}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Limitations and Future Work}{11}{}\protected@file@percent }
 \bibstyle{plainnat}
 \bibdata{references}
-\bibcite{bansal2021aaai}{{1}{2021}{{Bansal et~al.}}{{Bansal, Nushi, Kamar, Horvitz, and Weld}}}
-\bibcite{dasantar2025aies}{{2}{2025}{{Das~Antar et~al.}}{{}}}
-\bibcite{gehman2020realtoxicity}{{3}{2020}{{Gehman et~al.}}{{Gehman, Gururangan, Sap, Choi, and Smith}}}
-\bibcite{grootendorst2022bertopic}{{4}{2022}{{Grootendorst}}{{}}}
-\bibcite{wildguard2024}{{5}{2024}{{Han et~al.}}{{Han, Kim, Yun, et~al.}}}
-\bibcite{inan2023llamaguard}{{6}{2023}{{Inan et~al.}}{{Inan, Upasani, Chi, Rungta, Iyer, Mao, Tontchev, Hu, Fuller, Testuggine, and Khabsa}}}
-\@writefile{toc}{\contentsline {section}{\numberline {9}Conclusion}{9}{}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Explainability comparison across three systems on 50-case benchmark. Prototype explanations dominate on FN accuracy (100\% vs.\ 20\% for Phi-3.5-GT) with no LLM API call required.}}{9}{}\protected@file@percent }
-\newlabel{fig:explainability}{{4}{9}}
-\bibcite{lin2023toxicchat}{{7}{2023}{{Lin et~al.}}{{Lin, Wang, Tong, Wang, Guo, Wang, and Sheng}}}
-\bibcite{lundberg2017shap}{{8}{2017}{{Lundberg and Lee}}{{}}}
-\bibcite{mcinnes2018umap}{{9}{2018}{{McInnes et~al.}}{{McInnes, Healy, and Melville}}}
-\bibcite{ribeiro2016lime}{{10}{2016}{{Ribeiro et~al.}}{{Ribeiro, Singh, and Guestrin}}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Decision geometry across TP/TN/FP/FN quadrants. Cosine distance and prototype margin are statistically indistinguishable across all four quadrants (spread $<$0.0002), falsifying the hypothesis that geometric uncertainty predicts errors.}}{10}{}\protected@file@percent }
-\newlabel{fig:geometry}{{5}{10}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces LTL trust properties: coverage (fraction of cases where property fires) vs.\ precision (fraction where explanation is correct). $\phi _\text  {incoherent}$ and $\phi _\text  {ambiguous}$ achieve 100\% precision.}}{11}{}\protected@file@percent }
-\newlabel{fig:ltl}{{6}{11}}
-\gdef \@abspage@last{11}
+\bibcite{aharoni2020unsupervised}{{1}{2020}{{Aharoni and Goldberg}}{{}}}
+\bibcite{buccinca2021trust}{{2}{2021}{{Buccinca et~al.}}{{Buccinca, Maliza, and Gajos}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Cosine distance and prototype margin across decision quadrants. All four groups are statistically indistinguishable, falsifying the boundary-case hypothesis.}}{12}{}\protected@file@percent }
+\newlabel{fig:geometry}{{5}{12}}
+\@writefile{toc}{\contentsline {section}{\numberline {9}Conclusion}{12}{}\protected@file@percent }
+\bibcite{chen2019looks}{{3}{2019}{{Chen et~al.}}{{Chen, Li, Tao, Barnett, Rudin, and Su}}}
+\bibcite{dasantar2025aies}{{4}{2025}{{Das~Antar et~al.}}{{}}}
+\bibcite{gehman2020realtoxicity}{{5}{2020}{{Gehman et~al.}}{{Gehman, Gururangan, Sap, Choi, and Smith}}}
+\bibcite{grootendorst2022bertopic}{{6}{2022}{{Grootendorst}}{{}}}
+\bibcite{guo2017calibration}{{7}{2017}{{Guo et~al.}}{{Guo, Pleiss, Sun, and Weinberger}}}
+\bibcite{wildguard2024}{{8}{2024}{{Han et~al.}}{{Han, Kim, Yun, et~al.}}}
+\bibcite{inan2023llamaguard}{{9}{2023}{{Inan et~al.}}{{Inan, Upasani, Chi, Rungta, Iyer, Mao, Tontchev, Hu, Fuller, Testuggine, and Khabsa}}}
+\bibcite{lin2023toxicchat}{{10}{2023}{{Lin et~al.}}{{Lin, Wang, Tong, Wang, Guo, Wang, and Sheng}}}
+\bibcite{lundberg2017shap}{{11}{2017}{{Lundberg and Lee}}{{}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces LTL trust property coverage and precision. $\phi _\text  {incoherent}$ and $\phi _\text  {ambiguous}$ achieve 100\% precision at 33\% and 17\% coverage respectively.}}{13}{}\protected@file@percent }
+\newlabel{fig:ltl}{{6}{13}}
+\bibcite{mazeika2024harmbench}{{12}{2024}{{Mazeika et~al.}}{{Mazeika, Phan, Yin, Zou, Wang, Mu, Sakhaee, Li, Basart, Li, Forsyth, and Hendrycks}}}
+\bibcite{mcinnes2018umap}{{13}{2018}{{McInnes et~al.}}{{McInnes, Healy, and Melville}}}
+\bibcite{ribeiro2016lime}{{14}{2016}{{Ribeiro et~al.}}{{Ribeiro, Singh, and Guestrin}}}
+\bibcite{shen2024dan}{{15}{2024}{{Shen et~al.}}{{Shen, Chen, Backes, Shen, and Zhang}}}
+\bibcite{wei2023jailbroken}{{16}{2023}{{Wei et~al.}}{{Wei, Haghtalab, and Steinhardt}}}
+\bibcite{zheng2023judging}{{17}{2023}{{Zheng et~al.}}{{Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li, Li, Xing, Zhang, Gonzalez, and Stoica}}}
+\bibcite{zou2023universal}{{18}{2023}{{Zou et~al.}}{{Zou, Wang, Kolter, and Fredrikson}}}
+\gdef \@abspage@last{14}

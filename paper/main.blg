@@ -5,45 +5,45 @@ The style file: plainnat.bst
 Database file #1: references.bib
 Warning--empty booktitle in grootendorst2022bertopic
 Warning--empty booktitle in inan2023llamaguard
-You've used 10 entries,
+You've used 18 entries,
             2773 wiz_defined-function locations,
-            643 strings with 7073 characters,
-and the built_in function-call counts, 5483 in all, are:
-= -- 439
-> -- 413
-< -- 6
-+ -- 139
-- -- 129
-* -- 435
-:= -- 837
-add.period$ -- 30
-call.type$ -- 10
-change.case$ -- 71
-chr.to.int$ -- 10
-cite$ -- 22
-duplicate$ -- 251
-empty$ -- 419
-format.name$ -- 142
-if$ -- 1152
+            680 strings with 8987 characters,
+and the built_in function-call counts, 10403 in all, are:
+= -- 819
+> -- 860
+< -- 11
++ -- 288
+- -- 270
+* -- 879
+:= -- 1608
+add.period$ -- 54
+call.type$ -- 18
+change.case$ -- 142
+chr.to.int$ -- 18
+cite$ -- 38
+duplicate$ -- 444
+empty$ -- 746
+format.name$ -- 293
+if$ -- 2161
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 10
-newline$ -- 58
-num.names$ -- 40
-pop$ -- 175
+missing$ -- 18
+newline$ -- 98
+num.names$ -- 72
+pop$ -- 331
 preamble$ -- 1
-purify$ -- 61
+purify$ -- 124
 quote$ -- 0
-skip$ -- 203
+skip$ -- 366
 stack$ -- 0
-substring$ -- 108
-swap$ -- 41
-text.length$ -- 3
+substring$ -- 172
+swap$ -- 67
+text.length$ -- 7
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 110
+type$ -- 198
 warning$ -- 2
-while$ -- 36
+while$ -- 65
 width$ -- 0
-write$ -- 128
+write$ -- 231
 (There were 2 warnings)

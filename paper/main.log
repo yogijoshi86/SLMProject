@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2021/TeX Live for SUSE Linux) (preloaded format=pdflatex 2026.7.11)  3 AUG 2026 23:02
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2021/TeX Live for SUSE Linux) (preloaded format=pdflatex 2026.7.11)  4 AUG 2026 00:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -232,33 +232,65 @@ Package: natbib 2010/09/13 8.31b (PWD, AO)
 LaTeX Info: Redefining \cite on input line 694.
 \c@NAT@ctr=\count275
 )
-LaTeX Font Info:    Trying to load font information for OT1+ptm on input line 2
-9.
+(/usr/share/texmf/tex/latex/parskip/parskip.sty
+Package: parskip 2021-03-14 v2.0h non-zero parskip adjustments
+
+(/usr/share/texmf/tex/latex/kvoptions/kvoptions.sty
+Package: kvoptions 2020-10-07 v3.14 Key value format for package options (HO)
+
+(/usr/share/texmf/tex/generic/ltxcmds/ltxcmds.sty
+Package: ltxcmds 2020-05-10 v1.25 LaTeX kernel commands for general use (HO)
+)
+(/usr/share/texmf/tex/generic/kvsetkeys/kvsetkeys.sty
+Package: kvsetkeys 2019/12/15 v1.18 Key value parser (HO)
+))
+(/usr/share/texmf/tex/latex/etoolbox/etoolbox.sty
+Package: etoolbox 2020/10/05 v2.5k e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count276
+))
+(/usr/share/texmf/tex/latex/titlesec/titlesec.sty
+Package: titlesec 2019/10/16 v2.13 Sectioning titles
+\ttl@box=\box51
+\beforetitleunit=\skip59
+\aftertitleunit=\skip60
+\ttl@plus=\dimen175
+\ttl@minus=\dimen176
+\ttl@toksa=\toks24
+\titlewidth=\dimen177
+\titlewidthlast=\dimen178
+\titlewidthfirst=\dimen179
+)
+LaTeX Font Info:    Trying to load font information for OT1+ptm on input line 3
+2.
 
 (/usr/share/texmf/tex/latex/psnfss/ot1ptm.fd
 File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
 )
 (/usr/share/texmf/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2021-03-18 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count276
-\l__pdf_internal_box=\box51
-) (./main.aux)
+\l__color_backend_stack_int=\count277
+\l__pdf_internal_box=\box52
+) (./main.aux
+
+LaTeX Warning: Label `sec:proto' multiply defined.
+
+)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 32.
+LaTeX Font Info:    ... okay on input line 32.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -296,64 +328,34 @@ LaTeX Font Info:    ... okay on input line 29.
 
 (/usr/share/texmf/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count277
-\scratchdimen=\dimen175
-\scratchbox=\box52
-\nofMPsegments=\count278
-\nofMParguments=\count279
-\everyMPshowfont=\toks24
-\MPscratchCnt=\count280
-\MPscratchDim=\dimen176
-\MPnumerator=\count281
-\makeMPintoPDFobject=\count282
-\everyMPtoPDFconversion=\toks25
+\scratchcounter=\count278
+\scratchdimen=\dimen180
+\scratchbox=\box53
+\nofMPsegments=\count279
+\nofMParguments=\count280
+\everyMPshowfont=\toks25
+\MPscratchCnt=\count281
+\MPscratchDim=\dimen181
+\MPnumerator=\count282
+\makeMPintoPDFobject=\count283
+\everyMPtoPDFconversion=\toks26
 ) (/usr/share/texmf/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
-
-(/usr/share/texmf/tex/generic/infwarerr/infwarerr.sty
-Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
-)
-(/usr/share/texmf/tex/latex/grfext/grfext.sty
-Package: grfext 2019/12/03 v1.3 Manage graphics extensions (HO)
-
-(/usr/share/texmf/tex/generic/kvdefinekeys/kvdefinekeys.sty
-Package: kvdefinekeys 2019-12-19 v1.6 Define keys (HO)
-))
-(/usr/share/texmf/tex/latex/kvoptions/kvoptions.sty
-Package: kvoptions 2020-10-07 v3.14 Key value format for package options (HO)
-
-(/usr/share/texmf/tex/generic/ltxcmds/ltxcmds.sty
-Package: ltxcmds 2020-05-10 v1.25 LaTeX kernel commands for general use (HO)
-)
-(/usr/share/texmf/tex/generic/kvsetkeys/kvsetkeys.sty
-Package: kvsetkeys 2019/12/15 v1.18 Key value parser (HO)
-))
-(/usr/share/texmf/tex/generic/pdftexcmds/pdftexcmds.sty
-Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
-)
-Package pdftexcmds Info: \pdf@primitive is available.
-Package pdftexcmds Info: \pdf@ifprimitive is available.
-Package pdftexcmds Info: \pdfdraftmode found.
-)
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 85.
-Package grfext Info: Graphics extension search list:
-(grfext)             [.pdf,.png,.jpg,.mps,.jpeg,.jbig2,.jb2,.PDF,.PNG,.JPG,.JPE
-G,.JBIG2,.JB2,.eps]
-(grfext)             \AppendGraphicsExtensions on input line 504.
 
 (/usr/share/texmf/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Info: Redefining \microtypecontext on input line 29.
+LaTeX Info: Redefining \microtypecontext on input line 32.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
 Package microtype Info: Automatic font expansion enabled (level 2),
 (microtype)             stretch: 20, shrink: 20, step: 1, non-selected.
 Package microtype Info: Using default expansion set `alltext-nott'.
-LaTeX Info: Redefining \showhyphens on input line 29.
+LaTeX Info: Redefining \showhyphens on input line 32.
 Package microtype Info: No adjustment of tracking.
 Package microtype Info: No adjustment of interword spacing.
 Package microtype Info: No adjustment of character kerning.
@@ -365,7 +367,7 @@ File: mt-ptm.cfg 2006/04/20 v1.7 microtype config. file: Times (RS)
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msa on input line 31.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 33.
 
 
 (/usr/share/texmf/tex/latex/amsfonts/umsa.fd
@@ -374,7 +376,7 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 (/usr/share/texmf/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 31.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 33.
 
 
 (/usr/share/texmf/tex/latex/amsfonts/umsb.fd
@@ -384,7 +386,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 )
 LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 3
-1.
+3.
 
 (/usr/share/texmf/tex/latex/psnfss/ot1pcr.fd
 File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
@@ -393,110 +395,113 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `pcr' (encoding: OT1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
-LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 6
-1.
+LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 7
+7.
 
 (/usr/share/texmf/tex/latex/psnfss/ts1ptm.fd
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 ) [1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-<architecture.png, id=11, 860.013pt x 497.6994pt>
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2]
+<architecture.png, id=19, 860.013pt x 497.6994pt>
 File: architecture.png Graphic file (type png)
 <use architecture.png>
-Package pdftex.def Info: architecture.png  used on input line 142.
+Package pdftex.def Info: architecture.png  used on input line 233.
 (pdftex.def)             Requested size: 505.89pt x 292.76675pt.
- [2]
-Underfull \hbox (badness 5316) in paragraph at lines 205--205
-[]|\OT1/ptm/m/n/9 (+20) P0 --- Per-sona
+ [3] [4 <./architecture.png>]
+Underfull \hbox (badness 3601) in paragraph at lines 351--351
+[]|\OT1/ptm/b/n/9 (+20) P1 \OT1/ptm/m/n/9 (+20) --- Fic-tional
  []
 
 
-Underfull \hbox (badness 1442) in paragraph at lines 210--210
-[]|\OT1/ptm/m/n/9 (+20) P1 --- Fic-tional
+Underfull \hbox (badness 10000) in paragraph at lines 358--358
+[]|\OT1/ptm/b/n/9 (+20) P2 \OT1/ptm/m/n/9 (+20) --- Di-rect
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 214--214
-[]|\OT1/ptm/m/n/9 (+20) P2 --- Di-rect
+Underfull \hbox (badness 1112) in paragraph at lines 358--358
+\OT1/ptm/m/n/9 (+20) Harm-ful Con-tent
  []
 
-[3 <./architecture.png>]
 
-LaTeX Warning: `h' float specifier changed to `ht'.
+Underfull \hbox (badness 1028) in paragraph at lines 365--367
+[]|\OT1/ptm/m/n/9 (+20) Targeting a real in-di-vid-ual, pri-
+ []
 
-[4]
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
-[5]
-<ab_results.png, id=35, 715.473pt x 251.4996pt>
+[5] [6] [7] [8]
+<ab_results.png, id=46, 715.473pt x 251.4996pt>
 File: ab_results.png Graphic file (type png)
 <use ab_results.png>
-Package pdftex.def Info: ab_results.png  used on input line 447.
+Package pdftex.def Info: ab_results.png  used on input line 669.
 (pdftex.def)             Requested size: 480.59395pt x 168.93365pt.
-
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
-<clustering_sweep.png, id=36, 353.6412pt x 245.2362pt>
+<clustering_sweep.png, id=47, 353.6412pt x 245.2362pt>
 File: clustering_sweep.png Graphic file (type png)
 <use clustering_sweep.png>
-Package pdftex.def Info: clustering_sweep.png  used on input line 457.
+Package pdftex.def Info: clustering_sweep.png  used on input line 718.
 (pdftex.def)             Requested size: 430.00958pt x 298.20732pt.
 
+
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[6] [7 <./ab_results.png>] [8 <./clustering_sweep.png>]
-<explainability_comparison.png, id=49, 426.393pt x 245.2362pt>
+<explainability_comparison.png, id=48, 426.393pt x 245.2362pt>
 File: explainability_comparison.png Graphic file (type png)
 <use explainability_comparison.png>
-Package pdftex.def Info: explainability_comparison.png  used on input line 595.
+Package pdftex.def Info: explainability_comparison.png  used on input line 731.
 
 (pdftex.def)             Requested size: 480.59395pt x 276.41766pt.
-<decision_geometry.png, id=50, 570.933pt x 251.4996pt>
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+<decision_geometry.png, id=49, 570.933pt x 251.4996pt>
 File: decision_geometry.png Graphic file (type png)
 <use decision_geometry.png>
-Package pdftex.def Info: decision_geometry.png  used on input line 604.
+Package pdftex.def Info: decision_geometry.png  used on input line 739.
 (pdftex.def)             Requested size: 480.59395pt x 211.71104pt.
-
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<ltl_properties.png, id=51, 426.393pt x 245.2362pt>
+<ltl_properties.png, id=50, 426.393pt x 245.2362pt>
 File: ltl_properties.png Graphic file (type png)
 <use ltl_properties.png>
-Package pdftex.def Info: ltl_properties.png  used on input line 613.
+Package pdftex.def Info: ltl_properties.png  used on input line 747.
 (pdftex.def)             Requested size: 480.59395pt x 276.41766pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-(./main.bbl [9 <./explainability_comparison.png>]) [10 <./decision_geometry.png
->] [11 <./ltl_properties.png>] (./main.aux) ) 
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[9 <./ab_results.png>] [10 <./clustering_sweep.png>] [11 <./explainability_comp
+arison.png>] (./main.bbl [12 <./decision_geometry.png>] [13 <./ltl_properties.p
+ng>]) [14] (./main.aux)
+
+LaTeX Warning: There were multiply-defined labels.
+
+ ) 
 Here is how much of TeX's memory you used:
- 6622 strings out of 480031
- 94304 string characters out of 5884516
- 435194 words of memory out of 5000000
- 23481 multiletter control sequences out of 15000+600000
- 448095 words of font info for 291 fonts, out of 8000000 for 9000
+ 7241 strings out of 480031
+ 101280 string characters out of 5884516
+ 448477 words of memory out of 5000000
+ 24045 multiletter control sequences out of 15000+600000
+ 450725 words of font info for 334 fonts, out of 8000000 for 9000
  475 hyphenation exceptions out of 8191
- 72i,12n,78p,664b,296s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texmf/fonts/enc/dvips/
-base/8r.enc}</usr/share/texmf/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/s
-hare/texmf/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf/fonts/ty
-pe1/public/amsfonts/cm/cmmi7.pfb></usr/share/texmf/fonts/type1/public/amsfonts/
-cm/cmmi9.pfb></usr/share/texmf/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/s
-hare/texmf/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texmf/fonts/type
-1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf/fonts/type1/public/amsfonts/c
-m/cmsy6.pfb></usr/share/texmf/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/sh
-are/texmf/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/share/texmf/fonts/type
-1/urw/courier/ucrr8a.pfb></usr/share/texmf/fonts/type1/urw/times/utmb8a.pfb></u
-sr/share/texmf/fonts/type1/urw/times/utmr8a.pfb></usr/share/texmf/fonts/type1/u
-rw/times/utmri8a.pfb>
-Output written on main.pdf (11 pages, 520095 bytes).
+ 68i,12n,74p,1193b,289s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/share/texmf/fonts/enc/dvips/base/8r.enc}</usr/share/texmf/fonts/type1/p
+ublic/amsfonts/cm/cmex10.pfb></usr/share/texmf/fonts/type1/public/amsfonts/cm/c
+mmi10.pfb></usr/share/texmf/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/shar
+e/texmf/fonts/type1/public/amsfonts/cm/cmmi9.pfb></usr/share/texmf/fonts/type1/
+public/amsfonts/cm/cmr10.pfb></usr/share/texmf/fonts/type1/public/amsfonts/cm/c
+mr7.pfb></usr/share/texmf/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/share/t
+exmf/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf/fonts/type1/pu
+blic/amsfonts/cm/cmsy6.pfb></usr/share/texmf/fonts/type1/public/amsfonts/cm/cms
+y7.pfb></usr/share/texmf/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/share/t
+exmf/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texmf/fonts/type1/urw/times
+/utmb8a.pfb></usr/share/texmf/fonts/type1/urw/times/utmr8a.pfb></usr/share/texm
+f/fonts/type1/urw/times/utmri8a.pfb>
+Output written on main.pdf (14 pages, 550491 bytes).
 PDF statistics:
- 110 PDF objects out of 1000 (max. 8388607)
- 70 compressed objects within 1 object stream
+ 124 PDF objects out of 1000 (max. 8388607)
+ 80 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 66079 words of extra memory for PDF output out of 74296 (max. 10000000)
+ 65055 words of extra memory for PDF output out of 74296 (max. 10000000)
 
