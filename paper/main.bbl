@@ -1,17 +1,30 @@
-\begin{thebibliography}{11}
+\begin{thebibliography}{18}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
-\bibitem[Bansal et~al.(2021)Bansal, Nushi, Kamar, Horvitz, and
-  Weld]{bansal2021aaai}
-Gagan Bansal, Besmira Nushi, Ece Kamar, Eric Horvitz, and Daniel~S. Weld.
-\newblock Is the most accurate ai the best teammate? optimizing ai for
-  teamwork.
-\newblock In \emph{Proceedings of the Thirty-Fifth AAAI Conference on
-  Artificial Intelligence}, pages 11405--11414, 2021.
+\bibitem[Aharoni and Goldberg(2020)]{aharoni2020unsupervised}
+Roee Aharoni and Yoav Goldberg.
+\newblock Unsupervised domain clusters in pretrained language models.
+\newblock In \emph{Proceedings of the 58th Annual Meeting of the Association
+  for Computational Linguistics}, pages 7747--7763, 2020.
+
+\bibitem[Buccinca et~al.(2021)Buccinca, Maliza, and Gajos]{buccinca2021trust}
+Zana Buccinca, Maja~Barbara Maliza, and Krzysztof~Z. Gajos.
+\newblock To trust or to think: Cognitive forcing functions can reduce
+  overreliance on {AI} in {AI}-assisted decision making.
+\newblock \emph{Proceedings of the ACM on Human-Computer Interaction},
+  5\penalty0 (CSCW1):\penalty0 1--21, 2021.
+
+\bibitem[Chen et~al.(2019)Chen, Li, Tao, Barnett, Rudin, and Su]{chen2019looks}
+Chaofan Chen, Oscar Li, Daniel Tao, Alina~J. Barnett, Cynthia Rudin, and
+  Jonathan~K. Su.
+\newblock This looks like that: Deep learning for interpretable image
+  recognition.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~32, 2019.
 
 \bibitem[Das~Antar et~al.(2025)]{dasantar2025aies}
 Amrita Das~Antar et~al.
@@ -33,6 +46,12 @@ Maarten Grootendorst.
 \newblock {BERTopic}: Neural topic modeling with a class-based {TF-IDF}
   procedure.
 \newblock 2022.
+
+\bibitem[Guo et~al.(2017)Guo, Pleiss, Sun, and Weinberger]{guo2017calibration}
+Chuan Guo, Geoff Pleiss, Yu~Sun, and Kilian~Q. Weinberger.
+\newblock On calibration of modern neural networks.
+\newblock In \emph{Proceedings of the 34th International Conference on Machine
+  Learning}, Proceedings of Machine Learning Research, pages 1321--1330, 2017.
 
 \bibitem[Han et~al.(2024)Han, Kim, Yun, et~al.]{wildguard2024}
 Seungju Han, Kavel Kim, Jaehyun Yun, et~al.
@@ -64,6 +83,16 @@ Scott~M. Lundberg and Su-In Lee.
 \newblock In \emph{Advances in Neural Information Processing Systems},
   volume~30, 2017.
 
+\bibitem[Mazeika et~al.(2024)Mazeika, Phan, Yin, Zou, Wang, Mu, Sakhaee, Li,
+  Basart, Li, Forsyth, and Hendrycks]{mazeika2024harmbench}
+Mantas Mazeika, Long Phan, Xuwang Yin, Andy Zou, Zifan Wang, Norman Mu, Elham
+  Sakhaee, Nathaniel Li, Steven Basart, Bo~Li, David Forsyth, and Dan
+  Hendrycks.
+\newblock {HarmBench}: A standardized evaluation framework for automated red
+  teaming and robust refusal.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine
+  Learning}, Proceedings of Machine Learning Research, 2024.
+
 \bibitem[McInnes et~al.(2018)McInnes, Healy, and Melville]{mcinnes2018umap}
 Leland McInnes, John Healy, and James Melville.
 \newblock {UMAP}: Uniform manifold approximation and projection for dimension
@@ -76,6 +105,28 @@ Marco~Tulio Ribeiro, Sameer Singh, and Carlos Guestrin.
   classifier.
 \newblock In \emph{Proceedings of the 22nd ACM SIGKDD International Conference
   on Knowledge Discovery and Data Mining}, pages 1135--1144, 2016.
+
+\bibitem[Shen et~al.(2024)Shen, Chen, Backes, Shen, and Zhang]{shen2024dan}
+Xinyue Shen, Zeyuan Chen, Michael Backes, Yun Shen, and Yang Zhang.
+\newblock ``{Do Anything Now}'': Characterizing and evaluating in-the-wild
+  jailbreak prompts on large language models.
+\newblock In \emph{Proceedings of the 2024 ACM SIGSAC Conference on Computer
+  and Communications Security}, 2024.
+
+\bibitem[Wei et~al.(2023)Wei, Haghtalab, and Steinhardt]{wei2023jailbroken}
+Alexander Wei, Nika Haghtalab, and Jacob Steinhardt.
+\newblock Jailbroken: How does {LLM} safety training fail?
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~36, 2023.
+
+\bibitem[Zheng et~al.(2023)Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li,
+  Li, Xing, Zhang, Gonzalez, and Stoica]{zheng2023judging}
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao
+  Zhuang, Zi~Lin, Zhuohan Li, Dacheng Li, Eric~P. Xing, Hao Zhang, Joseph~E.
+  Gonzalez, and Ion Stoica.
+\newblock Judging {LLM}-as-a-judge with {MT}-bench and chatbot arena.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~36, 2023.
 
 \bibitem[Zou et~al.(2023)Zou, Wang, Kolter, and Fredrikson]{zou2023universal}
 Andy Zou, Zifan Wang, J.~Zico Kolter, and Matt Fredrikson.

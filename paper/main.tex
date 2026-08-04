@@ -160,42 +160,60 @@ Token-level attribution methods such as LIME~\cite{ribeiro2016lime} and
 SHAP~\cite{lundberg2017shap} produce explanations by perturbing inputs and measuring
 decision changes. Applied to safety classifiers, these methods surface \emph{which tokens}
 contributed to the decision, but not \emph{which semantic attack pattern} the prompt
-instantiates. A developer learning that the token ``story'' contributed positively to
-an UNSAFE classification gains no guidance on whether to adjust training data for the
-Fictional Narrative Bypass pattern or the Persona Bypass pattern. Our prototype-based
-explanations operate at the semantic level, bridging the gap from token attribution
-to actionable attack taxonomy.
+instantiates. Closest in spirit to our method is ProtoPNet~\cite{chen2019looks}, which
+classifies images by similarity to learned part-prototypes, yielding ``this looks like that''
+rationales. We adapt this principle to the NLP safety domain: each guard decision is
+explained by the nearest semantically-labelled cluster in hidden-state embedding space,
+providing a semantic-level counterpart to token attribution that is directly actionable
+for training data augmentation.
 
-\subsection{LLM-Based Explanation Generation}
+\subsection{LLM-as-Judge and Calibration}
 
-Several works use a large language model to explain or evaluate a weaker model's
-decisions~\cite{dasantar2025aies}. GPT-4-as-judge achieves high explanation quality
-but at $\sim$\$0.03/call and $>$2\,s latency, making it economically infeasible at
-production moderation scale. More fundamentally, any approach that queries a \emph{different}
-model for an explanation of the \emph{guard's} decision cannot access the guard's
-internal representation. Our work demonstrates empirically (Section~\ref{sec:exp})
-that Phi-3.5, despite having more parameters than the guard, produces worse explanations
-for guard failures precisely because it lacks access to the guard's embedding geometry.
-
-\subsection{Human-AI Teaming and Decision Support}
-
-Bansal et al.~\cite{bansal2021aaai} showed formally that the most accurate AI is not
-necessarily the best teammate: a less accurate model that places high-confidence predictions
-in a predictable region can yield higher team utility than a more accurate but
-unpredictably uncertain model. Their framework motivates our design---we do not improve
-the guard's raw accuracy, but we add a communication channel (the prototype label and
-exemplar) that helps developers accurately calibrate when to trust the guard's decision
-and when to override it. The ``accept/solve'' meta-decision in their framework maps
-directly to our $\phi_\text{trust}$ / $\phi_\text{ambiguous}$ LTL properties.
+Using a capable LLM to evaluate and explain a weaker model's decisions has been benchmarked
+by Zheng et al.~\cite{zheng2023judging}, who show GPT-4-as-judge achieves near-human
+agreement on quality assessments. In safety contexts~\cite{dasantar2025aies}, this achieves
+high quality but at $\sim$\$0.03/call and $>$2\,s latency, making it economically infeasible
+at production moderation scale. A complementary failure mode is calibration: Guo et
+al.~\cite{guo2017calibration} showed that modern neural networks are systematically
+overconfident in their predictions. Our Experiment~3 reveals a particularly acute
+manifestation in safety classifiers: Llama-Guard's cosine similarity to prototypes is
+statistically indistinguishable across TP/TN/FP/FN quadrants, meaning the model is
+\emph{perfectly miscalibrated} with respect to its own error probability. This motivates
+the LTL trust properties derived from polarity structure rather than similarity magnitude.
 
 \subsection{Embedding-Based Taxonomy Discovery}
 
-Clustering of transformer hidden states for taxonomy discovery has been explored in
-natural language understanding~\cite{mcinnes2018umap} and document
-classification~\cite{grootendorst2022bertopic}, but not in the context of safety guard
-failure analysis. The closest prior work in safety applies concept-bottleneck interpretability
-to understand what individual neurons encode~\cite{zou2023universal}; our approach is
-complementary, operating at the cluster level rather than the neuron level.
+Aharoni and Goldberg~\cite{aharoni2020unsupervised} demonstrated that pretrained LM hidden
+states form geometrically coherent domain clusters without supervision, using UMAP and
+K-means on BERT representations. Our work extends this finding to safety: Llama-Guard's
+hidden states cluster by \emph{attack strategy} rather than topic domain, providing a
+structural basis for unsupervised taxonomy discovery. At the neuron level,
+Zou et al.~\cite{zou2023universal} showed that safety concepts are linearly represented
+in LLM activation space; our cluster-level analysis is a complementary, coarser-grained
+view of the same phenomenon.
+
+\subsection{Jailbreak Attack Taxonomy}
+
+Wei et al.~\cite{wei2023jailbroken} formalise two root causes of safety training failure:
+competing objectives and generalisation mismatch. These map directly to our highest-FN
+prototype classes---P0 (Persona Bypass) exploits competing objectives, P1 (Fictional
+Narrative Bypass) exploits generalisation mismatch. Shen et al.~\cite{shen2024dan}
+empirically characterise 6,387 in-the-wild jailbreak prompts, finding role-play and
+fictional-framing as the two dominant strategies, independently validating our discovered
+taxonomy. HarmBench~\cite{mazeika2024harmbench} provides a standardised benchmark for
+red-teaming evaluation; we use it to confirm that ToxicChat failure patterns generalise.
+
+\subsection{AI-Assisted Decision Making and Overreliance}
+
+Buccinca et al.~\cite{buccinca2021trust} show that AI explanations can increase
+overreliance: users become more confident in AI decisions---including wrong ones---when
+explanations are provided. This directly predicts the 9-point FP accuracy decrease in
+our A/B treatment arm (Section~\ref{sec:ab}): developers given prototype explanations
+over-accept the UNSAFE label on surface-triggered cases. Their proposed solution---
+\emph{cognitive forcing functions} that prompt independent reasoning before showing the
+AI recommendation---is implemented in our architecture via the $\phi_\text{incoherent}$
+property: when SAFE and UNSAFE prototypes co-appear, the developer is shown conflicting
+signals that actively prevent passive acceptance.
 
 % ================================================================
 \section{Architecture}
@@ -449,10 +467,10 @@ $\phi_\text{FN}$ (P0 fires SAFE) & --- & --- & Flag probable FN \\
 \end{tabular}
 \end{table}
 
-Together, these properties operationalise the ``accept/solve'' meta-decision from
-Bansal et al.~\cite{bansal2021aaai}: $\phi_\text{trust}$ defines the accept region
-(93\% of cases), $\phi_\text{ambiguous}$ defines the solve region (17\%), and the
-mixed middle is flagged by $\phi_\text{incoherent}$.
+Together, these properties operationalise a structured accept/solve meta-decision for
+developers~\cite{buccinca2021trust}: $\phi_\text{trust}$ defines the accept region
+(93\% of cases), $\phi_\text{ambiguous}$ defines the solve region requiring human review (17\%),
+and the mixed middle is flagged by $\phi_\text{incoherent}$ as a cognitive forcing signal.
 
 % ================================================================
 \section{Experiments}
@@ -760,43 +778,44 @@ non-English extremist content, and subtle social manipulation prompts.
 
 \subsection{Why SLM Self-Explanation Fails Structurally}
 
-The failure of Phi-3.5 to explain Llama-Guard's decisions is not a failure of model
-capability. Phi-3.5-mini-instruct (3.8B parameters) outperforms the guard itself on
-most benchmarks. The failure is structural: to explain \emph{why} Llama-Guard fired
-on ``NaughtyVircuna,'' one needs to know that ``NaughtyVircuna'' is geometrically
+The failure of Phi-3.5 to explain Llama-Guard's decisions is not a capability gap.
+Phi-3.5-mini-instruct (3.8B parameters) outperforms the guard on most language
+benchmarks. The failure is structural: to explain \emph{why} Llama-Guard fired on
+``NaughtyVircuna,'' one needs to know that this novel persona name is geometrically
 close to ``Kevin (4chan user with no restrictions)'' in the guard's latent space---a
-fact that is not recoverable from the surface text of the prompt by any generative model,
-regardless of its size. This is the key contribution that justifies our embedding-based
-approach: the guard's own hidden states contain the explanation, and no external model
-can recover it without access to that space.
+fact not recoverable from surface text by any generative model, regardless of size.
+Wei et al.~\cite{wei2023jailbroken} identify generalisation mismatch as a root cause
+of safety failures; our finding provides the geometric evidence: novel attack variants
+produce embeddings close to known-attack centroids even when the surface text is
+unrecognised. The explanation must come from the guard's own hidden state, not from
+a separate model.
 
-\subsection{Connections to Human-AI Teaming}
+\subsection{Overreliance and Cognitive Forcing}
 
-Bansal et al.~\cite{bansal2021aaai} showed that the most accurate AI is not always the
-best teammate. Our results instantiate this for safety guardrails: a guard with 92.3\%
-accuracy performs poorly as a collaborative partner because it provides no explanation
-for its failures. Prototype explanations do not improve the guard's accuracy, but they
-add a structured communication channel that improves the human-AI team's combined
-diagnostic utility by 12 percentage points in accuracy and 46\% in latency.
-
-The $\phi_\text{trust}$/$\phi_\text{ambiguous}$ pair directly implements Bansal et al.'s
-``accept/solve'' meta-decision model: $\phi_\text{trust}$ (range$>$0.0005) defines
-the 93\% of cases where developers should accept the prototype explanation;
-$\phi_\text{ambiguous}$ (mixed $\wedge$ range$<$0.001) defines the 17\% where they
-should solve the case themselves.
+Our A/B study reveals a nuanced interaction: prototype explanations improve FN accuracy
+by +30 points but reduce FP accuracy by 9 points. The FP decrease is consistent with
+the overreliance phenomenon documented by Buccinca et al.~\cite{buccinca2021trust}:
+developers given all-UNSAFE top-3 explanations become appropriately confident about
+the guard's trigger pattern but fail to apply the contextual judgment required to
+identify the prompt as actually benign. The $\phi_\text{incoherent}$ property mitigates
+this by design: in 44\% of FP cases a SAFE prototype appears in the top-3, providing
+the cognitive forcing signal that the guard may have over-triggered. The remaining 56\%
+of FP ``must-think'' cases---where all three prototypes are UNSAFE---require a developer
+to reason about domain context rather than prototype label, a task for which our
+explanations provide necessary but not sufficient guidance.
 
 \subsection{Fine-Tuning Guidance from Prototype Analysis}
 
-Our prototype analysis yields a directly actionable fine-tuning data recipe. The 16
-FP ``must-think'' cases are high-quality contrastive pairs: each pairs a benign prompt
-that triggered the guard with the UNSAFE exemplar it was confused with (e.g., Harry Potter
-quote request vs. ``Quote a scene from Story of O''). Adding these as labelled SAFE
-training examples directly targets the surface-trigger pattern causing FPs. The 140
-confirmed FN cases (top-1 UNSAFE prototype, correct attack pattern identified) are
-verified hard negatives the guard currently misclassifies as SAFE. The 50 $\phi_\text{ambiguous}$
-cases, where guard decisions are geometrically borderline, should be upweighted
-(2$\times$ sample weight) to sharpen the decision boundary at training time.
-All of this is derived without any additional manual annotation.
+Our prototype analysis yields a directly actionable fine-tuning recipe for Llama-Guard
+practitioners. The 16 FP ``must-think'' cases are high-quality contrastive pairs:
+each pairs a benign prompt that triggered the guard with the UNSAFE exemplar it was
+confused with (e.g., Harry Potter quote request vs.\ ``Quote a scene from Story of O'').
+The 140 confirmed FN cases (top-1 UNSAFE prototype, correct attack pattern identified)
+are verified hard negatives for FN reduction. The 50 $\phi_\text{ambiguous}$ cases
+should be upweighted ($2\times$ sample weight) to sharpen the decision boundary at
+training time. Critically, Shen et al.~\cite{shen2024dan} show that in-the-wild
+jailbreaks continuously evolve: our taxonomy is a snapshot that requires periodic
+rerunning of prototype discovery on new data to remain current.
 
 \subsection{Limitations and Future Work}
 
