@@ -207,16 +207,15 @@ the decision to the developer. That is the gap we address.
 
 \subsection{Post-Hoc Explainability}
 
-Token-level attribution methods such as LIME~\cite{ribeiro2016lime} and
-SHAP~\cite{lundberg2017shap} produce explanations by perturbing inputs and measuring
-decision changes. Applied to safety classifiers, these methods surface \emph{which tokens}
-contributed to the decision, but not \emph{which semantic attack pattern} the prompt
-instantiates. Closest in spirit to our method is ProtoPNet~\cite{chen2019looks}, which
-classifies images by similarity to learned part-prototypes, yielding ``this looks like that''
-rationales. We adapt this principle to the NLP safety domain: each guard decision is
-explained by the nearest semantically-labelled cluster in hidden-state embedding space,
-providing a semantic-level counterpart to token attribution that is directly actionable
-for training data augmentation.
+LIME~\cite{ribeiro2016lime} and SHAP~\cite{lundberg2017shap} perturb inputs to
+identify which tokens drove a decision. That is useful, but for safety classifiers it is
+not enough: knowing that the token ``story'' contributed to an UNSAFE flag does not tell
+you whether the prompt is a Fictional Narrative Bypass or a Persona Jailbreak.
+The closest prior work to ours is ProtoPNet~\cite{chen2019looks}, which classifies
+images by their similarity to learned part-prototypes---``this looks like that.'' We
+apply the same idea to the NLP safety domain: explain each guard decision by the nearest
+semantically-labelled cluster in hidden-state space, and you get an explanation that is
+directly actionable for training data augmentation.
 
 \subsection{LLM-as-Judge and Calibration}
 
@@ -234,25 +233,22 @@ the LTL trust properties derived from polarity structure rather than similarity 
 
 \subsection{Embedding-Based Taxonomy Discovery}
 
-Aharoni and Goldberg~\cite{aharoni2020unsupervised} demonstrated that pretrained LM hidden
-states form geometrically coherent domain clusters without supervision, using UMAP and
-K-means on BERT representations. Our work extends this finding to safety: Llama-Guard's
-hidden states cluster by \emph{attack strategy} rather than topic domain, providing a
-structural basis for unsupervised taxonomy discovery. At the neuron level,
-Zou et al.~\cite{zou2023universal} showed that safety concepts are linearly represented
-in LLM activation space; our cluster-level analysis is a complementary, coarser-grained
-view of the same phenomenon.
+Aharoni and Goldberg~\cite{aharoni2020unsupervised} showed that pretrained LM hidden
+states cluster by domain without any labels---a result we replicate in the safety setting.
+Llama-Guard's hidden states cluster not by topic but by \emph{attack strategy}, which
+turns out to be exactly the signal needed for explanation. Zou et al.~\cite{zou2023universal}
+found that safety concepts are linearly encoded at the neuron level; our work operates
+at the cluster level and surfaces those concepts as human-readable attack prototypes.
 
 \subsection{Jailbreak Attack Taxonomy}
 
-Wei et al.~\cite{wei2023jailbroken} formalise two root causes of safety training failure:
-competing objectives and generalisation mismatch. These map directly to our highest-FN
-prototype classes---P0 (Persona Bypass) exploits competing objectives, P1 (Fictional
-Narrative Bypass) exploits generalisation mismatch. Shen et al.~\cite{shen2024dan}
-empirically characterise 6,387 in-the-wild jailbreak prompts, finding role-play and
-fictional-framing as the two dominant strategies, independently validating our discovered
-taxonomy. HarmBench~\cite{mazeika2024harmbench} provides a standardised benchmark for
-red-teaming evaluation; we use it to confirm that ToxicChat failure patterns generalise.
+Wei et al.~\cite{wei2023jailbroken} identify two root causes of safety training failure:
+competing objectives and generalisation mismatch. These map neatly onto our top-two
+FN prototypes---P0 (Persona Bypass) exploits competing objectives; P1 (Fictional Narrative
+Bypass) exploits generalisation mismatch. Shen et al.~\cite{shen2024dan} catalogued 6,387
+real jailbreak prompts and found the same two strategies dominating in the wild, which
+independently validates our discovered taxonomy. We use HarmBench~\cite{mazeika2024harmbench}
+to confirm that ToxicChat failure patterns hold beyond a single dataset.
 
 \subsection{AI-Assisted Decision Making and Overreliance}
 
@@ -314,11 +310,10 @@ to project embeddings into a space where cluster structure is preserved and magn
 The UMAP projection is fitted once on the 304 UNSAFE training embeddings and \emph{persisted},
 so that new query embeddings can be projected into the same space at inference time.
 
-We then run K-means with a silhouette sweep over $k \in [3, 10]$, selecting $k^*{=}4$
-at $S{=}0.4111$---a 945\% improvement. Critically, UMAP reveals a fourth cluster
-(Privacy \& Sensitive Information) that merges with Direct Harmful Content at full
-dimensionality, demonstrating that the curse of dimensionality actively obscures
-semantically distinct attack patterns.
+K-means sweep over $k \in [3, 10]$ selects $k^*{=}4$ at $S{=}0.4111$---a 945\%
+improvement over full-dim. UMAP also reveals a fourth cluster (Privacy \& Sensitive
+Information) that is invisible at full dimensionality, merging into Direct Harmful Content.
+The curse of dimensionality was hiding a real semantic distinction.
 
 SAFE embeddings are clustered separately in the same 50-dim UMAP space (reusing the
 fitted reducer), yielding three SAFE content prototypes: \emph{Casual \& Creative
@@ -665,14 +660,13 @@ a fourth prototype (Privacy) not visible at full dimensionality.}
 \label{fig:clustering}
 \end{figure}
 
-Figure~\ref{fig:clustering} and Table~\ref{tab:clustering} show the K-means silhouette
-sweep results. UMAP at 50 dimensions achieves $S{=}0.4111$ at $k^*{=}4$, versus $S{=}0.039$
-at $k^*{=}3$ for full-dimensional K-means. The 945\% improvement reflects two phenomena:
-(1) UMAP removes the noise dimensions that dominate cosine distances at high
-dimensionality, and (2) the chosen metric (cosine, preserved by UMAP) aligns with the
-semantic similarity structure of the embedding space. BERTopic, despite using the same
-UMAP reduction, assigns 41.8\% of UNSAFE prompts to the outlier class (no cluster assigned),
-making it unsuitable for production use where every flagged case must receive an explanation.
+Figure~\ref{fig:clustering} and Table~\ref{tab:clustering} show the results. UMAP at
+50 dimensions hits $S{=}0.4111$ at $k^*{=}4$; full-dimensional K-means reaches only $S{=}0.039$
+at $k^*{=}3$---a 945\% gap. UMAP strips away the noise dimensions that dominate cosine
+distances at high dimensionality, and the cosine metric aligns well with the semantic
+structure of the embedding space. BERTopic fares worse: despite using the same UMAP
+reduction, it assigns 41.8\% of UNSAFE prompts to an outlier class with no explanation.
+That is a non-starter for production use.
 
 \begin{table}[h]
 \centering
@@ -915,8 +909,7 @@ stereotypes, non-English extremist content, and subtle social manipulation.
 
 \subsection{Best Cases}
 
-Table~\ref{tab:best5} shows the five cases where prototype explanations are most
-diagnostic.
+Table~\ref{tab:best5} shows the five cases where the explanation is most immediately useful.
 
 \begin{table}[h]
 \centering
