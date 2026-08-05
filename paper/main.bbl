@@ -1,4 +1,4 @@
-\begin{thebibliography}{23}
+\begin{thebibliography}{25}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -10,6 +10,12 @@ Roee Aharoni and Yoav Goldberg.
 \newblock Unsupervised domain clusters in pretrained language models.
 \newblock In \emph{Proceedings of the 58th Annual Meeting of the Association
   for Computational Linguistics}, pages 7747--7763, 2020.
+
+\bibitem[{Anthropic}(2025)]{anthropic2025pricing}
+{Anthropic}.
+\newblock Claude {API} pricing.
+\newblock \url{https://www.anthropic.com/pricing}, 2025.
+\newblock Accessed August 2026.
 
 \bibitem[Buccinca et~al.(2021)Buccinca, Maliza, and Gajos]{buccinca2021trust}
 Zana Buccinca, Maja~Barbara Maliza, and Krzysztof~Z. Gajos.
@@ -90,6 +96,16 @@ Scott~M. Lundberg and Su-In Lee.
 \newblock A unified approach to interpreting model predictions.
 \newblock In \emph{Advances in Neural Information Processing Systems},
   volume~30, 2017.
+
+\bibitem[Mazeika et~al.(2024)Mazeika, Phan, Yin, Zou, Wang, Mu, Sakhaee, Li,
+  Basart, Li, Forsyth, and Hendrycks]{mazeika2024harmbench}
+Mantas Mazeika, Long Phan, Xuwang Yin, Andy Zou, Zifan Wang, Norman Mu, Elham
+  Sakhaee, Nathaniel Li, Steven Basart, Bo~Li, David Forsyth, and Dan
+  Hendrycks.
+\newblock {HarmBench}: A standardized evaluation framework for automated red
+  teaming and robust refusal.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine
+  Learning}, Proceedings of Machine Learning Research, 2024.
 
 \bibitem[McInnes et~al.(2018)McInnes, Healy, and Melville]{mcinnes2018umap}
 Leland McInnes, John Healy, and James Melville.
