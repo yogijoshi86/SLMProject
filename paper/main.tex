@@ -593,61 +593,33 @@ in ToxicChat's conversational distribution.
 
 \subsection{Experiment 1: Guard Accuracy and Dataset Imbalance}
 
-\textbf{Class imbalance in ToxicChat.}
-ToxicChat contains 5,082 prompts drawn from real LMSYS Chatbot Arena conversations.
-Of these, only 384 carry a positive toxicity or jailbreak label (7.6\% positive rate),
-making it a heavily imbalanced binary classification task. Table~\ref{tab:confusion}
-shows the full confusion matrix on Llama-Guard-3-8B.
+ToxicChat contains 5,082 prompts with only 7.6\% positive (toxic) labels, making it
+heavily imbalanced. On ToxicChat, Llama-Guard-3-8B achieves accuracy=92.3\%,
+precision=49.1\%, recall=48.7\%, F1=0.489. The accuracy is dominated by 4,504 true
+negatives---a na\"ive always-SAFE classifier would score 92.5\%. The operationally
+critical numbers are precision and recall: nearly half of UNSAFE flags are wrong (194 FPs)
+and nearly half of harmful prompts slip through (197 FNs). At 42\,s mean diagnostic
+latency per case, clearing a day's errors consumes over two hours of engineering time.
+HarmBench validation (precision=99.3\%, recall=97.3\%) confirms the failure profile
+generalises beyond ToxicChat~\cite{mazeika2024harmbench}.
 
 \begin{table}[h]
 \centering
 \small
-\caption{Llama-Guard-3-8B confusion matrix on ToxicChat ($n{=}5\,082$). The 92.3\%
-accuracy figure is dominated by the 4,504 true negatives and is misleading as a
-performance indicator. The operationally critical metrics are precision and recall.}
+\caption{Llama-Guard-3-8B on ToxicChat. Accuracy is dominated by true negatives and
+is a misleading indicator; precision and recall reveal the operational problem.}
 \label{tab:confusion}
 \begin{tabular}{lrr}
 \toprule
- & \textbf{Predicted UNSAFE} & \textbf{Predicted SAFE} \\
+ & \textbf{Pred. UNSAFE} & \textbf{Pred. SAFE} \\
 \midrule
 \textbf{True UNSAFE} & TP = 187 & FN = 197 \\
 \textbf{True SAFE}   & FP = 194 & TN = 4504 \\
-\bottomrule
-\end{tabular}
-\vspace{4pt}
-\begin{tabular}{lr}
-\toprule
-\textbf{Metric} & \textbf{Value} \\
 \midrule
-Accuracy  & 92.3\% \\
-Precision & 49.1\% \\
-Recall    & 48.7\% \\
-F1        & 0.489  \\
+\multicolumn{3}{l}{Accuracy=92.3\% \quad Precision=49.1\% \quad Recall=48.7\% \quad F1=0.489} \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\textbf{Why accuracy is misleading.}
-A na\"ive classifier that predicts SAFE for every prompt would achieve 92.5\% accuracy
-on ToxicChat---higher than Llama-Guard. This is the accuracy paradox of imbalanced
-datasets~\cite{guo2017calibration}: when the positive class is rare (7.6\%), even a
-useless classifier achieves high accuracy by predicting the majority class. The
-operationally relevant metrics are precision (49.1\%: nearly half of all UNSAFE flags
-are false positives) and recall (48.7\%: nearly half of all truly harmful prompts are
-missed). Both are close to 50\%---effectively random classification of the unsafe class.
-
-\textbf{The imbalance motivates prototype-based auditing.}
-With 194 FPs and 197 FNs per full dataset pass, a developer team faces hundreds of
-daily errors to investigate. At the mean diagnostic latency of 42\,s/case (our study,
-control arm), clearing a day's errors would consume over two hours of engineering time.
-This is the operational burden the prototype explanation system addresses. Imbalance
-also explains why the guard's confidence is uninformative (all similarities
-$\approx$0.999x regardless of quadrant): the model was trained to minimise cross-entropy
-on an imbalanced task, pushing all outputs toward high-confidence SAFE predictions,
-and the rare UNSAFE examples are insufficiently represented to calibrate the boundary.
-HarmBench validation confirms this failure profile generalises beyond ToxicChat
-(precision=99.3\%, recall=97.3\% on HarmBench harmful prompts), ruling out dataset-specific
-contamination.
 
 \subsection{Experiment 2: Prototype Discovery}
 
