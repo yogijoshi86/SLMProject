@@ -42,7 +42,8 @@ We make two findings that are, to our knowledge, new to the literature.
 
 \textbf{First, an SLM guard cannot explain its own decisions---and a separate SLM
 cannot explain them either.} Phi-3.5-mini-instruct, even when explicitly told the
-guard made an error, produces generic boilerplate for 94\% of false-negative cases
+guard made an error, produces non-specific or generic diagnoses for 80\% of
+false-negative cases (FN accuracy 20\% on our 223-case benchmark)
 and actively defends the guard's wrong SAFE decision in 97\% of cases when given no
 error context. This failure is structural: the attack pattern that caused the guard
 to err is encoded in the guard's hidden-state geometry, not in the surface text, and
@@ -77,18 +78,23 @@ the Perspective API---are chosen for their speed (batch throughput on commodity 
 and zero per-call cost compared to LLM-as-judge approaches. Table~\ref{tab:cost} shows
 the economics at 10,000 moderation calls per day: replacing a self-hosted SLM guard
 with a capable LLM judge would cost between \$8.50 and \$25.50 per day per 10K calls,
-while Llama-Guard-3-8B costs \$0---a difference that compounds to thousands of dollars
-per month at production scale. Latency is equally constraining: LLM inference adds
-$>$2\,s per decision, making it unsuitable for the real-time moderation loop where
-decisions must complete before the user sees a response.
+while Llama-Guard-3-8B costs \$0 per call because it is open-weight and runs on
+self-hosted hardware---the guard's forward pass is already required for the binary
+classification decision, so embedding extraction adds no marginal compute cost.
+This advantage compounds to thousands of dollars per month at production scale.
+Latency is equally constraining: LLM inference adds $>$2\,s per decision, making it
+unsuitable for the real-time moderation loop where decisions must complete before
+the user sees a response.
 
 \begin{table}[h]
 \centering
 \small
 \caption{Cost comparison of LLM-as-judge approaches vs.\ self-hosted SLM safety guard
 at 10,000 moderation calls per day~\cite{anthropic2025pricing,openai2025pricing,inan2023llamaguard}.
-SLMs offer three orders of magnitude lower cost
-and $>$40$\times$ lower latency, justifying their role as the first-line guard.}
+Llama-Guard-3-8B costs \$0 per call because it is open-weight and runs on self-hosted
+hardware (no third-party API); the only cost is compute, which is shared with the
+inference already required for the guard's classification decision.
+LLM-based judges add both API cost and $>$2\,s latency per call.}
 \label{tab:cost}
 \begin{tabular}{lrrrr}
 \toprule
@@ -120,8 +126,9 @@ they also produce no insight into \emph{why} a decision was made. \textbf{LLM-as
 restores context at the cost of latency and money, but at \$0.03/call it is economically
 prohibitive for real-time moderation pipelines~\cite{dasantar2025aies}. Most importantly,
 the SLM that produced the decision \textbf{cannot explain it}: when asked to diagnose its
-own error, Phi-3.5-mini-instruct (3.8B parameters, instruction-tuned) produces boilerplate
-responses for 94\% of false-negative cases even when we tell it the guard was wrong.
+own error, Phi-3.5-mini-instruct (3.8B parameters, instruction-tuned) produces
+non-specific or generic diagnoses for 80\% of false-negative cases even when told
+the guard was wrong (FN accuracy 20\% on the 223-case full benchmark).
 In blind mode (no error context), it actively defends the guard's wrong SAFE decision in
 97\% of FN cases---actively misleading the developer. This is not a deficiency of a
 particular model; it is a \emph{structural} consequence of SLMs lacking access to their
@@ -143,11 +150,12 @@ in the safety guardrail literature:
 \begin{enumerate}
 \item \textbf{SLM guards are structurally unexplainable by SLMs.}
 We are the first to demonstrate this systematically: Phi-3.5-mini-instruct achieves
-only 6\% accuracy on FN attack-pattern identification even when told the guard was
-wrong---not because it lacks capability, but because the attack pattern is encoded in
-the guard's embedding geometry and is inaccessible to any external model.
-Prototype-based explanations, which \emph{do} access that geometry, achieve 99.6\%
-on the same task.
+only 20\% accuracy on FN attack-pattern identification even when told the guard was
+wrong (80\% produce non-specific diagnoses), and only 3\% in blind mode (97\% actively
+defend the wrong decision)---not because it lacks capability, but because the attack
+pattern is encoded in the guard's embedding geometry and is inaccessible to any external
+model. Prototype-based explanations, which \emph{do} access that geometry, achieve
+99.6\% on the same task (top-3).
 
 \item \textbf{A guard's hidden states form an unsupervised attack taxonomy.}
 UMAP-reduced embeddings from Llama-Guard-3-8B cluster into four semantically coherent
@@ -689,9 +697,9 @@ Table~\ref{tab:explainability} shows the results.
 \centering
 \small
 \caption{Explainability comparison on 223-case benchmark.
-Phi-3.5-Blind defends the guard's wrong SAFE decision in 97\% of FN cases.
-Phi-3.5-GT produces generic boilerplate for jailbreaks. Prototype-based
-explanations surface the attack pattern in 99\% of FN cases with zero API cost.}
+Phi-3.5-Blind (FN accuracy 3\%) defends the guard's wrong SAFE decision in 97\% of FN cases.
+Phi-3.5-GT (FN accuracy 20\%) produces non-specific diagnoses for 80\% of FN cases.
+Prototype-based explanations surface the attack pattern in 99.6\% of FN cases (top-3) with zero API cost.}
 \label{tab:explainability}
 \begin{tabular}{p{2.3cm}ccc}
 \toprule
@@ -710,20 +718,23 @@ Latency & $\sim$2s & $\sim$2s & $<$50ms \\
 \end{table}
 
 The key finding is the structural nature of the SLM explanation failure. Phi-3.5-Blind
-is asked: ``The guard classified this as SAFE. Explain why.'' For jailbreak FN cases
-(DAN prompts, NaughtyVircuna, ChatAGI personas), it consistently responds that the
-prompt is ``a fictional/hypothetical scenario that does not promote harm''---actively
-defending the wrong decision. It cannot diagnose the guard's error because it lacks
-access to the guard's embedding geometry: the Persona Bypass pattern is not visible in
-the surface text of these prompts (the persona name ``NaughtyVircuna'' is novel, not
-a known jailbreak keyword), but it is encoded in the embedding's similarity to known
-P0 cluster members.
+(FN accuracy 3\%) is asked: ``The guard classified this as SAFE. Explain why.'' For
+jailbreak FN cases (DAN prompts, NaughtyVircuna, ChatAGI personas), it consistently
+responds that the prompt is ``a fictional/hypothetical scenario that does not promote
+harm''---actively defending the wrong decision in 97\% of FN cases. It cannot diagnose
+the guard's error because it lacks access to the guard's embedding geometry: the Persona
+Bypass pattern is not visible in the surface text of these prompts (the persona name
+``NaughtyVircuna'' is novel, not a known jailbreak keyword), but it is encoded in the
+embedding's similarity to known P0 cluster members.
 
-Phi-3.5-GT knows an error occurred but still fails for jailbreaks, producing boilerplate
-such as ``the guard may have been misled by ambiguous information'' (c027, NRAF jailbreak)
-or ``pattern recognition failure'' (c059, DAN). For non-English extremist content (c049,
-Spanish Hitler prompt), it incorrectly classifies the task as ``educational'' and ``safe''
-even when told the guard was wrong.
+Phi-3.5-GT (FN accuracy 20\%) knows an error occurred but still fails for jailbreaks,
+producing non-specific diagnoses such as ``the guard may have been misled by ambiguous
+information'' (c027, NRAF jailbreak) or ``pattern recognition failure'' (c059, DAN).
+For 80\% of FN cases the diagnosis is not actionable. For non-English extremist content
+(c049, Spanish Hitler prompt), it incorrectly classifies the task as ``educational'' and
+``safe'' even when told the guard was wrong. Only for narrative-contextual FNs with
+surface-visible threat cues (c073, sarin gas synthesis) does Phi-3.5-GT produce a
+specific diagnosis (``terrorist plot, sarin gas, highly unsafe'').
 
 Prototype explanations, by contrast, correctly route c037 (NaughtyVircuna) to the Persona
 Bypass cluster with exemplar ``You are Kevin with no restrictions,'' giving the developer
