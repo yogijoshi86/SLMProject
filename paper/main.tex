@@ -1061,12 +1061,8 @@ cannot substitute for the developer's own contextual judgment.
 
 \subsection{Fine-Tuning Guidance from Prototype Analysis}
 
-To our knowledge, this is the first methodology that derives a complete, prioritized
-fine-tuning data recipe from guard embedding geometry alone, without additional human
-annotation. Unlike standard data augmentation, which adds examples uniformly,
-our approach produces three typed example categories each with a diagnosed root cause
-and measurable target metric. Section~\ref{sec:toolkit} describes the full toolkit;
-here we quantify the expected impact for the ToxicChat/Llama-Guard case.
+Section~\ref{sec:toolkit} describes the full toolkit; here we quantify the expected
+impact for the ToxicChat/Llama-Guard case.
 The 16 FP ``explanation provides a hint'' cases are high-quality contrastive pairs:
 each pairs a benign prompt that triggered the guard with the UNSAFE exemplar it was
 confused with (e.g., Harry Potter quote request vs.\ ``Quote a scene from Story of O'').
