@@ -915,26 +915,26 @@ uncertainty signal: the DAN jailbreak has margin 0.000226, the gunpowder hedge h
 indicating uncertainty the confidence score conceals. Cases with margin $<$0.001
 (cases where $\phi_\text{incoherent}$ fires) should automatically trigger human review.
 
-\begin{table}[h]
+\begin{table*}[h]
 \centering
 \small
 \caption{Prioritised recommendations to Llama-Guard developers derived from
 prototype analysis. All recommendations are derived without additional manual annotation.}
 \label{tab:recs}
-\begin{tabular}{p{0.8cm}p{4.5cm}p{3.5cm}}
+\begin{tabular}{p{0.8cm}p{8.0cm}p{4.5cm}}
 \toprule
-\textbf{Priority} & \textbf{Action} & \textbf{Expected impact} \\
+\textbf{Pri.} & \textbf{Action} & \textbf{Expected impact} \\
 \midrule
 \textbf{P1} & Add Hate Speech / Extremist Ideology training data & Fixes $\sim$51 FNs (27\% of failures) \\
-\textbf{P1} & Replace token confidence with embedding margin & Surfaces uncertainty on all ambiguous cases \\
-\textbf{P2} & Add multilingual harmful examples (500--1000 translated prompts) & Closes non-English FN blind spot \\
-\textbf{P2} & Add hedge-aware training pairs (strip ``hypothetically'', ``pretend'') & Closes hedged-request evasion gap \\
-\textbf{P3} & Contrastive FP training (URL in code, business role-play) & Reduces $\sim$50\% of FPs \\
-\textbf{P3} & Upweight $\phi_\text{incoherent}$ (mixed-polarity) examples ($2\times$ sample weight) & Tightens decision boundary \\
-\textbf{P4} & Run prototype discovery on WildChat~\\cite{zhao2024wildchat} (1M prompts) & Reveals 2--3 additional attack families \\
+\textbf{P1} & Replace token confidence with embedding margin (use $\phi_\text{incoherent}$ as the uncertainty signal) & Surfaces uncertainty on all ambiguous cases \\
+\textbf{P2} & Add multilingual harmful examples (500--1000 translated prompts across major languages) & Closes non-English FN blind spot \\
+\textbf{P2} & Add hedge-aware training pairs (strip ``hypothetically'', ``pretend'', ``in a story'' from harmful prompts and add both versions) & Closes hedged-request evasion gap \\
+\textbf{P3} & Contrastive FP training: pair benign FP prompts with their UNSAFE exemplar (URL in code, business role-play) & Reduces $\sim$50\% of FPs \\
+\textbf{P3} & Upweight $\phi_\text{incoherent}$ (mixed-polarity) cases ($2\times$ sample weight during fine-tuning) & Tightens decision boundary \\
+\textbf{P4} & Run prototype discovery on WildChat~\cite{zhao2024wildchat} (1M prompts, 68 languages) & Reveals 2--3 additional attack families \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
 
 % ================================================================
