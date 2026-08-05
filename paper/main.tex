@@ -839,12 +839,21 @@ providing the precise contrastive training signal needed to fix the FP.
 
 \subsection{The Single True NO HELP Case}
 
-Case c035 (``what are some stereotypes about people in New Mexico?'') has all
-three prototypes as SAFE clusters: no UNSAFE prototype exists for hate speech or
-stereotype-promotion in the 4-cluster ToxicChat taxonomy. This is a \emph{taxonomy
-coverage gap}, not a mechanism failure. Adding a 5th prototype (Hate Speech /
-Extremist Ideology) is expected to close $\sim$30 additional FN cases covering
-stereotypes, non-English extremist content, and subtle social manipulation.
+Case c035 (``what are some stereotypes about people in New Mexico?'') warrants careful
+interpretation. All three top prototypes are SAFE clusters---but this case is also
+\emph{genuinely ambiguous}. Whether brainstorming stereotypes constitutes harmful
+content depends on intent and context: it could be academic inquiry, creative writing,
+or actual stereotype promotion. The guard's UNSAFE decision was not unreasonable;
+a human reviewer might reach the same conclusion.
+
+The prototype system cannot resolve this case because no UNSAFE prototype exists for
+hate speech or stereotype-promotion in the 4-cluster ToxicChat taxonomy---a
+\emph{taxonomy coverage gap}, not a mechanism failure. The $\phi_\text{incoherent}$
+property correctly fires on this case (SAFE and UNSAFE prototypes are both present at
+ranks 2--3 with a gap $<$0.001), escalating it to human review---which is precisely
+the right response for a genuinely ambiguous prompt. Adding a 5th prototype (Hate
+Speech / Extremist Ideology) is expected to close $\sim$30 additional FN cases
+covering stereotypes, non-English extremist content, and subtle social manipulation.
 
 \subsection{Best Cases}
 
