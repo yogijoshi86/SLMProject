@@ -148,7 +148,7 @@ save_grayscale('explainability_comparison.png')
 # ─────────────────────────────────────────────────────────────────────────────
 # Figure 4: Decision geometry (box per quadrant)
 # ─────────────────────────────────────────────────────────────────────────────
-fig, axes = plt.subplots(1, 2, figsize=(8, 3.5))
+fig, axes = plt.subplots(1, 2, figsize=(8, 4.0))
 quadrants = ['TP\n(n=187)', 'TN\n(n=4504)', 'FP\n(n=194)', 'FN\n(n=197)']
 mean_dist   = [0.00040, 0.00034, 0.00037, 0.00037]
 mean_margin = [0.00096, 0.00114, 0.00109, 0.00099]
@@ -159,16 +159,18 @@ ax = axes[0]
 bars = ax.bar(quadrants, [v*1e4 for v in mean_dist],
               color=grays, hatch=hatches, edgecolor='black')
 ax.set_ylabel('Mean cosine distance (×10⁻⁴)')
-ax.set_title('Cosine Distance by Quadrant')
+ax.set_title('Cosine Distance by Quadrant', pad=4)
+ax.set_ylim(0, max(v*1e4 for v in mean_dist) * 1.12)
 
 ax = axes[1]
 bars = ax.bar(quadrants, [v*1e4 for v in mean_margin],
               color=grays, hatch=hatches, edgecolor='black')
 ax.set_ylabel('Mean prototype margin (×10⁻⁴)')
-ax.set_title('Prototype Margin by Quadrant')
+ax.set_title('Prototype Margin by Quadrant', pad=4)
+ax.set_ylim(0, max(v*1e4 for v in mean_margin) * 1.12)
 
 plt.suptitle('Decision Geometry: TP/TN/FP/FN are Geometrically Indistinguishable',
-             fontsize=10, fontweight='bold')
+             fontsize=9, fontweight='bold', y=1.01)
 plt.tight_layout()
 save_grayscale('decision_geometry.png')
 

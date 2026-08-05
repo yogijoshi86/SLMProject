@@ -74,7 +74,7 @@ Content moderation at scale is one of the most consequential deployment contexts
 AI systems. On major platforms, every user message is evaluated by a lightweight safety
 classifier before it reaches the main model or a human reviewer. These classifiers---fine-tuned
 SLMs such as Llama-Guard~\cite{inan2023llamaguard}, WildGuard~\cite{wildguard2024}, or
-the Perspective API---are chosen for their speed (batch throughput on commodity GPUs)
+the Perspective API~\cite{lees2022perspective}---are chosen for their speed (batch throughput on commodity GPUs)
 and zero per-call cost compared to LLM-as-judge approaches. Table~\ref{tab:cost} shows
 the economics at 10,000 moderation calls per day: replacing a self-hosted SLM guard
 with a capable LLM judge would cost between \$8.50 and \$25.50 per day per 10K calls,
@@ -188,8 +188,8 @@ Llama-Guard~\cite{inan2023llamaguard} introduced the paradigm of fine-tuning a l
 model to classify user-AI conversation turns against a structured harm taxonomy (S1--S14).
 This approach achieves strong throughput at self-hosted inference cost and has been
 widely adopted. Subsequent work extended the paradigm to multilingual settings
-(WildGuard~\cite{wildguard2024}), multi-domain judgment (MD-Judge), and attribute-specific
-harm categories (ShieldLM). A critical property shared by all members of this family is
+(WildGuard~\cite{wildguard2024}), multi-domain judgment (MD-Judge~\cite{zhu2023mdjudge}), and attribute-specific
+harm categories (ShieldLM~\cite{zeng2024shieldlm}). A critical property shared by all members of this family is
 \emph{binary output}: the model produces a label and optionally a category code, but no
 explanation grounded in the prompt's specific content. Our work treats this as the central
 problem to solve.
@@ -991,7 +991,7 @@ prototype analysis. All recommendations are derived without additional manual an
 \textbf{P2} & Add hedge-aware training pairs (strip ``hypothetically'', ``pretend'') & Closes hedged-request evasion gap \\
 \textbf{P3} & Contrastive FP training (URL in code, business role-play) & Reduces $\sim$50\% of FPs \\
 \textbf{P3} & Upweight $\phi_\text{ambiguous}$ examples ($2\times$ sample weight) & Tightens decision boundary \\
-\textbf{P4} & Run prototype discovery on WildChat (1M prompts) & Reveals 2--3 additional attack families \\
+\textbf{P4} & Run prototype discovery on WildChat~\\cite{zhao2024wildchat} (1M prompts) & Reveals 2--3 additional attack families \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1049,7 +1049,7 @@ English-language conversational AI interactions. Non-English harmful prompts (Sp
 Japanese, multilingual mixtures) consistently land in SAFE clusters because ToxicChat's
 training distribution under-represents multilingual attacks---all non-English harmful
 prompts in our benchmark are FNs, and their prototype matches are incidental rather
-than semantic. Running the full pipeline on WildChat (1M prompts, 68 languages) would
+than semantic. Running the full pipeline on WildChat~\cite{zhao2024wildchat} (1M prompts, 68 languages) would
 likely reveal 2--3 additional prototype clusters for multilingual attacks and hate speech.
 Our A/B study used $n{=}5$ developers, constituting a pilot with limited statistical
 power for the H1 significance test; a larger study is needed. Finally, the UMAP

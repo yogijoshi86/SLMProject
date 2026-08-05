@@ -1,4 +1,4 @@
-\begin{thebibliography}{19}
+\begin{thebibliography}{23}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -74,6 +74,14 @@ Hakan Inan, Kartikeya Upasani, Jianfeng Chi, Rashi Rungta, Krithika Iyer,
   conversations.
 \newblock 2023.
 
+\bibitem[Lees et~al.(2022)Lees, Tran, Tay, Sorensen, Gupta, Metzler, and
+  Vasserman]{lees2022perspective}
+Alyssa Lees, Vinh~Q. Tran, Yi~Tay, Jeffrey Sorensen, Jai Gupta, Donald Metzler,
+  and Lucy Vasserman.
+\newblock A new generation of perspective {API}: Efficient multilingual
+  character-level transformers.
+\newblock \emph{arXiv preprint arXiv:2202.11176}, 2022.
+
 \bibitem[Lin et~al.(2023)Lin, Wang, Tong, Wang, Guo, Wang, and
   Sheng]{lin2023toxicchat}
 Zi~Lin, Zihan Wang, Yongqi Tong, Yangkun Wang, Yuxin Guo, Yujia Wang, and
@@ -121,6 +129,20 @@ Alexander Wei, Nika Haghtalab, and Jacob Steinhardt.
 \newblock In \emph{Advances in Neural Information Processing Systems},
   volume~36, 2023.
 
+\bibitem[Zeng et~al.(2024)Zeng, Wang, Mi, Jiang, Wang, Zhao,
+  et~al.]{zeng2024shieldlm}
+Zhexin Zeng, Yuhao Wang, Fei Mi, Chuxiong Jiang, Yu~Wang, Minlie Zhao, et~al.
+\newblock {ShieldLM}: Empowering {LLMs} as aligned, customizable and
+  explainable safety detectors.
+\newblock \emph{arXiv preprint arXiv:2402.16444}, 2024.
+
+\bibitem[Zhao et~al.(2024)Zhao, Ren, Hessel, Cardie, Choi, and
+  Deng]{zhao2024wildchat}
+Wenting Zhao, Xiang Ren, Jack Hessel, Claire Cardie, Yejin Choi, and Yuntian
+  Deng.
+\newblock {WildChat}: 1m {ChatGPT} interaction logs in the wild.
+\newblock \emph{arXiv preprint arXiv:2405.01470}, 2024.
+
 \bibitem[Zheng et~al.(2023)Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li,
   Li, Xing, Zhang, Gonzalez, and Stoica]{zheng2023judging}
 Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao
@@ -129,6 +151,11 @@ Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao
 \newblock Judging {LLM}-as-a-judge with {MT}-bench and chatbot arena.
 \newblock In \emph{Advances in Neural Information Processing Systems},
   volume~36, 2023.
+
+\bibitem[Zhu et~al.(2023)Zhu, Chen, et~al.]{zhu2023mdjudge}
+Qian Zhu, Kaining Chen, et~al.
+\newblock {MD}-judge: A multi-domain safety evaluator for {LLM}-based chatbots.
+\newblock \emph{arXiv preprint arXiv:2311.12885}, 2023.
 
 \bibitem[Zou et~al.(2023)Zou, Wang, Kolter, and Fredrikson]{zou2023universal}
 Andy Zou, Zifan Wang, J.~Zico Kolter, and Matt Fredrikson.
