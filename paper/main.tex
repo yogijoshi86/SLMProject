@@ -36,10 +36,10 @@ Prototype-Based Auditing of Safety Guardrail Failures from Hidden States}}
 \begin{abstract}
 % ----------------------------------------------------------------
 Safety guardrails based on small language models (SLMs) are the first line of defence
-in production AI systems, yet they fail silently: these models are fine-tuned for
-binary classification, not explanation generation, so all they return is a UNSAFE/SAFE
-label and an optional harm category code---no rationale, no diagnosis, no guidance.
-This leaves developers to investigate every misclassification from scratch.
+in production AI systems, yet they fail silently: even when SLMs produce explanations,
+these are typically no more than a restatement of the decision or generic boilerplate
+that gives developers no actionable signal. A binary UNSAFE/SAFE label with no
+grounded rationale leaves developers to investigate every misclassification from scratch.
 We make two findings that are, to our knowledge, new to the literature.
 
 \textbf{Firstly, an SLM guard cannot explain its own decisions---and a separate SLM
