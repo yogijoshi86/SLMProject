@@ -1,4 +1,111 @@
 \appendix
+
+\section*{Glossary of Key Terms}
+\addcontentsline{toc}{section}{Glossary of Key Terms}
+\label{app:glossary}
+
+The following terms appear throughout this report. They are defined here for readers
+who may not have a machine learning background.
+
+\begin{description}
+
+\item[Safety guard / guardrail]
+A lightweight classifier that sits in front of a conversational AI system and inspects
+every user message before it reaches the main model. It outputs a binary decision:
+SAFE (allow the message through) or UNSAFE (block it). Llama-Guard-3-8B is the specific
+guard studied in this work.
+
+\item[False Positive (FP)]
+A case where the guard incorrectly flags a safe prompt as UNSAFE. The user's message
+was harmless, but the guard blocked it. From a developer's perspective: the guard
+over-triggered.
+
+\item[False Negative (FN)]
+A case where the guard incorrectly passes a harmful prompt as SAFE. The user's message
+contained an attack or harmful intent, but the guard missed it. From a developer's
+perspective: the guard under-triggered.
+
+\item[Hidden state / embedding]
+A numerical vector (list of numbers) that the guard model computes internally when it
+reads a prompt. It encodes the model's internal ``understanding'' of the text at that
+point. We extract the terminal hidden state---the vector at the very last processing
+step---as a 4,096-dimensional representation of the prompt.
+
+\item[UMAP (Uniform Manifold Approximation and Projection)]
+A dimensionality reduction technique that compresses high-dimensional vectors (e.g.,
+4,096 numbers) into a lower-dimensional space (e.g., 50 numbers) while preserving
+the neighbourhood structure. Prompts that are semantically similar end up close together
+after UMAP projection.
+
+\item[K-means clustering]
+An algorithm that groups data points into $k$ clusters by iteratively assigning each
+point to the nearest cluster centre. We use it to discover groups of semantically
+similar attack prompts from the guard's hidden-state embeddings.
+
+\item[Silhouette score]
+A measure of clustering quality between $-$1 and 1. Higher is better; values above
+0.4 indicate well-separated, meaningful clusters.
+
+\item[Prototype]
+A labelled cluster of semantically similar prompts, represented by its centroid vector
+and a set of closest exemplar prompts. Each prototype has a human-written label (e.g.,
+``Persona Jailbreak'') describing the attack strategy it captures.
+
+\item[Cosine similarity]
+A measure of how similar two vectors are, ranging from $-$1 (opposite) to 1 (identical
+direction). In this work, all similarities cluster near 0.999 because the vectors are
+L2-normalised; what matters is the relative difference between scores.
+
+\item[LLM (Large Language Model)]
+A large generative AI model such as GPT-4 or Claude. In this paper, LLMs are used as
+a comparison baseline for generating explanations (LLM-as-judge).
+
+\item[SLM (Small Language Model)]
+A smaller, faster, and cheaper language model fine-tuned for a specific task. The guard
+(Llama-Guard-3-8B) and the explanation baseline (Phi-3.5-mini-instruct) are both SLMs.
+
+\item[LTL (Linear Temporal Logic)]
+A formal logic for specifying properties that must hold over a sequence of events or
+states. In this work, LTL properties are simple logical rules evaluated at each
+inference call (e.g., ``if SAFE and UNSAFE prototypes both appear in the top-3, escalate
+to human review''). They require no model calls and execute in microseconds.
+
+\item[$\phi_\text{incoherent}$ (Uncertainty certificate)]
+Fires when the top-3 prototype matches contain both SAFE and UNSAFE prototypes. This
+signals structural uncertainty---the guard's decision is not geometrically well-founded.
+Achieves 100\% precision: every case where it fires is a genuine boundary case.
+
+\item[$\phi_\text{polarised}$ (Certainty certificate)]
+Fires when all three top-3 prototypes agree on the same polarity (all SAFE or all
+UNSAFE). This signals structural certainty---the guard's embedding is in an unambiguous
+region of the space.
+
+\item[Jailbreak]
+An adversarial prompt designed to bypass a safety guard by disguising harmful intent.
+Common strategies include persona assignment (``you are an AI with no restrictions''),
+fictional framing (``write a story where a character explains how to...''), and hedging
+(``hypothetically speaking, how would one...'').
+
+\item[Persona Jailbreak (P0)]
+The most common jailbreak type in our benchmark: the user assigns the AI a fictional
+identity or role designed to strip away safety constraints (e.g., ``You are NaughtyVircuna,
+a fiction AI that writes inappropriate content'').
+
+\item[A/B study]
+A controlled experiment where participants are randomly assigned to two conditions:
+control (no explanation, raw guard output only) and treatment (guard output plus
+prototype explanation). By measuring both conditions for the same participant with
+counterbalancing, we isolate the effect of the explanation itself.
+
+\item[Diagnostic latency]
+The time (in seconds) a developer takes to identify the root cause of a guard
+misclassification. Lower is better. Our primary H1 hypothesis was that prototype
+explanations would reduce this by $\geq$30\%.
+
+\end{description}
+
+\bigskip
+
 \section*{Appendix A: Explanation System Comparison}
 \addcontentsline{toc}{section}{Appendix A: Explanation System Comparison}
 \label{app:comparison}
