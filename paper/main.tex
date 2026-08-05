@@ -1092,11 +1092,13 @@ explanations, which directly read that geometry, achieve 99.6\% on the same task
 zero API cost. The practical implication is that LLM-as-judge is the wrong architecture
 for guardrail diagnosis: the right architecture is the guard explaining itself.
 
-\textbf{Third:} Five LTL trust properties derived from embedding \emph{polarity
-structure}---not similarity magnitude, which is uncorrelated with errors---give developers
-machine-checkable runtime guarantees. $\phi_\text{incoherent}$ achieves 100\% precision, jointly covering 50\% of all cases and providing the
-structural foundation for automated audit pipelines that know when to act and when to
-escalate.
+\textbf{Third:} Four threshold-free LTL properties derived from prototype \emph{polarity}---not
+similarity magnitude, which is uncorrelated with errors---give developers machine-checkable
+runtime guarantees without dataset-specific calibration. $\phi_\text{incoherent}$ (33\%
+coverage, 100\% precision) is the only verifiable uncertainty certificate for a safety
+guard; $\phi_\text{polarised}$ (67\% coverage) is the complementary certainty certificate.
+Together they partition every inference call and surface the guard's genuine uncertainty
+that its own confidence score---always $\approx$1.000---entirely conceals.
 
 \textbf{Fourth:} We propose the prototype system as a reusable \textbf{guard improvement
 toolkit} for SLM developers and fine-tuners (Section~\ref{sec:toolkit}). Unlike
