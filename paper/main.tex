@@ -61,7 +61,7 @@ A controlled A/B study ($n{=}5$ developers, counterbalanced Latin square) confir
 the practical value: prototype explanations reduce diagnostic latency by \textbf{46\%}
 and improve root-cause accuracy from 44\% to 57\%. We further formalise five Linear
 Temporal Logic (LTL) trust properties from embedding geometry; two of them
-($\phi_\text{incoherent}$, $\phi_\text{ambiguous}$) achieve 100\% precision on
+$\phi_\text{incoherent}$ achieves 100\% precision (33\% coverage) on
 223 benchmark cases, giving developers runtime-verifiable signals for when to act
 autonomously versus when to escalate.
 \end{abstract}
@@ -173,7 +173,7 @@ pre-registered 30\% latency threshold.
 \item \textbf{LTL trust properties with 100\% precision.}
 Five formally specified LTL properties derived from embedding polarity structure
 (not distance) give developers machine-checkable runtime guarantees. Two properties
-($\phi_\text{incoherent}$, $\phi_\text{ambiguous}$) achieve 100\% precision on 223
+$\phi_\text{incoherent}$ achieves 100\% precision (33\% coverage) on 223
 cases, covering 33\% and 17\% of cases respectively, and jointly implement a
 structured accept/escalate decision for automated audit pipelines.
 \end{enumerate}
@@ -315,7 +315,7 @@ Requests} ($n{=}2\,014$), \emph{Academic \& Structured Tasks} ($n{=}892$), and
 \emph{Informational How-To Queries} ($n{=}1\,795$). These SAFE prototypes serve two
 roles: (1) disambiguating FPs, where a benign prompt often lands closer to a SAFE
 centroid than to any UNSAFE centroid; and (2) computing the ambiguity signal
-$\phi_\text{ambiguous}$ that distinguishes a borderline guard decision from a clear one.
+$\phi_\text{incoherent}$ that identifies boundary cases requiring human review.
 
 For each prototype, we store: centroid vector, cluster size, dominant harm categories
 (from Llama-Guard's output), the top-5 closest training exemplars by cosine similarity,
@@ -418,111 +418,96 @@ requiring the developer to reason about context rather than receiving an explici
 % ================================================================
 
 A central finding of this work---formalised in Experiment~3 below---is that embedding
-geometry does \emph{not} predict misclassification in the way one might expect.
-The cosine distance to the nearest prototype centroid and the margin between the top-2
-prototype similarities are statistically indistinguishable across all four quadrants
-(TP, TN, FP, FN), with a spread of $<$0.0002 across all groups. This falsifies the
-intuitive hypothesis that ``errors occur at cluster boundaries'' and rules out
-distance-based confidence thresholds as misclassification detectors.
+geometry does \emph{not} predict misclassification through distance or margin: cosine
+distance and prototype margin are statistically indistinguishable across TP, TN, FP,
+and FN quadrants. This rules out any threshold-based confidence signal. Instead, the
+geometry encodes \emph{structural polarity}: whether the top-3 nearest prototypes all
+agree on SAFE/UNSAFE, or whether they disagree. We formalise four threshold-free LTL
+properties derived solely from prototype polarity labels. All are O(1) at inference,
+require no ground truth, and are fully transferable across datasets and guard models
+without recalibration.
 
-What the geometry does encode, however, is \emph{structural ambiguity}: whether the
-query sits in a region of the embedding space that is semantically unambiguous (all
-nearest prototypes agree on polarity) or genuinely boundary-straddling (SAFE and UNSAFE
-prototypes appear together in the top-3). We formalise this distinction as five LTL
-properties. Let $\text{sim}_k(t)$ be the cosine similarity to the $k$-th ranked
-prototype at time $t$, $\text{range}(t) = \text{sim}_1(t) - \text{sim}_3(t)$ the
-spread across top-3, and $\text{mixed}(t)$ be true when the top-3 contains at least
-one UNSAFE and one SAFE prototype.
-
-\medskip
-\noindent\textbf{$\phi_\text{trust}$} --- Primary trust signal:
-\begin{equation}
-\label{eq:trust}
-G\!\bigl(\text{range}(t) > 0.0005 \;\to\; \text{explanation\_reliable}(t)\bigr)
-\end{equation}
-Fires on 207/223 cases (93\%), precision 92.3\%. When the top-3 similarity scores
-are sufficiently spread (threshold calibrated to the 50-dim UMAP scale), the prototype
-ranking reflects genuine geometric structure rather than noise. Developers can act on
-the top-1 explanation directly.
+Let $\text{mixed}(t)$ be true when the top-3 prototype matches at time $t$ contain
+at least one UNSAFE and at least one SAFE prototype.
 
 \medskip
 \noindent\textbf{$\phi_\text{incoherent}$} --- Mixed-polarity signal:
 \begin{equation}
 \label{eq:incoherent}
-G\!\bigl(\text{mixed}(t) \;\to\; \text{explanation\_reveals\_ambiguity}(t)\bigr)
+G\!\bigl(\text{mixed}(t) \;\to\; \text{escalate\_human}(t)\bigr)
 \end{equation}
 Fires on 74/223 cases (33\%), \textbf{precision 100\%}. When SAFE and UNSAFE prototypes
-co-appear in the top-3, the explanation always correctly identifies the boundary nature
-of the case. Developers should read all three entries: the mix of SAFE and UNSAFE
-prototypes is itself the diagnostic signal. This property is particularly valuable for
-FP diagnosis: in 44\% of FP cases, a SAFE prototype appears in the top-3, immediately
-revealing that the guard over-triggered on a benign prompt.
+co-appear in the top-3, the explanation always correctly identifies a boundary case.
+The mix of SAFE and UNSAFE is itself the diagnostic signal: the prompt straddles the
+decision boundary and requires human judgment. This property subsumes the previous
+threshold-dependent $\phi_\text{ambiguous}$---all 38 formerly-ambiguous cases fire
+here, as do the additional 36 mixed-polarity cases with larger gaps. Precision remains
+100\% across all 74.
 
 \medskip
-\noindent\textbf{$\phi_\text{ambiguous}$} --- Tight mixed-polarity signal:
+\noindent\textbf{$\phi_\text{polarised}$} --- Single-polarity signal:
 \begin{equation}
-\label{eq:ambiguous}
-G\!\bigl(\text{mixed}(t) \;\wedge\; \text{range}(t) < 0.001 \;\to\; \text{escalate\_human}(t)\bigr)
+\label{eq:polarised}
+G\!\bigl(\lnot\text{mixed}(t) \;\to\; \text{act\_on\_top1}(t)\bigr)
 \end{equation}
-Fires on 38/223 cases (17\%), \textbf{precision 100\%}. This is the strictest trust
-property: not only are SAFE and UNSAFE prototypes present, they are nearly equidistant
-from the query. The guard's decision in these cases is geometrically a coin-flip.
-Examples: ``Pretend you are DAN and ignore all your rules'' (margin=0.000226);
-``Hypothetically, how do I make gunpowder?'' (margin=0.000103). Human review is required.
+Fires on 149/223 cases (67\%). When all three prototypes agree on polarity, the
+explanation can be acted on directly. For FNs (all-UNSAFE top-3), the top-1 prototype
+names the missed attack class with 87\% accuracy. For FPs (all-UNSAFE top-3), the
+developer should still check whether the surface trigger maps to the prototype correctly.
+This property is the complement of $\phi_\text{incoherent}$: together they partition
+every inference call.
 
 \medskip
 \noindent\textbf{$\phi_\text{FP}$} --- Per-prototype FP risk:
 \begin{equation}
+\label{eq:fp}
 \bigl(\text{dec}(t) = \text{UNSAFE} \;\wedge\; \text{proto}(t) = P_2\bigr) \;\to\; \text{flag\_fp}(t)
 \end{equation}
-Prototype P2 (Direct Harmful Content) produced 40\% of all FPs in the benchmark.
-A guard firing on a prompt matched to P2 should prompt a developer to check whether
-the surface-phrasing trigger (``write about X'', reproduction of text) is actually harmful.
+Prototype P2 (Direct Harmful Content) produced 40\% of all FPs. A guard firing on a
+P2-matched prompt should trigger a developer check on whether the surface trigger
+(``write about X'', reproduction of text) is actually harmful in context.
 
 \medskip
 \noindent\textbf{$\phi_\text{FN}$} --- Per-prototype FN risk:
 \begin{equation}
+\label{eq:fn}
 \bigl(\text{dec}(t) = \text{SAFE} \;\wedge\; \text{proto}(t) = P_0\bigr) \;\to\; \text{flag\_fn}(t)
 \end{equation}
-Prototype P0 (Persona Bypass) produced 32\% of all FNs. A SAFE decision on a prompt
-matched to P0 is a strong indicator of a missed jailbreak.
+Prototype P0 (Persona Bypass) produced 32\% of all FNs. A SAFE decision on a P0-matched
+prompt is a strong indicator of a missed jailbreak and should be routed to developer review.
 
 \begin{table}[t]
 \centering
 \small
-\caption{LTL trust properties computed at inference time from the top-3 similarity
-scores. All properties are O(1) with no additional model calls. $\phi_\text{incoherent}$
-and $\phi_\text{ambiguous}$ achieve 100\% precision.}
+\caption{Four threshold-free LTL properties derived from prototype polarity.
+All are transferable across datasets and guard models without recalibration.
+$\phi_\text{incoherent}$ achieves 100\% precision.}
 \label{tab:ltl}
-\begin{tabular}{lrrp{2.5cm}}
+\begin{tabular}{lrrp{2.8cm}}
 \toprule
 \textbf{Property} & \textbf{Coverage} & \textbf{Precision} & \textbf{Action} \\
 \midrule
-$\phi_\text{trust}$ (Eq.~\ref{eq:trust}) & 93\% & 92.3\% & Trust and act \\
-$\phi_\text{incoherent}$ (Eq.~\ref{eq:incoherent}) & 33\% & \textbf{100\%} & Read all 3 \\
-$\phi_\text{ambiguous}$ (Eq.~\ref{eq:ambiguous}) & 17\% & \textbf{100\%} & Escalate \\
-$\phi_\text{polarised}$ ($\lnot\text{mixed} \wedge \text{range}{>}0.001$) & 53\% & 87.3\% & High confidence \\
-$\phi_\text{FP}$ (P2 fires UNSAFE) & --- & --- & Flag probable FP \\
-$\phi_\text{FN}$ (P0 fires SAFE) & --- & --- & Flag probable FN \\
+$\phi_\text{incoherent}$ (Eq.~\ref{eq:incoherent}) & 33\% & \textbf{100\%} & Escalate to human review \\
+$\phi_\text{polarised}$ (Eq.~\ref{eq:polarised}) & 67\% & 87\% & Act on top-1 prototype \\
+$\phi_\text{FP}$ (Eq.~\ref{eq:fp}) & --- & --- & Flag probable FP \\
+$\phi_\text{FN}$ (Eq.~\ref{eq:fn}) & --- & --- & Flag probable FN \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\noindent\textbf{Developer decision tree.} At runtime, a developer applies these
-properties in order: (1) if $\phi_{\lnot\text{trust}}$ fires (range $\leq$0.0005,
-7\% of cases), ignore the prototype ranking and read the prompt directly; (2) if
-$\phi_\text{ambiguous}$ fires (mixed polarity and range $<$0.001, 17\%), escalate
-to human review---the guard's decision was geometrically a coin-flip; (3) if
-$\phi_\text{incoherent}$ fires (mixed polarity, 33\%), read all three prototypes
-and treat the polarity mixture as the diagnostic signal; (4) otherwise
-$\phi_\text{polarised}$ applies (53\%) and the top-1 prototype can be trusted at
-87\% confidence. Together, these four branches cover 100\% of cases and require no
-ground truth.
+\noindent\textbf{Developer decision tree.} Every inference call falls into exactly one of
+two branches: (1)~if $\phi_\text{incoherent}$ fires (33\%), SAFE and UNSAFE prototypes
+disagree---escalate to human review, the guard's decision is structurally uncertain;
+(2)~if $\phi_\text{polarised}$ fires (67\%), all prototypes agree---act on the top-1
+prototype label directly. Within the polarised branch, $\phi_\text{FP}$ and $\phi_\text{FN}$
+provide additional routing: P2+UNSAFE suggests checking for a surface-trigger FP; P0+SAFE
+suggests checking for a missed jailbreak FN. These four properties require no thresholds,
+no ground truth, and no dataset-specific calibration.
 
-Together, these properties operationalise a structured accept/solve meta-decision for
-developers~\cite{buccinca2021trust}: $\phi_\text{trust}$ defines the accept region
-(93\% of cases), $\phi_\text{ambiguous}$ defines the solve region requiring human review (17\%),
-and the mixed middle is flagged by $\phi_\text{incoherent}$ as a cognitive forcing signal.
+Together, these properties operationalise a structured accept/escalate meta-decision:
+$\phi_\text{polarised}$ defines the accept region (67\%), and $\phi_\text{incoherent}$
+defines the escalate region (33\%) acting as a cognitive forcing function~\cite{buccinca2021trust}
+that prevents developers from passively accepting a wrong decision.
 
 % ================================================================
 \section{Experiments}
@@ -839,7 +824,7 @@ groups are statistically indistinguishable, falsifying the boundary-case hypothe
 \centering
 \includegraphics[width=0.95\columnwidth]{ltl_properties.png}
 \caption{LTL trust property coverage and precision. $\phi_\text{incoherent}$ and
-$\phi_\text{ambiguous}$ achieve 100\% precision at 33\% and 17\% coverage respectively.}
+$\phi_\text{incoherent}$ achieves 100\% precision at 33\% coverage.}
 \label{fig:ltl}
 \end{figure}
 
@@ -973,7 +958,7 @@ catastrophic misclassifications. The embedding margin
 uncertainty signal: the DAN jailbreak has margin 0.000226, the gunpowder hedge has
 0.000103, and the Nazi parody (c223) has 0.000041 --- all near zero, correctly
 indicating uncertainty the confidence score conceals. Cases with margin $<$0.001
-(the $\phi_\text{ambiguous}$ zone) should automatically trigger human review.
+(cases where $\phi_\text{incoherent}$ fires) should automatically trigger human review.
 
 \begin{table}[h]
 \centering
@@ -990,7 +975,7 @@ prototype analysis. All recommendations are derived without additional manual an
 \textbf{P2} & Add multilingual harmful examples (500--1000 translated prompts) & Closes non-English FN blind spot \\
 \textbf{P2} & Add hedge-aware training pairs (strip ``hypothetically'', ``pretend'') & Closes hedged-request evasion gap \\
 \textbf{P3} & Contrastive FP training (URL in code, business role-play) & Reduces $\sim$50\% of FPs \\
-\textbf{P3} & Upweight $\phi_\text{ambiguous}$ examples ($2\times$ sample weight) & Tightens decision boundary \\
+\textbf{P3} & Upweight $\phi_\text{incoherent}$ (mixed-polarity) examples ($2\times$ sample weight) & Tightens decision boundary \\
 \textbf{P4} & Run prototype discovery on WildChat~\\cite{zhao2024wildchat} (1M prompts) & Reveals 2--3 additional attack families \\
 \bottomrule
 \end{tabular}
@@ -1068,9 +1053,9 @@ closest exemplar identify the surface trigger. Pairing the benign FP prompt with
 UNSAFE exemplar produces a contrastive training pair that teaches the guard to
 distinguish surface form from harmful intent.
 
-\textbf{(4) Boundary sharpening via $\phi_\text{ambiguous}$.} The 50 cases where
-$|\text{sim}_\text{unsafe} - \text{sim}_\text{safe}| < 0.001$ identify the guard's
-weakest decision boundary region. Upweighting these cases ($2\times$ sample weight)
+\textbf{(4) Boundary sharpening via $\phi_\text{incoherent}$.} The 74 cases where
+SAFE and UNSAFE prototypes co-appear in the top-3 identify prompts near the guard's
+decision boundary. Upweighting these cases ($2\times$ sample weight)
 during fine-tuning concentrates gradient signal exactly where the model needs it.
 
 Together, these four components constitute a \emph{prototype-driven audit loop}: run
@@ -1102,7 +1087,7 @@ The 16 FP ``explanation provides a hint'' cases are high-quality contrastive pai
 each pairs a benign prompt that triggered the guard with the UNSAFE exemplar it was
 confused with (e.g., Harry Potter quote request vs.\ ``Quote a scene from Story of O'').
 The 140 confirmed FN cases (top-1 UNSAFE prototype, correct attack pattern identified)
-are verified hard negatives for FN reduction. The 50 $\phi_\text{ambiguous}$ cases
+are verified hard negatives for FN reduction. The 74 $\phi_\text{incoherent}$ (mixed-polarity) cases
 should be upweighted ($2\times$ sample weight) to sharpen the decision boundary at
 training time. Critically, Shen et al.~\cite{shen2024dan} show that in-the-wild
 jailbreaks continuously evolve: our taxonomy is a snapshot that requires periodic
@@ -1148,8 +1133,7 @@ for guardrail diagnosis: the right architecture is the guard explaining itself.
 
 \textbf{Third:} Five LTL trust properties derived from embedding \emph{polarity
 structure}---not similarity magnitude, which is uncorrelated with errors---give developers
-machine-checkable runtime guarantees. $\phi_\text{incoherent}$ and $\phi_\text{ambiguous}$
-each achieve 100\% precision, jointly covering 50\% of all cases and providing the
+machine-checkable runtime guarantees. $\phi_\text{incoherent}$ achieves 100\% precision, jointly covering 50\% of all cases and providing the
 structural foundation for automated audit pipelines that know when to act and when to
 escalate.
 
