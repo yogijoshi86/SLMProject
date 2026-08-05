@@ -689,6 +689,8 @@ BERTopic (HDBSCAN) & 7 & 0.029 & 41.8\% \\
 We evaluated three explanation systems on 223 benchmark cases (32 FP + 191 FN):
 (A) prototype-based explanations, (B) Phi-3.5-Blind, and (C) Phi-3.5-GT.
 Table~\ref{tab:explainability} and Figure~\ref{fig:explainability} show the results.
+Appendix~\ref{app:comparison} provides a concrete side-by-side comparison of all four
+systems on a single representative case (c037, NaughtyVircuna persona jailbreak).
 
 \begin{table}[h]
 \centering
@@ -845,6 +847,8 @@ When any of the four UNSAFE prototypes appears as top-1, helpfulness is 100\%:
 The 50 FNs where the top-1 was a SAFE cluster (Academic, Casual, or Informational)
 are fully rescued by the 2nd or 3rd prototype entry (50/50, 100\% rescue rate).
 \textbf{Every FN has at least one UNSAFE prototype somewhere in the top-3.}
+Appendix~\ref{app:cases} shows one representative case per diagnostic category with
+the full prompt, prototype matches, exemplars, and inline developer interpretation.
 
 \subsection{Does the Explanation Contradict the Guard's Decision?}
 
