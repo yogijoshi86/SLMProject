@@ -1087,18 +1087,27 @@ rerunning of prototype discovery on new data to remain current.
 
 \subsection{Limitations and Future Work}
 
-The taxonomy was built from ToxicChat, which is almost entirely English-language
-conversational AI interactions. Non-English harmful prompts---Spanish, Japanese, multilingual
-mixtures---all land in SAFE clusters in our benchmark because ToxicChat's training
-distribution barely covers them. Running the pipeline on WildChat~\cite{zhao2024wildchat}
-(1M prompts, 68 languages) would likely surface 2--3 additional clusters.
-Our A/B study had $n{=}5$ participants (software developers with minimal ML/AI background), which is a pilot. The 46\% latency reduction
-is promising but a larger study with ML practitioners is needed for statistical confidence.
-The participants were fellow students. For a more exhaustive study with a larger and
-more diverse participant pool, we intend to request ethics review through the
-University of Waterloo's institutional review process~\cite{uwaterloo_ethics}.
-And the UMAP projection is tied to the current model at its current quantisation level:
-any fine-tuning or model upgrade means re-running prototype discovery from scratch.
+Three limitations bound the current work.
+
+\textbf{Dataset coverage.} The prototype taxonomy was discovered from ToxicChat, which
+is almost entirely English-language conversational AI interactions. Non-English harmful
+prompts---Spanish, Japanese, multilingual mixtures---consistently land in SAFE clusters
+because ToxicChat's training distribution barely covers them. Running the full pipeline
+on WildChat~\cite{zhao2024wildchat} (1M prompts, 68 languages) would likely surface
+2--3 additional clusters and close this gap.
+
+\textbf{Study scale and participant background.} The A/B study involved $n{=}5$
+students with minimal ML/AI background, which constitutes a pilot. The 46\%
+latency reduction is encouraging, but a larger study with ML practitioners is needed
+for statistical confidence. For a more exhaustive study with a larger and more diverse
+participant pool, we intend to request ethics review through the University of
+Waterloo's institutional review process~\cite{uwaterloo_ethics}.
+
+\textbf{Model coupling.} The UMAP projection is fitted to Llama-Guard-3-8B at its
+current int8 quantisation level. Any fine-tuning or model upgrade changes the hidden-state
+distribution, which means prototype discovery must be re-run from scratch. This is a
+one-time offline cost per model version, not a per-deployment cost.
+
 
 % ================================================================
 \section{Conclusion}
@@ -1114,7 +1123,7 @@ K-means), and these four prototypes account for 99.6\% of all misclassified case
 in our 223-case benchmark. The guard's latent space is structurally sufficient
 for explanation---the answer was always there; it just needed to be extracted.
 
-\textbf{Second:} SLM guards are structurally unexplainable by other SLMs.
+\textbf{Secondly:} SLM guards are structurally unexplainable by other SLMs.
 Phi-3.5-mini-instruct, even when told the guard was wrong, achieves only 20\% accuracy
 on false-negative attack pattern identification. This is not a capability gap: Phi-3.5
 is larger than the guard. It is a representation access gap---the evasion pattern
