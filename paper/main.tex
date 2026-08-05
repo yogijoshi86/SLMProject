@@ -72,8 +72,9 @@ from prototype polarity that serve a dual purpose: at runtime, $\phi_\text{incoh
 (100\% precision, 33\% coverage on ToxicChat) routes structurally uncertain cases to
 LLM-based thorough review or human review, while $\phi_\text{polarised}$ handles the
 remaining 67\% automatically---scaling content moderation by reserving expensive review
-for cases that genuinely need it. Coverage will vary across deployments but the
-polarity-based routing logic requires no recalibration. In the offline diagnostic phase,
+for cases that genuinely need it. Coverage will vary across deployments; minimal calibration of prototype labels
+may be needed for new guard models, but the polarity-based routing logic itself
+requires no threshold recalibration. In the offline diagnostic phase,
 $\phi_\text{FP}$ and $\phi_\text{FN}$ help developers identify systematic guard
 failures and guide fine-tuning.
 \end{abstract}
