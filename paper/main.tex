@@ -40,7 +40,7 @@ in production AI systems, yet they fail silently: a binary UNSAFE/SAFE decision 
 no rationale leaves developers to investigate every misclassification from scratch.
 We make two findings that are, to our knowledge, new to the literature.
 
-\textbf{First, an SLM guard cannot explain its own decisions---and a separate SLM
+\textbf{Firstly, an SLM guard cannot explain its own decisions---and a separate SLM
 cannot explain them either.} Phi-3.5-mini-instruct, even when explicitly told the
 guard made an error, produces non-specific or generic diagnoses for 80\% of
 false-negative cases (FN accuracy 20\% on our 223-case benchmark)
@@ -73,7 +73,7 @@ $\approx$1.000 regardless of whether the decision is correct.
 \section{Introduction}
 % ================================================================
 
-Content moderation at scale is one of the most consequential deployment contexts for
+\textit{Content moderation} at scale is one of the most consequential deployment contexts for
 AI systems. On major platforms, every user message is evaluated by a lightweight safety
 classifier before it reaches the main model or a human reviewer. These classifiers---fine-tuned
 SLMs such as Llama-Guard~\cite{inan2023llamaguard}, WildGuard~\cite{wildguard2024}, or
