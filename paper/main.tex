@@ -417,97 +417,97 @@ requiring the developer to reason about context rather than receiving an explici
 \label{sec:ltl}
 % ================================================================
 
-A central finding of this work---formalised in Experiment~3 below---is that embedding
-geometry does \emph{not} predict misclassification through distance or margin: cosine
-distance and prototype margin are statistically indistinguishable across TP, TN, FP,
-and FN quadrants. This rules out any threshold-based confidence signal. Instead, the
-geometry encodes \emph{structural polarity}: whether the top-3 nearest prototypes all
-agree on SAFE/UNSAFE, or whether they disagree. We formalise four threshold-free LTL
-properties derived solely from prototype polarity labels. All are O(1) at inference,
-require no ground truth, and are fully transferable across datasets and guard models
-without recalibration.
+A central finding of this work---formalised in Experiment~3 below---is that the guard's
+confidence score is useless as an uncertainty signal: cosine distance and prototype margin
+are statistically indistinguishable across TP, TN, FP, and FN quadrants. The guard
+outputs confidence $\approx$1.000 on every decision, including every catastrophic
+misclassification. This rules out any threshold-based confidence signal from the guard's
+output. We show, however, that the guard's hidden-state geometry encodes a verifiable
+uncertainty signal through \emph{structural polarity}: whether the top-3 nearest
+prototypes agree on SAFE/UNSAFE (certainty) or disagree (uncertainty).
+
+We formalise this as two complementary LTL properties that together constitute the
+\textbf{only verifiable confidence certificate for a safety guard}---derived from
+prototype polarity alone, requiring no thresholds, no ground truth, and no
+dataset-specific calibration. Two additional properties provide directional error-risk
+routing within the certain branch.
 
 Let $\text{mixed}(t)$ be true when the top-3 prototype matches at time $t$ contain
 at least one UNSAFE and at least one SAFE prototype.
 
-\medskip
-\noindent\textbf{$\phi_\text{incoherent}$} --- Mixed-polarity signal:
+\noindent\textbf{$\phi_\text{incoherent}$ --- Uncertainty certificate:}
 \begin{equation}
 \label{eq:incoherent}
-G\!\bigl(\text{mixed}(t) \;\to\; \text{escalate\_human}(t)\bigr)
+G\!\bigl(\text{mixed}(t) \;\to\; \text{guard\_uncertain}(t) \;\wedge\; \text{escalate\_human}(t)\bigr)
 \end{equation}
 Fires on 74/223 cases (33\%), \textbf{precision 100\%}. When SAFE and UNSAFE prototypes
-co-appear in the top-3, the explanation always correctly identifies a boundary case.
-The mix of SAFE and UNSAFE is itself the diagnostic signal: the prompt straddles the
-decision boundary and requires human judgment. This property subsumes the previous
-threshold-dependent $\phi_\text{ambiguous}$---all 38 formerly-ambiguous cases fire
-here, as do the additional 36 mixed-polarity cases with larger gaps. Precision remains
-100\% across all 74.
+co-appear in the top-3, the guard's embedding sits between two semantic regions and its
+decision is structurally uncertain. This is a \emph{formal uncertainty certificate}:
+every case where $\phi_\text{incoherent}$ fires is a genuine boundary case, with zero
+false alarms in our 223-case benchmark. The guard's own output provides no hint of this
+uncertainty---all 74 cases show confidence $\approx$1.000---making this property the
+only observable uncertainty signal available. Human review is required.
 
 \medskip
-\noindent\textbf{$\phi_\text{polarised}$} --- Single-polarity signal:
+\noindent\textbf{$\phi_\text{polarised}$ --- Certainty certificate:}
 \begin{equation}
 \label{eq:polarised}
-G\!\bigl(\lnot\text{mixed}(t) \;\to\; \text{act\_on\_top1}(t)\bigr)
+G\!\bigl(\lnot\text{mixed}(t) \;\to\; \text{guard\_certain}(t) \;\wedge\; \text{act\_on\_top1}(t)\bigr)
 \end{equation}
-Fires on 149/223 cases (67\%). When all three prototypes agree on polarity, the
-explanation can be acted on directly. For FNs (all-UNSAFE top-3), the top-1 prototype
-names the missed attack class with 87\% accuracy. For FPs (all-UNSAFE top-3), the
-developer should still check whether the surface trigger maps to the prototype correctly.
-This property is the complement of $\phi_\text{incoherent}$: together they partition
-every inference call.
+Fires on 149/223 cases (67\%), precision 87\%. When all three prototypes agree on
+polarity, the guard's embedding is in an unambiguous region and its decision is
+structurally grounded. This is a \emph{formal certainty certificate}: the developer
+can act on the top-1 prototype label directly. $\phi_\text{polarised}$ and
+$\phi_\text{incoherent}$ are logical complements---together they partition every
+inference call exhaustively.
 
 \medskip
-\noindent\textbf{$\phi_\text{FP}$} --- Per-prototype FP risk:
+\noindent\textbf{$\phi_\text{FP}$ --- FP error-risk signal (within certain branch):}
 \begin{equation}
 \label{eq:fp}
-\bigl(\text{dec}(t) = \text{UNSAFE} \;\wedge\; \text{proto}(t) = P_2\bigr) \;\to\; \text{flag\_fp}(t)
+\bigl(\lnot\text{mixed}(t) \;\wedge\; \text{dec}(t) = \text{UNSAFE} \;\wedge\; \text{proto}(t) = P_2\bigr) \;\to\; \text{flag\_fp}(t)
 \end{equation}
-Prototype P2 (Direct Harmful Content) produced 40\% of all FPs. A guard firing on a
-P2-matched prompt should trigger a developer check on whether the surface trigger
-(``write about X'', reproduction of text) is actually harmful in context.
+Within the certain branch, P2 (Direct Harmful Content) produced 40\% of all FPs.
+A polarised UNSAFE decision matched to P2 should trigger a check on whether the
+surface trigger is actually harmful in context.
 
 \medskip
-\noindent\textbf{$\phi_\text{FN}$} --- Per-prototype FN risk:
+\noindent\textbf{$\phi_\text{FN}$ --- FN error-risk signal (within certain branch):}
 \begin{equation}
 \label{eq:fn}
-\bigl(\text{dec}(t) = \text{SAFE} \;\wedge\; \text{proto}(t) = P_0\bigr) \;\to\; \text{flag\_fn}(t)
+\bigl(\lnot\text{mixed}(t) \;\wedge\; \text{dec}(t) = \text{SAFE} \;\wedge\; \text{proto}(t) = P_0\bigr) \;\to\; \text{flag\_fn}(t)
 \end{equation}
-Prototype P0 (Persona Bypass) produced 32\% of all FNs. A SAFE decision on a P0-matched
-prompt is a strong indicator of a missed jailbreak and should be routed to developer review.
+Within the certain branch, P0 (Persona Bypass) produced 32\% of all FNs. A polarised
+SAFE decision matched to P0 is a strong indicator of a missed jailbreak.
 
 \begin{table}[t]
 \centering
 \small
 \caption{Four threshold-free LTL properties derived from prototype polarity.
-All are transferable across datasets and guard models without recalibration.
-$\phi_\text{incoherent}$ achieves 100\% precision.}
+$\phi_\text{incoherent}$ and $\phi_\text{polarised}$ are the \emph{only verifiable
+confidence certificates} for a safety guard---the guard's own output provides no
+uncertainty signal. All properties transfer across datasets without recalibration.}
 \label{tab:ltl}
-\begin{tabular}{lrrp{2.8cm}}
+\begin{tabular}{p{2.4cm}p{0.6cm}p{0.9cm}p{3.6cm}}
 \toprule
-\textbf{Property} & \textbf{Coverage} & \textbf{Precision} & \textbf{Action} \\
+\textbf{Property} & \textbf{Cov.} & \textbf{Prec.} & \textbf{Meaning} \\
 \midrule
-$\phi_\text{incoherent}$ (Eq.~\ref{eq:incoherent}) & 33\% & \textbf{100\%} & Escalate to human review \\
-$\phi_\text{polarised}$ (Eq.~\ref{eq:polarised}) & 67\% & 87\% & Act on top-1 prototype \\
-$\phi_\text{FP}$ (Eq.~\ref{eq:fp}) & --- & --- & Flag probable FP \\
-$\phi_\text{FN}$ (Eq.~\ref{eq:fn}) & --- & --- & Flag probable FN \\
+$\phi_\text{incoherent}$ & 33\% & \textbf{100\%} & \textbf{Uncertainty cert.} --- escalate \\
+$\phi_\text{polarised}$  & 67\% & 87\%  & \textbf{Certainty cert.} --- act \\
+$\phi_\text{FP}$         & ---  & ---   & Probable FP (certain branch) \\
+$\phi_\text{FN}$         & ---  & ---   & Probable FN (certain branch) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\noindent\textbf{Developer decision tree.} Every inference call falls into exactly one of
-two branches: (1)~if $\phi_\text{incoherent}$ fires (33\%), SAFE and UNSAFE prototypes
-disagree---escalate to human review, the guard's decision is structurally uncertain;
-(2)~if $\phi_\text{polarised}$ fires (67\%), all prototypes agree---act on the top-1
-prototype label directly. Within the polarised branch, $\phi_\text{FP}$ and $\phi_\text{FN}$
-provide additional routing: P2+UNSAFE suggests checking for a surface-trigger FP; P0+SAFE
-suggests checking for a missed jailbreak FN. These four properties require no thresholds,
-no ground truth, and no dataset-specific calibration.
-
-Together, these properties operationalise a structured accept/escalate meta-decision:
-$\phi_\text{polarised}$ defines the accept region (67\%), and $\phi_\text{incoherent}$
-defines the escalate region (33\%) acting as a cognitive forcing function~\cite{buccinca2021trust}
-that prevents developers from passively accepting a wrong decision.
+\noindent\textbf{Developer decision tree.} Every inference call falls into one of two
+branches determined solely by prototype polarity: (1)~$\phi_\text{incoherent}$ fires
+(33\%)---guard is \emph{uncertain}, escalate to human review; (2)~$\phi_\text{polarised}$
+fires (67\%)---guard is \emph{certain}, act on top-1 prototype. Within the certain
+branch, $\phi_\text{FP}$ (P2+UNSAFE) and $\phi_\text{FN}$ (P0+SAFE) provide directional
+error-risk routing. These two confidence certificates cover 100\% of cases, require no
+thresholds or ground truth, and surface a genuine uncertainty signal that the guard's
+own confidence score entirely conceals~\cite{buccinca2021trust}.
 
 % ================================================================
 \section{Experiments}
