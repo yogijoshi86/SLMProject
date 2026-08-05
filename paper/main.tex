@@ -485,7 +485,8 @@ SAFE decision matched to P0 is a strong indicator of a missed jailbreak.
 \caption{Four threshold-free LTL properties derived from prototype polarity.
 $\phi_\text{incoherent}$ and $\phi_\text{polarised}$ are the \emph{only verifiable
 confidence certificates} for a safety guard---the guard's own output provides no
-uncertainty signal. All properties transfer across datasets without recalibration.}
+uncertainty signal. All properties transfer across datasets without recalibration.
+Figure~\ref{fig:ltl} visualises coverage and precision per property.}
 \label{tab:ltl}
 \begin{tabular}{p{2.4cm}p{0.6cm}p{0.9cm}p{3.6cm}}
 \toprule
@@ -498,6 +499,14 @@ $\phi_\text{FN}$         & ---  & ---   & Probable FN (certain branch) \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\columnwidth]{ltl_properties.png}
+\caption{LTL trust property coverage and precision. $\phi_\text{incoherent}$ achieves
+100\% precision at 33\% coverage as the uncertainty certificate.}
+\label{fig:ltl}
+\end{figure}
 
 \noindent\textbf{Developer decision tree.} Every inference call falls into one of two
 branches determined solely by prototype polarity: (1)~$\phi_\text{incoherent}$ fires
@@ -607,6 +616,15 @@ contamination.
 
 \subsection{Experiment 2: Prototype Discovery}
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\columnwidth]{clustering_sweep.png}
+\caption{K-means silhouette sweep. UMAP achieves $S{=}0.41$ at $k^*{=}4$,
+versus $S{=}0.039$ for full 4096-dim embeddings. UMAP also reveals
+a fourth prototype (Privacy) not visible at full dimensionality.}
+\label{fig:clustering}
+\end{figure}
+
 Figure~\ref{fig:clustering} and Table~\ref{tab:clustering} show the K-means silhouette
 sweep results. UMAP at 50 dimensions achieves $S{=}0.4111$ at $k^*{=}4$, versus $S{=}0.039$
 at $k^*{=}3$ for full-dimensional K-means. The 945\% improvement reflects two phenomena:
@@ -638,7 +656,7 @@ BERTopic (HDBSCAN) & 7 & 0.029 & 41.8\% \\
 
 We evaluated three explanation systems on 223 benchmark cases (32 FP + 191 FN):
 (A) prototype-based explanations, (B) Phi-3.5-Blind, and (C) Phi-3.5-GT.
-Table~\ref{tab:explainability} shows the results.
+Table~\ref{tab:explainability} and Figure~\ref{fig:explainability} show the results.
 
 \begin{table}[h]
 \centering
@@ -719,7 +737,7 @@ reduction $\geq$30\%) was met: mean latency dropped from 42.0\,s to 22.0\,s/case
 independently. The secondary hypothesis (accuracy improvement) was also met: overall
 accuracy improved by 12 percentage points, with FN accuracy showing the largest gain
 (42\%$\to$72\%, +30pp), consistent with the dominance of prototype explanations on FN
-cases observed in Experiment~4.
+cases observed in Experiment~3 (Table~\ref{tab:explainability}).
 
 \begin{table}[h]
 \centering
@@ -753,15 +771,6 @@ The $\phi_\text{incoherent}$ property addresses this gap: in the 44\% of FP case
 a SAFE prototype appears in the top-3, the developer receives a direct contradiction of
 the guard's decision.
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.85\columnwidth]{clustering_sweep.png}
-\caption{K-means silhouette sweep. UMAP (blue) achieves $S{=}0.41$ at $k^*{=}4$,
-versus $S{=}0.039$ for full 4096-dim embeddings (red dashed). UMAP also reveals
-a fourth prototype (Privacy) not visible at full dimensionality.}
-\label{fig:clustering}
-\end{figure}
-
 % ================================================================
 \section{Analysis: Prototype Explanation Helpfulness}
 % ================================================================
@@ -769,17 +778,9 @@ a fourth prototype (Privacy) not visible at full dimensionality.}
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.95\columnwidth]{explainability_comparison.png}
-\caption{Per-category accuracy of three explanation systems. Prototype explanations
-dominate FN diagnosis (99.6\% top-3); Phi-3.5-GT is competitive only on FPs.}
+\caption{Per-category accuracy of three explanation systems.
+Prototype explanations dominate FN diagnosis (99.6\% top-3); Phi-3.5-GT is competitive only on FPs.}
 \label{fig:explainability}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.95\columnwidth]{ltl_properties.png}
-\caption{LTL trust property coverage and precision. $\phi_\text{incoherent}$ and
-$\phi_\text{incoherent}$ achieves 100\% precision at 33\% coverage.}
-\label{fig:ltl}
 \end{figure}
 
 We evaluated all 223 benchmark cases for whether the prototype explanation helps
