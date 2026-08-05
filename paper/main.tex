@@ -1003,14 +1003,13 @@ the quantified expected impact of each component for the ToxicChat/Llama-Guard c
 
 \subsection{Overreliance and Cognitive Forcing}
 
-The A/B results contain one surprise: FN accuracy improved by 30 points but FP accuracy
-dropped by 9. This is the overreliance effect Buccinca et al.~\cite{buccinca2021trust}
-describe---when developers see all-UNSAFE prototypes, they become confident the guard
-was right and stop questioning it. The $\phi_\text{incoherent}$ property partially
-addresses this: in 44\% of FP cases a SAFE prototype appears in the top-3, which is
-a direct signal that the guard may have over-triggered. For the remaining 56\%---where
-all three prototypes are UNSAFE---the explanation identifies the surface trigger but
-cannot substitute for the developer's own contextual judgment.
+FP accuracy dropped 9 points in the treatment arm---the overreliance
+effect~\cite{buccinca2021trust}. A compounding factor is that the A/B study used a
+partial taxonomy (UNSAFE-only prototypes); SAFE prototypes were not yet available,
+so developers received no direct polarity contradiction for FP cases. With the full
+taxonomy, $\phi_\text{incoherent}$ fires in 44\% of FP cases and provides that
+contradiction directly. The remaining 56\%---all-UNSAFE top-3---still require the
+developer's own contextual judgment.
 
 \subsection{Fine-Tuning Guidance from Prototype Analysis}
 
