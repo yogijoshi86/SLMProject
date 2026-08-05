@@ -9,7 +9,7 @@ chosen because the attack pattern (novel persona name ``NaughtyVircuna'') is inv
 in the surface text yet unambiguous in embedding space---making it the sharpest
 illustration of the structural gap between text-based and geometry-based explanations.
 
-\begin{table*}[h]
+\begin{table}[H]
 \centering
 \small
 \caption{Side-by-side explanation comparison on c037 (FN: guard=SAFE, truth=UNSAFE).
@@ -18,7 +18,7 @@ that writes inappropriate or offensive content.''}
 Llama-Guard outputs only a binary label; both Phi-3.5 modes miss the jailbreak pattern;
 the prototype explanation names it exactly and provides an actionable exemplar.}
 \label{tab:expcomp_case}
-\begin{tabular}{p{2.8cm}p{10.4cm}}
+\begin{tabular}{p{2.4cm}p{11.0cm}}
 \toprule
 \textbf{System} & \textbf{Explanation} \\
 \midrule
@@ -59,7 +59,7 @@ P0 (Persona Jailbreak) accounts for 32\% of all FNs; add NaughtyVircuna-style no
 persona names to the P0 training cluster. No generic advice, no missed attack class.} \\
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
 
 \medskip
 \noindent\textbf{Key observation.} The guard and Phi-3.5-Blind produce no useful signal.
