@@ -63,10 +63,12 @@ and improve root-cause accuracy from 44\% to 57\%. In 92\% of misclassification 
 the explanation autonomously contradicts the guard's decision without requiring developer
 interpretation; the 2nd/3rd prototype achieves a 100\% rescue rate across the covered
 taxonomy. We further formalise four threshold-free Linear Temporal Logic (LTL) properties
-from prototype polarity: $\phi_\text{incoherent}$ achieves 100\% precision as an
-uncertainty certificate and $\phi_\text{polarised}$ as a certainty certificate---the
-only verifiable confidence signals for a guard whose output is always confidence
-$\approx$1.000 regardless of whether the decision is correct.
+from prototype polarity that serve a dual purpose: at runtime, $\phi_\text{incoherent}$
+(100\% precision, 33\% coverage) routes structurally uncertain cases to LLM-based
+thorough review or human review, while $\phi_\text{polarised}$ handles the remaining
+67\% automatically---scaling content moderation by reserving expensive review for cases
+that genuinely need it. In the offline diagnostic phase, $\phi_\text{FP}$ and
+$\phi_\text{FN}$ help developers identify systematic guard failures and guide fine-tuning.
 \end{abstract}
 
 % ================================================================
