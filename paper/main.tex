@@ -61,7 +61,7 @@ with no additional model call and covers 99.6\% of all misclassified cases in ou
 
 A controlled A/B study ($n{=}4$ software developers with minimal ML background, counterbalanced Latin square) confirms
 the practical value on ToxicChat/Llama-Guard: prototype explanations reduce diagnostic
-latency by \textbf{46\%} and improve root-cause accuracy from 44\% to 57\%. In 92\%
+latency by \textbf{47\%} and improve root-cause accuracy from 44\% to 56\%. In 92\%
 of misclassification cases the explanation autonomously contradicts the guard's decision
 without requiring developer interpretation; the 2nd/3rd prototype achieves a 100\%
 rescue rate across the covered taxonomy. These numbers are specific to our experimental
@@ -300,7 +300,7 @@ ToxicChat) to enable disambiguation of false positives---cases where the guard f
 on a benign prompt that resembles a known attack pattern.
 
 \subsection{Phase 2: Prototype Discovery via UMAP + K-means}
-\label{sec:proto}
+\label{sec:proto-discovery}
 
 Raw 4,096-dimensional embeddings suffer acutely from the curse of dimensionality: all
 pairwise cosine distances concentrate near the mean, and K-means clusters at this
@@ -353,7 +353,7 @@ Total matching latency: $<$50\,ms including UMAP projection.
 
 \subsection{Phase 4: LTL Runtime Trust Monitor}
 
-Five LTL properties (Section~\ref{sec:ltl}) are evaluated at each inference call from
+Four LTL properties (Section~\ref{sec:ltl}) are evaluated at each inference call from
 the similarity scores returned by the matching step. These properties require no
 additional model calls and execute in O(1) time, providing developers with instant
 signals for autonomous action versus human escalation.
@@ -559,7 +559,7 @@ from the 77 held-out UNSAFE test embeddings where the ground-truth label is safe
 FNs drawn from ToxicChat prompts the guard missed (false negatives). A researcher
 documented ground-truth root cause per case to form the answer key.
 
-\textbf{A/B study:} 5 software developers (minimal ML/AI background, reasonable software engineering experience) completed two sessions each---control (raw guard
+\textbf{A/B study:} 4 software developers (minimal ML/AI background, reasonable software engineering experience) completed two sessions each---control (raw guard
 flag only) and treatment (flag + top-3 prototype explanation)---counterbalanced via
 Latin square to eliminate ordering effects. Each session contained 25 guardrail failures
 (mixed FP/FN). Primary metric: diagnostic latency (seconds/case). Secondary: root-cause
@@ -1037,7 +1037,7 @@ on WildChat~\cite{zhao2024wildchat} (1M prompts, 68 languages) would likely surf
 2--3 additional clusters and close this gap.
 
 \textbf{Study scale and participant background.} The A/B study involved $n{=}4$
-students with minimal ML/AI background, which constitutes a pilot. The 46\%
+students with minimal ML/AI background, which constitutes a pilot. The 47\%
 latency reduction is encouraging, but a larger study with ML practitioners is needed
 for statistical confidence. For a more exhaustive study with a larger and more diverse
 participant pool, we intend to request ethics review through the University of
@@ -1090,8 +1090,8 @@ belong to it, surfaces the most representative examples, and specifies exactly w
 training data to add---forming a prototype-driven audit loop that can be run on any
 Llama-Guard-family model and any deployment dataset.
 
-A controlled A/B study ($n{=}4$ software developers with minimal ML background) validates the human impact: 46\% latency reduction,
-+13 points accuracy, with 4/4 participants exceeding the pre-registered 30\% threshold.
+A controlled A/B study ($n{=}4$ software developers with minimal ML background) validates the human impact: 47\% latency reduction,
++12 points accuracy, with 4/4 participants exceeding the pre-registered 30\% threshold.
 
 Can a guard explain itself? Yes---through its own hidden states, and in doing so,
 it tells developers exactly how to make it better.

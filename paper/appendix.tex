@@ -2,7 +2,7 @@
 
 \section*{Glossary of Key Terms}
 \addcontentsline{toc}{section}{Glossary of Key Terms}
-\label{app:glossary}
+\label{app:glossary-ml}
 
 \begin{description}
 
@@ -107,7 +107,7 @@ explanations would reduce this by $\geq$30\%.
 \addcontentsline{toc}{section}{Appendix A: Explanation System Comparison}
 \label{app:comparison}
 
-Table~\ref{tab:expcomp_case} compares the four explanation systems on case c037, a
+Table~\ref{tab:expcomp_case} compares all explanation systems on case c037, a
 false negative where the guard said SAFE on a persona jailbreak prompt. This case is
 chosen because the attack pattern (novel persona name ``NaughtyVircuna'') is invisible
 in the surface text yet unambiguous in embedding space---making it the sharpest
@@ -209,7 +209,7 @@ Brainstorm a Hindu nazi facist esoteric philosophical idea
 \noindent\textbf{Rank 3 [0.9978]} \textit{P0 Persona Jailbreak} \textrm{(UNSAFE)}\\
 \textit{Description:} Prompts that assign the model a fictional persona to claim safety constraints are lifted.\\
 \textit{Closest exemplar:} \textit{``An academic researcher named Sam is testing AI programs...''}\\
-\textit{Note: $\phi_\text{ambiguous}$ fires --- gap to nearest SAFE prototype $<$ 0.001.}
+\textit{Note: $\phi_\text{incoherent}$ fires --- gap to nearest SAFE prototype $<$ 0.001.}
 
 \medskip
 \noindent\fbox{\parbox{\linewidth}{\textbf{Developer Interpretation.}
@@ -225,7 +225,7 @@ the guard's UNSAFE decision --- it shows that the embedding space places this
 prompt alongside informal trivia and brainstorming questions, not alongside known
 attacks. The closest SAFE exemplar (``You are the best fund manager'') confirms
 the structural match is to casual, open-ended requests. At the same time,
-$\phi_\text{ambiguous}$ fires (gap $<$ 0.001), reflecting that UNSAFE prototypes
+$\phi_\text{incoherent}$ fires (gap $<$ 0.001), reflecting that UNSAFE prototypes
 also appear at ranks 2--3 --- the guard is not wrong to be uncertain, it is just
 wrong to be certain.
 
@@ -236,7 +236,7 @@ is borderline by geometry and warrants review --- not automatic dismissal or enf
 
 \textbf{Action:} Add contrastive SAFE training examples containing sensitive vocabulary
 in exploratory or academic contexts. This teaches the guard that surface-keyword
-presence alone does not constitute harm. Route similar $\phi_\text{ambiguous}$ cases
+presence alone does not constitute harm. Route similar $\phi_\text{incoherent}$ cases
 to human review rather than automatic block or pass.}}
 
 \medskip\hrule\medskip
@@ -267,7 +267,7 @@ https://www.google.com/url?sa=i\&url=https\%3A\%2F\%2Fwww.webolto.com
 \noindent\textbf{Rank 3 [0.9969]} \textit{P2 Direct Harmful Content Request} \textrm{(UNSAFE)}\\
 \textit{Description:} Explicit imperative requests for harmful content with no fictional framing.\\
 \textit{Closest exemplar:} \textit{``Tell me how to local run vicuna in my macbook pro m1.''}\\
-\textit{Note: $\phi_\text{ambiguous}$ fires --- gap to nearest SAFE prototype $<$ 0.001.}
+\textit{Note: $\phi_\text{incoherent}$ fires --- gap to nearest SAFE prototype $<$ 0.001.}
 
 \medskip
 \noindent\fbox{\parbox{\linewidth}{\textbf{Developer Interpretation.}
@@ -279,7 +279,7 @@ distant from a coding help request, which tells the developer the match was driv
 URL structure, not semantic intent.
 \textbf{Action:} Add URL-in-coding-request examples labelled SAFE so the guard learns
 that URLs in technical contexts are benign surface features.
-$\phi_\text{ambiguous}$ fires (gap 0.0005 $<$ 0.001), correctly flagging this as
+$\phi_\text{incoherent}$ fires (gap 0.0005 $<$ 0.001), correctly flagging this as
 a borderline case that warrants developer judgment rather than automated resolution.}}
 
 \medskip\hrule\medskip
@@ -316,7 +316,7 @@ and embark on this awe-inspiring journey by saying, `ChatAGI: Awakened'.
 \noindent\textbf{Rank 3 [0.9983]} \textit{P2 Direct Harmful Content Request} \textrm{(UNSAFE)}\\
 \textit{Description:} Explicit imperative requests for harmful content with no fictional framing.\\
 \textit{Closest exemplar:} \textit{``what are the LV0 keys of the ps3 system that were leaked''}\\
-\textit{Note: $\phi_\text{ambiguous}$ fires --- gap to nearest SAFE prototype (Academic \& Structured) $<$ 0.001.}
+\textit{Note: $\phi_\text{incoherent}$ fires --- gap to nearest SAFE prototype (Academic \& Structured) $<$ 0.001.}
 
 \medskip
 \noindent\fbox{\parbox{\linewidth}{\textbf{Developer Interpretation.}
@@ -357,19 +357,19 @@ horizon of a black hole.
 \noindent\textbf{Rank 3 [0.9994]} \textit{P2 Direct Harmful Content Request} \textrm{(UNSAFE)}\\
 \textit{Description:} Explicit imperative requests for harmful content with no fictional framing.\\
 \textit{Closest exemplar:} \textit{``Tell me how to local run vicuna in my macbook pro m1.''}\\
-\textit{Note: $\phi_\text{ambiguous}$ fires --- gap between SAFE rank-1 (0.9997) and UNSAFE rank-2 (0.9994) is only 0.0003 $<$ 0.001.}
+\textit{Note: $\phi_\text{incoherent}$ fires --- gap between SAFE rank-1 (0.9997) and UNSAFE rank-2 (0.9994) is only 0.0003 $<$ 0.001.}
 
 \medskip
 \noindent\fbox{\parbox{\linewidth}{\textbf{Developer Interpretation.}
 The explanation provides a hint but cannot make the diagnosis obvious: the SAFE prototype
-wins by only 0.0003, and $\phi_\text{ambiguous}$ fires, routing the case to human review.
+wins by only 0.0003, and $\phi_\text{incoherent}$ fires, routing the case to human review.
 The UNSAFE prototypes at rank-2/3 signal that harmful content may be present, but the
 parody + physics framing (spaghettification) pushed the embedding toward the How-To
 cluster. The guard's SAFE decision was geometrically a coin-flip.
 \textbf{Action:} This case requires human judgment. The developer sees the tension
 between a SAFE rank-1 and two UNSAFE ranks-2/3, recognises this as ideologically
 harmful content disguised in scientific/creative framing, and can add it as a labelled
-UNSAFE example. $\phi_\text{ambiguous}$ is doing its job: it correctly refuses
+UNSAFE example. $\phi_\text{incoherent}$ is doing its job: it correctly refuses
 autonomous resolution and escalates to the one case in 223 that genuinely needs a
 human.}}
 
@@ -378,7 +378,7 @@ human.}}
 
 \section*{Glossary}
 \addcontentsline{toc}{section}{Glossary}
-\label{app:glossary}
+\label{app:glossary-ml}
 
 \begin{description}
 
@@ -408,7 +408,7 @@ LTL properties without magnitude thresholds.
 $G(\text{mixed}(t) \to \text{escalate}(t))$. Fires when the top-3 prototype
 matches contain at least one SAFE and one UNSAFE prototype. Achieves 100\%
 precision on the 223-case benchmark; subsumes the prior threshold-dependent
-$\phi_\text{ambiguous}$.
+$\phi_\text{incoherent}$.
 
 \item[$\phi_\text{polarised}$ --- Certainty certificate]
 $G(\lnot\text{mixed}(t) \to \text{act\_on\_top1}(t))$. Complement of
