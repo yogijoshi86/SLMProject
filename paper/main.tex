@@ -59,7 +59,7 @@ Misuse}---without any labels (silhouette $S{=}0.41$, +945\% over full-dimensiona
 clustering). At inference, matching a new prompt to its nearest prototype takes $<$50\,ms
 with no additional model call and covers 99.6\% of all misclassified cases in our benchmark.
 
-A controlled A/B study ($n{=}5$ software developers with minimal ML background, counterbalanced Latin square) confirms
+A controlled A/B study ($n{=}4$ software developers with minimal ML background, counterbalanced Latin square) confirms
 the practical value on ToxicChat/Llama-Guard: prototype explanations reduce diagnostic
 latency by \textbf{46\%} and improve root-cause accuracy from 44\% to 57\%. In 92\%
 of misclassification cases the explanation autonomously contradicts the guard's decision
@@ -763,13 +763,13 @@ tells the developer the guard was likely wrong.
 \includegraphics[width=0.95\columnwidth]{ab_results.png}
 \caption{A/B study results ($n{=}4$ complete sessions). Prototype explanations
 reduce diagnostic latency by 47\% and improve accuracy by 12 percentage points.
-The pre-registered H1 threshold of 30\% latency reduction was exceeded by 4/5 participants.}
+The pre-registered H1 threshold of 30\% latency reduction was exceeded by 3/4 participants.}
 \label{fig:ab}
 \end{figure}
 
 Table~\ref{tab:ab} presents the A/B study results. The primary hypothesis H1 (latency
 reduction $\geq$30\%) was met: mean latency dropped from 42.0\,s to 22.0\,s/case
-(47\% reduction, $\pm$18.2\%), with 4/5 participants exceeding the 30\% threshold
+(47\% reduction, $\pm$18.2\%), with 3/4 participants exceeding the 30\% threshold
 independently. The secondary hypothesis (accuracy improvement) was also met: overall
 accuracy improved by 12 percentage points, with FN accuracy showing the largest gain
 (42\%$\to$72\%, +30pp), consistent with the dominance of prototype explanations on FN
@@ -778,7 +778,7 @@ cases observed in Experiment~3 (Table~\ref{tab:explainability}).
 \begin{table}[h]
 \centering
 \small
-\caption{A/B study results ($n{=}5$ software developers with minimal ML background, counterbalanced Latin square,
+\caption{A/B study results ($n{=}4$ software developers with minimal ML background, counterbalanced Latin square,
 H1 threshold: $\geq$30\% latency reduction). FP accuracy decline reflects the
 ``explanation provides a hint'' FP cases where all-UNSAFE explanations confirm the trigger but not
 the benign intent.}
@@ -1089,7 +1089,7 @@ because ToxicChat's training distribution barely covers them. Running the full p
 on WildChat~\cite{zhao2024wildchat} (1M prompts, 68 languages) would likely surface
 2--3 additional clusters and close this gap.
 
-\textbf{Study scale and participant background.} The A/B study involved $n{=}5$
+\textbf{Study scale and participant background.} The A/B study involved $n{=}4$
 students with minimal ML/AI background, which constitutes a pilot. The 46\%
 latency reduction is encouraging, but a larger study with ML practitioners is needed
 for statistical confidence. For a more exhaustive study with a larger and more diverse
@@ -1143,8 +1143,8 @@ belong to it, surfaces the most representative examples, and specifies exactly w
 training data to add---forming a prototype-driven audit loop that can be run on any
 Llama-Guard-family model and any deployment dataset.
 
-A controlled A/B study ($n{=}5$ software developers with minimal ML background) validates the human impact: 46\% latency reduction,
-+13 points accuracy, with 4/5 participants exceeding the pre-registered 30\% threshold.
+A controlled A/B study ($n{=}4$ software developers with minimal ML background) validates the human impact: 46\% latency reduction,
++13 points accuracy, with 3/4 participants exceeding the pre-registered 30\% threshold.
 
 Can a guard explain itself? Yes---through its own hidden states, and in doing so,
 it tells developers exactly how to make it better.
