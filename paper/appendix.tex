@@ -8,6 +8,72 @@ UNSAFE prototypes: P0=Persona Bypass, P1=Fictional Narrative,
 P2=Direct Harmful Content, P3=Privacy Misuse.
 SAFE prototypes: S0=Casual \& Creative, S1=Academic \& Structured, S2=How-To.
 
+\subsection*{Developer Walkthrough: How to Use the Explanation}
+
+The four cases below illustrate the two diagnostic modes a developer encounters.
+
+\textbf{FP ``Explanation Makes the Reasoning Obvious'' (c001).}
+The guard said UNSAFE; the truth is SAFE. Rank-1 prototype is \textit{S0 Casual
+\& Creative Requests}. The developer sees immediately: the guard fired on a prompt
+that the embedding space considers casual brainstorming. The SAFE prototype at rank-1
+\emph{directly contradicts} the UNSAFE decision --- no further reasoning is needed.
+The developer's action: the guard over-triggered on extremist vocabulary (``nazi'',
+``fascist'') in a context that is structurally identical to trivia and creative questions.
+Fix: add contrastive SAFE training examples containing sensitive vocabulary in
+exploratory/academic contexts so the guard learns that surface-keyword presence alone
+does not constitute harm.
+
+\textbf{FP ``Explanation Provides a Hint'' (c002).}
+The guard said UNSAFE; the truth is SAFE (React coding request with a Google URL).
+All three top prototypes are UNSAFE: Privacy Misuse (rank-1), Persona Jailbreak
+(rank-2), Direct Harmful Content (rank-3). The explanation does \emph{not} directly
+signal that the guard was wrong --- the developer must apply domain context.
+The hint: Privacy Misuse fired because the URL contains encoded query parameters
+that superficially resemble the pattern of domain-specific information targeting.
+The closest exemplar (``write a story about a young couple having a passionate sex'')
+is semantically distant from a coding help request, which tells the developer the
+match was driven by URL structure, not semantic intent. The developer's action:
+add URL-in-coding-request examples as labelled SAFE to teach the guard that URLs
+in technical contexts are benign surface features. The $\phi_\text{ambiguous}$
+property fires here (gap 0.0005 $<$ 0.001), correctly flagging this as a borderline
+case that warrants developer judgment rather than automated resolution.
+
+\textbf{FN ``Explanation Makes the Reasoning Obvious'' (c033).}
+The guard said SAFE; the truth is UNSAFE (ChatAGI full jailbreak prompt). Rank-1
+prototype is \textit{P1 Fictional Narrative for Inappropriate Content}, rank-2 is
+\textit{P0 Persona Jailbreak}. The explanation directly signals the attack: two UNSAFE
+prototypes in the top-3 immediately tell the developer the guard missed a jailbreak.
+The rank-2 exemplar (``You are a typical 4chan user named Kevin'') is structurally
+identical to the ChatAGI setup --- both assign an unconstrained persona. The developer's
+action is immediate: P0 (Persona Jailbreak) covers 32\% of all the guard's false negatives
+($\phi_\text{FN}$ fires), so adding ChatAGI-style novel persona names to the P0 training
+cluster has the highest expected FN reduction impact of any single intervention.
+
+\textbf{FN ``Explanation Provides a Hint'' (c223).}
+The guard said SAFE; the truth is UNSAFE (Hitler parody + spaghettification). Rank-1
+is \textit{S2 Informational How-To Queries} (SAFE), but rank-2 and rank-3 are UNSAFE
+(P0 Persona Jailbreak, P2 Direct Harmful Content). The SAFE prototype wins by only
+0.0003 --- $\phi_\text{ambiguous}$ fires, correctly escalating to human review.
+The hint: the parody + physics framing pushed the embedding toward the How-To cluster,
+but the UNSAFE prototypes at rank-2/3 signal that harmful ideological content is present.
+The developer's action: this case requires human judgment precisely because the
+embedding geometry is genuinely ambiguous --- the prompt straddles the SAFE/UNSAFE
+boundary. The $\phi_\text{ambiguous}$ property is doing its job: it correctly refuses
+to make an autonomous decision and routes the case for human review, where a person
+can apply the contextual reasoning that the geometry cannot.
+
+\medskip
+\noindent\textbf{Summary of developer workflow.}
+In all four cases the prototype explanation provides more signal than the guard's
+binary output alone. In two cases (c001, c033) the explanation makes the diagnosis
+immediate --- a SAFE prototype contradicts an UNSAFE decision, or an UNSAFE prototype
+names a known attack class. In one case (c002) the explanation provides the attack
+surface trigger but the developer must supply domain context to confirm the FP.
+In one case (c223) the system correctly identifies its own uncertainty and escalates.
+This covers the full diagnostic space: autonomous resolution (69\%), hint-guided
+reasoning (30\%), and appropriate escalation (1\%).
+
+
 \subsection*{FP Explanation Makes the Reasoning Obvious --- c001}
 \textit{FP; SAFE prototype in top-3 directly reveals over-trigger}
 
