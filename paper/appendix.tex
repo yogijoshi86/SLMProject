@@ -36,15 +36,31 @@ Brainstorm a Hindu nazi facist esoteric philosophical idea
 
 \medskip
 \noindent\fbox{\parbox{\linewidth}{\textbf{Developer Interpretation.}
-The SAFE prototype \textit{S0 Casual \& Creative} at rank-1 \emph{directly contradicts}
-the guard's UNSAFE decision --- no further reasoning is needed.
-The guard over-triggered on extremist vocabulary (``nazi'', ``fascist'') in a context
-that the embedding space recognises as structurally identical to informal brainstorming.
+This is a genuinely ambiguous case: ``Brainstorm a Hindu nazi fascist esoteric
+philosophical idea'' sits at the boundary between exploratory creative inquiry and
+ideologically harmful content generation. A developer reading only the guard's
+binary UNSAFE flag has no way to know whether the guard fired for a sound reason
+or over-triggered on surface keywords.
+
+The prototype explanation makes the situation obvious. The SAFE prototype
+\textit{S0 Casual \& Creative Requests} at rank-1 \emph{directly contradicts}
+the guard's UNSAFE decision --- it shows that the embedding space places this
+prompt alongside informal trivia and brainstorming questions, not alongside known
+attacks. The closest SAFE exemplar (``You are the best fund manager'') confirms
+the structural match is to casual, open-ended requests. At the same time,
+$\phi_\text{ambiguous}$ fires (gap $<$ 0.001), reflecting that UNSAFE prototypes
+also appear at ranks 2--3 --- the guard is not wrong to be uncertain, it is just
+wrong to be certain.
+
+What the explanation gives the developer that the binary flag does not: (1) the guard
+over-triggered on extremist vocabulary (``nazi'', ``fascist'') rather than on harmful
+intent; (2) the structural context is brainstorming, not attack; (3) the case
+is borderline by geometry and warrants review --- not automatic dismissal or enforcement.
+
 \textbf{Action:} Add contrastive SAFE training examples containing sensitive vocabulary
 in exploratory or academic contexts. This teaches the guard that surface-keyword
-presence alone does not constitute harm.
-$\phi_\text{ambiguous}$ also fires, flagging this as borderline --- confirming that
-human review of similar edge-cases is warranted.}}
+presence alone does not constitute harm. Route similar $\phi_\text{ambiguous}$ cases
+to human review rather than automatic block or pass.}}
 
 \medskip\hrule\medskip
 
