@@ -11,12 +11,6 @@ Roee Aharoni and Yoav Goldberg.
 \newblock In \emph{Proceedings of the 58th Annual Meeting of the Association
   for Computational Linguistics}, pages 7747--7763, 2020.
 
-\bibitem[{Anthropic}(2025)]{anthropic2025pricing}
-{Anthropic}.
-\newblock Claude {API} pricing.
-\newblock \url{https://www.anthropic.com/pricing}, 2025.
-\newblock Accessed August 2026.
-
 \bibitem[Buccinca et~al.(2021)Buccinca, Maliza, and Gajos]{buccinca2021trust}
 Zana Buccinca, Maja~Barbara Maliza, and Krzysztof~Z. Gajos.
 \newblock To trust or to think: Cognitive forcing functions can reduce
@@ -122,6 +116,15 @@ Xinyue Shen, Zeyuan Chen, Michael Backes, Yun Shen, and Yang Zhang.
   jailbreak prompts on large language models.
 \newblock In \emph{Proceedings of the 2024 ACM SIGSAC Conference on Computer
   and Communications Security}, 2024.
+
+\bibitem[{University of Waterloo Office of Research
+  Ethics}(2024)]{uwaterloo_ethics}
+{University of Waterloo Office of Research Ethics}.
+\newblock Does my data collection activity require ethics review?
+\newblock
+  \url{https://uwaterloo.ca/research-ethics/research-human-participants/does-my-data-collection-activity-require-ethics-review},
+  2024.
+\newblock Accessed August 2026.
 
 \bibitem[Wei et~al.(2023)Wei, Haghtalab, and Steinhardt]{wei2023jailbroken}
 Alexander Wei, Nika Haghtalab, and Jacob Steinhardt.
