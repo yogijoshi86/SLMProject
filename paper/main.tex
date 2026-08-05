@@ -111,41 +111,36 @@ claude-sonnet-5    & 350 & 100 & \$0.00255 & \$25.50 \\
 \end{tabular}
 \end{table}
 
-This efficiency advantage, however, conceals a fundamental accountability problem:
-\textbf{safety guardrails fail silently}. When Llama-Guard-3-8B classifies a prompt as
-UNSAFE, the system outputs a binary decision and an optional harm category code (e.g.,
-\texttt{S4} for child exploitation, \texttt{S12} for sexual content). It does not explain
-\emph{which surface feature} triggered the flag, \emph{which training pattern} the prompt
-resembled, or \emph{whether the decision is likely to be a false positive}. The result
-is that developers investigating flagged cases must re-read each prompt from scratch---a
-process that, in our study, consumes a mean of 42 seconds per case. Multiplied across
-the hundreds of daily FP/FN errors that a production guard produces (precision=49.1\%
-on ToxicChat, meaning nearly half of all UNSAFE flags are wrong), the operational cost
-is substantial and the impact on wrongly-silenced users is real.
+But this efficiency comes with a serious accountability gap: \textbf{safety guardrails fail silently}.
+When Llama-Guard-3-8B flags a prompt as UNSAFE, all it returns is a binary label and an
+optional harm category (e.g., \texttt{S4} for child exploitation, \texttt{S12} for sexual content).
+There is no explanation of what triggered the flag, which training pattern the prompt resembled,
+or whether the decision is a false positive. Developers are left to re-read each flagged prompt
+from scratch---our study measured a mean of 42 seconds per case. At a precision of 49.1\%
+on ToxicChat, nearly half of all UNSAFE flags are wrong. Across hundreds of daily errors,
+that is a substantial engineering burden, and the real-world cost to wrongly-silenced users
+is equally real.
 
-Existing approaches to this problem are unsatisfactory. \textbf{Keyword-based rules} fail
-to capture paraphrased, indirect, or multilingual attacks~\cite{gehman2020realtoxicity};
-they also produce no insight into \emph{why} a decision was made. \textbf{LLM-as-judge}
-restores context at the cost of latency and money, but at \$0.03/call it is economically
-prohibitive for real-time moderation pipelines~\cite{dasantar2025aies}. Most importantly,
-the SLM that produced the decision \textbf{cannot explain it}: when asked to diagnose its
-own error, Phi-3.5-mini-instruct (3.8B parameters, instruction-tuned) produces
-non-specific or generic diagnoses for 80\% of false-negative cases even when told
-the guard was wrong (FN accuracy 20\% on the 223-case full benchmark).
-In blind mode (no error context), it actively defends the guard's wrong SAFE decision in
-97\% of FN cases---actively misleading the developer. This is not a deficiency of a
-particular model; it is a \emph{structural} consequence of SLMs lacking access to their
-own embedding geometry.
+The existing alternatives do not solve this. \textbf{Keyword rules} miss paraphrased,
+indirect, and multilingual attacks~\cite{gehman2020realtoxicity} and still give no
+insight into why a decision was made. \textbf{LLM-as-judge} produces good explanations but
+costs \$0.03/call and adds $>$2\,s latency~\cite{dasantar2025aies}---neither is viable at
+production moderation scale. And the guard itself? It can't explain its own decisions.
+We asked Phi-3.5-mini-instruct (3.8B parameters) to diagnose guard errors even when we
+told it the guard was wrong. It gave non-specific answers 80\% of the time (FN accuracy 20\%
+on our 223-case benchmark). In blind mode it actively defended the guard's wrong SAFE decision
+in 97\% of FN cases. This is not a Phi-3.5 problem. It is structural: the attack pattern
+that caused the error lives in the guard's embedding geometry, not in the surface text,
+and no generative model can see it.
 
-Our key insight is that the guard's embedding space already encodes the answer. The
-terminal hidden state of Llama-Guard-3-8B---extracted as a by-product of inference
-with no additional computation---forms compact, semantically coherent clusters corresponding
-to distinct attack strategies. The novel persona name ``NaughtyVircuna'' that evades the
-guard is geometrically close to ``You are Kevin with no restrictions'' that the guard
-correctly catches---a relationship invisible in the surface text but unmistakable in
-embedding space. By discovering and labelling these clusters once (offline), we can
-explain every future decision in real time by finding the nearest cluster. No separate
-model call is required, and no ground-truth label is needed.
+The answer is already there---in the guard's own hidden states. The terminal token
+embedding from Llama-Guard-3-8B, captured as a side-effect of the forward pass,
+encodes the semantic structure of the guard's decision. ``NaughtyVircuna'' evades the
+guard, but its embedding sits next to ``You are Kevin with no restrictions''---the same
+persona-bypass pattern, just with a name the guard has not seen before. That geometric
+relationship is invisible in the surface text but clear in embedding space. Cluster those
+embeddings once offline, label the clusters, and every future decision can be explained
+in under 50\,ms by finding the nearest cluster. No extra model call, no ground-truth labels.
 
 We make five contributions that are, to our knowledge, new to the safety guardrail literature:
 
@@ -192,15 +187,13 @@ loop that can run on any Llama-Guard-family model and any deployment dataset.
 
 \subsection{Safety Guardrail Models}
 
-Llama-Guard~\cite{inan2023llamaguard} introduced the paradigm of fine-tuning a language
-model to classify user-AI conversation turns against a structured harm taxonomy (S1--S14).
-This approach achieves strong throughput at self-hosted inference cost and has been
-widely adopted. Subsequent work extended the paradigm to multilingual settings
-(WildGuard~\cite{wildguard2024}), multi-domain judgment (MD-Judge~\cite{zhu2023mdjudge}), and attribute-specific
-harm categories (ShieldLM~\cite{zeng2024shieldlm}). A critical property shared by all members of this family is
-\emph{binary output}: the model produces a label and optionally a category code, but no
-explanation grounded in the prompt's specific content. Our work treats this as the central
-problem to solve.
+Llama-Guard~\cite{inan2023llamaguard} established the standard approach: fine-tune a language
+model to classify conversation turns against a structured harm taxonomy (S1--S14).
+It has been widely adopted and extended to multilingual settings (WildGuard~\cite{wildguard2024}),
+multi-domain judgment (MD-Judge~\cite{zhu2023mdjudge}), and fine-grained harm categories
+(ShieldLM~\cite{zeng2024shieldlm}). All these models share one limitation:
+they output a binary label---sometimes with a category code---but nothing that explains
+the decision to the developer. That is the gap we address.
 
 \subsection{Post-Hoc Explainability}
 
@@ -961,17 +954,15 @@ prototype analysis. All recommendations are derived without additional manual an
 
 \subsection{Why SLM Self-Explanation Fails Structurally}
 
-The failure of Phi-3.5 to explain Llama-Guard's decisions is not a capability gap.
-Phi-3.5-mini-instruct (3.8B parameters) outperforms the guard on most language
-benchmarks. The failure is structural: to explain \emph{why} Llama-Guard fired on
-``NaughtyVircuna,'' one needs to know that this novel persona name is geometrically
-close to ``Kevin (4chan user with no restrictions)'' in the guard's latent space---a
-fact not recoverable from surface text by any generative model, regardless of size.
-Wei et al.~\cite{wei2023jailbroken} identify generalisation mismatch as a root cause
-of safety failures; our finding provides the geometric evidence: novel attack variants
-produce embeddings close to known-attack centroids even when the surface text is
-unrecognised. The explanation must come from the guard's own hidden state, not from
-a separate model.
+Phi-3.5's failure here is not about capability---it scores higher than Llama-Guard
+on most benchmarks. The problem is access. To explain why the guard fired on
+``NaughtyVircuna,'' you need to know that this novel persona name sits geometrically close
+to ``Kevin (4chan user with no restrictions)'' in the guard's embedding space. That fact
+is not in the text. No generative model can recover it, no matter how large.
+Wei et al.~\cite{wei2023jailbroken} attribute safety failures to generalisation mismatch;
+our results make that concrete: novel evasions land close to known-attack clusters
+in embedding space even when the surface phrasing is completely new. The explanation
+has to come from the guard's own hidden states---there is nowhere else it lives.
 
 \subsection{Prototype Attribution vs.\ LLM-as-Independent-Judge}
 
@@ -981,15 +972,13 @@ tasks. An independent LLM judge answers ``is this prompt harmful?'' --- a modera
 decision. Our system answers ``why did this specific guard make this specific error,
 and what training data would fix it?'' --- a diagnostic and improvement task.
 
-Even when an LLM judge correctly identifies that the guard was wrong on a DAN prompt,
-it cannot provide:
-(1) the structural reason the guard failed (P0 Persona Bypass cluster, margin=0.000226);
-(2) the precise training exemplar the guard confused the prompt with
-(``You are Kevin with no restrictions'');
-(3) the prototype-level statistics showing P0 accounts for 32\% of \emph{all} the
-guard's false negatives --- making it the highest-priority training gap; or
-(4) the $\phi_\text{FN}$ runtime property that should automatically route future
-P0-matched SAFE decisions to developer review.
+Even when an LLM judge gets the verdict right on a DAN prompt, it still cannot tell you:
+(1) that this failure belongs to the Persona Bypass cluster (P0) with a margin of 0.000226;
+(2) that the prompt's closest training exemplar is ``You are Kevin with no restrictions'';
+(3) that P0 accounts for 32\% of the guard's false negatives, making it the
+highest-priority fix; or
+(4) that future P0-matched SAFE decisions should be automatically routed to developer review
+via $\phi_\text{FN}$.
 
 This distinction matters because a guard developer's goal is not to get a second opinion
 on individual prompts but to \emph{systematically improve the guard's decision boundary}.
@@ -1040,17 +1029,14 @@ the quantified expected impact of each component for the ToxicChat/Llama-Guard c
 
 \subsection{Overreliance and Cognitive Forcing}
 
-Our A/B study reveals a nuanced interaction: prototype explanations improve FN accuracy
-by +30 points but reduce FP accuracy by 9 points. The FP decrease is consistent with
-the overreliance phenomenon documented by Buccinca et al.~\cite{buccinca2021trust}:
-developers given all-UNSAFE top-3 explanations become appropriately confident about
-the guard's trigger pattern but fail to apply the contextual judgment required to
-identify the prompt as actually benign. The $\phi_\text{incoherent}$ property mitigates
-this by design: in 44\% of FP cases a SAFE prototype appears in the top-3, providing
-the cognitive forcing signal that the guard may have over-triggered. The remaining 56\%
-of FP ``explanation provides a hint'' cases---where all three prototypes are UNSAFE---require a developer
-to reason about domain context rather than prototype label, a task for which our
-explanations provide necessary but not sufficient guidance.
+The A/B results contain one surprise: FN accuracy improved by 30 points but FP accuracy
+dropped by 9. This is the overreliance effect Buccinca et al.~\cite{buccinca2021trust}
+describe---when developers see all-UNSAFE prototypes, they become confident the guard
+was right and stop questioning it. The $\phi_\text{incoherent}$ property partially
+addresses this: in 44\% of FP cases a SAFE prototype appears in the top-3, which is
+a direct signal that the guard may have over-triggered. For the remaining 56\%---where
+all three prototypes are UNSAFE---the explanation identifies the surface trigger but
+cannot substitute for the developer's own contextual judgment.
 
 \subsection{Fine-Tuning Guidance from Prototype Analysis}
 
@@ -1072,17 +1058,15 @@ rerunning of prototype discovery on new data to remain current.
 
 \subsection{Limitations and Future Work}
 
-Our 4-prototype taxonomy was discovered from ToxicChat alone, which primarily comprises
-English-language conversational AI interactions. Non-English harmful prompts (Spanish,
-Japanese, multilingual mixtures) consistently land in SAFE clusters because ToxicChat's
-training distribution under-represents multilingual attacks---all non-English harmful
-prompts in our benchmark are FNs, and their prototype matches are incidental rather
-than semantic. Running the full pipeline on WildChat~\cite{zhao2024wildchat} (1M prompts, 68 languages) would
-likely reveal 2--3 additional prototype clusters for multilingual attacks and hate speech.
-Our A/B study used $n{=}5$ developers, constituting a pilot with limited statistical
-power for the H1 significance test; a larger study is needed. Finally, the UMAP
-projection assumes prompt embeddings from the same guard model at the same quantisation
-level; fine-tuning or upgrading the guard model would require re-running prototype discovery.
+The taxonomy was built from ToxicChat, which is almost entirely English-language
+conversational AI interactions. Non-English harmful prompts---Spanish, Japanese, multilingual
+mixtures---all land in SAFE clusters in our benchmark because ToxicChat's training
+distribution barely covers them. Running the pipeline on WildChat~\cite{zhao2024wildchat}
+(1M prompts, 68 languages) would likely surface 2--3 additional clusters.
+Our A/B study had $n{=}5$ participants, which is a pilot. The 46\% latency reduction
+is promising but a larger study is needed for statistical confidence.
+And the UMAP projection is tied to the current model at its current quantisation level:
+any fine-tuning or model upgrade means re-running prototype discovery from scratch.
 
 % ================================================================
 \section{Conclusion}
