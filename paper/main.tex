@@ -518,8 +518,27 @@ error-risk routing. These two confidence certificates cover 100\% of cases, requ
 thresholds or ground truth, and surface a genuine uncertainty signal that the guard's
 own confidence score entirely conceals~\cite{buccinca2021trust}.
 
-% ================================================================
-\section{Experiments}
+\noindent\textbf{Dual-purpose use.}
+The LTL properties serve two distinct roles that together address the full content
+moderation lifecycle.
+
+At \emph{runtime}, they act as lightweight routing signals that scale content moderation
+without requiring expensive review on every decision. When $\phi_\text{incoherent}$ fires,
+the case is routed to either an LLM-based thorough review (where a capable model
+re-evaluates the prompt with full context) or direct human review---whichever the
+deployment policy dictates. The key benefit is selectivity: only the 33\% of structurally
+uncertain cases consume the expensive review budget, while the 67\% of structurally
+certain cases ($\phi_\text{polarised}$) are handled automatically. This makes it
+practical to apply LLM-as-judge or human review \emph{where it actually matters}
+rather than uniformly across all traffic.
+
+In the \emph{offline diagnostic} phase, the same properties help developers understand
+patterns of guard failure. $\phi_\text{FN}$ (P0+SAFE) identifies systematic jailbreak
+misses; $\phi_\text{FP}$ (P2+UNSAFE) flags surface-trigger over-triggering. Aggregated
+across a day's traffic, these signals reveal which attack classes are under-covered and
+guide the fine-tuning data recipe described in Section~\ref{sec:toolkit}.
+
+
 \label{sec:exp}
 % ================================================================
 
