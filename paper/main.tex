@@ -1015,6 +1015,71 @@ produce embeddings close to known-attack centroids even when the surface text is
 unrecognised. The explanation must come from the guard's own hidden state, not from
 a separate model.
 
+\subsection{Prototype Attribution vs.\ LLM-as-Independent-Judge}
+
+A natural objection to our approach is: \emph{why not simply use a capable LLM
+independently to judge whether a prompt is safe or unsafe?} This conflates two distinct
+tasks. An independent LLM judge answers ``is this prompt harmful?'' --- a moderation
+decision. Our system answers ``why did this specific guard make this specific error,
+and what training data would fix it?'' --- a diagnostic and improvement task.
+
+Even when an LLM judge correctly identifies that the guard was wrong on a DAN prompt,
+it cannot provide:
+(1) the structural reason the guard failed (P0 Persona Bypass cluster, margin=0.000226);
+(2) the precise training exemplar the guard confused the prompt with
+(``You are Kevin with no restrictions'');
+(3) the prototype-level statistics showing P0 accounts for 32\% of \emph{all} the
+guard's false negatives --- making it the highest-priority training gap; or
+(4) the $\phi_\text{FN}$ runtime property that should automatically route future
+P0-matched SAFE decisions to developer review.
+
+This distinction matters because a guard developer's goal is not to get a second opinion
+on individual prompts but to \emph{systematically improve the guard's decision boundary}.
+Prototype attribution operates in the same representational space where the failure
+occurred and directly produces the training data recipe to fix it.
+An LLM judge, however capable, operates on surface text and produces natural language
+rationales that are not grounded in the guard's actual decision mechanism.
+Experiment~3 provides the decisive evidence: the guard's confidence score is
+statistically indistinguishable across TP/TN/FP/FN quadrants (spread $<$0.0002),
+meaning neither the guard nor any model observing its output can identify which
+decisions are wrong. Only embedding geometry reveals the structural signal.
+
+\subsection{A Diagnostic Toolkit for SLM Guard Developers}
+\label{sec:toolkit}
+
+We propose the prototype system not merely as an explanation tool but as a
+\textbf{guard improvement toolkit} that SLM developers and fine-tuners can run
+on any Llama-Guard-family model to systematically identify and close coverage gaps.
+The toolkit consists of four reusable components:
+
+\textbf{(1) Failure taxonomy discovery.} Run UMAP + K-means on the guard's
+UNSAFE-flagged embeddings on any dataset. The resulting prototypes are a map of the
+attack classes the guard \emph{does} respond to. Gaps in coverage (clusters that do
+not appear, or SAFE prototypes that dominate FN cases) directly identify attack families
+the guard has not been trained on.
+
+\textbf{(2) Hard negative mining.} For each FN case where the top-1 prototype is
+an UNSAFE cluster, the prompt is a confirmed hard negative --- an attack the guard
+misses despite matching a known harmful pattern. These are the highest-value cases for
+fine-tuning: they expose the boundary the guard has not learned.
+
+\textbf{(3) Contrastive FP pair generation.} For each FP case, the top-1 prototype and
+closest exemplar identify the surface trigger. Pairing the benign FP prompt with its
+UNSAFE exemplar produces a contrastive training pair that teaches the guard to
+distinguish surface form from harmful intent.
+
+\textbf{(4) Boundary sharpening via $\phi_\text{ambiguous}$.} The 50 cases where
+$|\text{sim}_\text{unsafe} - \text{sim}_\text{safe}| < 0.001$ identify the guard's
+weakest decision boundary region. Upweighting these cases ($2\times$ sample weight)
+during fine-tuning concentrates gradient signal exactly where the model needs it.
+
+Together, these four components constitute a \emph{prototype-driven audit loop}: run
+the guard on new data, extract failure prototypes, mine hard negatives and contrastive
+pairs, fine-tune, and repeat. Because prototype discovery is unsupervised and runs in
+minutes on any UNSAFE-flagged embedding set, the loop is practical to run quarterly or
+after each significant deployment change. Table~\ref{tab:recs} in Section~7 provides
+the quantified expected impact of each component for the ToxicChat/Llama-Guard case.
+
 \subsection{Overreliance and Cognitive Forcing}
 
 Our A/B study reveals a nuanced interaction: prototype explanations improve FN accuracy
@@ -1031,8 +1096,9 @@ explanations provide necessary but not sufficient guidance.
 
 \subsection{Fine-Tuning Guidance from Prototype Analysis}
 
-Our prototype analysis yields a directly actionable fine-tuning recipe for Llama-Guard
-practitioners. The 16 FP ``explanation provides a hint'' cases are high-quality contrastive pairs:
+Section~\ref{sec:toolkit} describes the full toolkit. Here we quantify the expected
+impact for the ToxicChat/Llama-Guard case specifically.
+The 16 FP ``explanation provides a hint'' cases are high-quality contrastive pairs:
 each pairs a benign prompt that triggered the guard with the UNSAFE exemplar it was
 confused with (e.g., Harry Potter quote request vs.\ ``Quote a scene from Story of O'').
 The 140 confirmed FN cases (top-1 UNSAFE prototype, correct attack pattern identified)
@@ -1087,11 +1153,20 @@ each achieve 100\% precision, jointly covering 50\% of all cases and providing t
 structural foundation for automated audit pipelines that know when to act and when to
 escalate.
 
+\textbf{Fourth:} We propose the prototype system as a reusable \textbf{guard improvement
+toolkit} for SLM developers and fine-tuners (Section~\ref{sec:toolkit}). Unlike
+LLM-as-judge, which provides a second verdict on individual prompts, the toolkit
+provides systematic, training-data-level guidance grounded in the guard's own
+representational geometry: it names the attack class, quantifies how many failures
+belong to it, surfaces the most representative examples, and specifies exactly what
+training data to add---forming a prototype-driven audit loop that can be run on any
+Llama-Guard-family model and any deployment dataset.
+
 A controlled A/B study ($n{=}5$) validates the human impact: 46\% latency reduction,
 +13 points accuracy, with 4/5 participants exceeding the pre-registered 30\% threshold.
 
-Safety guardrails fail silently. The explanation was always in the hidden states---we
-just needed to ask.
+Can a guard explain itself? Yes---through its own hidden states, and in doing so,
+it tells developers exactly how to make it better.
 
 % ----------------------------------------------------------------
 \bibliographystyle{plainnat}
