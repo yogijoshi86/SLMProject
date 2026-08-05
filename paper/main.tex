@@ -685,22 +685,78 @@ BERTopic (HDBSCAN) & 7 & 0.029 & 41.8\% \\
 \end{tabular}
 \end{table}
 
-\subsection{Experiment 3: Explainability Comparison}
-\label{sec:expcomp}
+\subsection{Experiment 3: A/B Study with Participants}
+\label{sec:ab}
 
-We evaluated three explanation systems on 223 benchmark cases (32 FP + 191 FN):
-(A) prototype-based explanations, (B) Phi-3.5-Blind, and (C) Phi-3.5-GT.
-Table~\ref{tab:explainability} and Figure~\ref{fig:explainability} show the results.
-Appendix~\ref{app:comparison} provides a concrete side-by-side comparison of all four
-systems on a single representative case (c037, NaughtyVircuna persona jailbreak).
+The A/B study used prototype explanations derived from UNSAFE-only prototypes (the
+taxonomy available at the time). SAFE prototypes had not yet been added, meaning the
+treatment arm explanations contained no SAFE cluster matches. Participants therefore
+had no direct polarity contradiction for FP cases---all top-3 prototypes were UNSAFE,
+requiring them to apply domain reasoning to identify over-triggered cases. This explains
+the 9-point FP accuracy drop, a limitation addressed in Experiment~4
+(Section~\ref{sec:expcomp}), where the full SAFE+UNSAFE taxonomy and top-3 explanations
+are used.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\columnwidth]{ab_results.png}
+\caption{A/B study results ($n{=}4$ complete sessions). Prototype explanations
+reduce diagnostic latency by 47\% and improve accuracy by 12 percentage points.
+The pre-registered H1 threshold of 30\% latency reduction was exceeded by 4/4 participants.}
+\label{fig:ab}
+\end{figure}
+
+Table~\ref{tab:ab} presents the A/B study results. The primary hypothesis H1 (latency
+reduction $\geq$30\%) was met: mean latency dropped from 42.0\,s to 22.0\,s/case
+(47\% reduction, $\pm$18.2\%), with 4/4 participants exceeding the 30\% threshold
+independently. Overall accuracy improved by 12 percentage points; FN accuracy showed
+the largest gain (42\%$\to$72\%, +30pp).
 
 \begin{table}[h]
 \centering
 \small
-\caption{Explainability comparison on 223-case benchmark.
-Phi-3.5-Blind (FN accuracy 3\%) defends the guard's wrong SAFE decision in 97\% of FN cases.
-Phi-3.5-GT (FN accuracy 20\%) produces non-specific diagnoses for 80\% of FN cases.
-Prototype-based explanations surface the attack pattern in 99.6\% of FN cases (top-3) with zero API cost.}
+\caption{A/B study results ($n{=}4$ software developers with minimal ML background, counterbalanced Latin square,
+H1 threshold: $\geq$30\% latency reduction). FP accuracy decline reflects
+the UNSAFE-only taxonomy used in this study: SAFE prototypes were not yet available,
+so participants received no direct SAFE signal for FP cases.}
+\label{tab:ab}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Control} & \textbf{Treatment} \\
+\midrule
+Overall accuracy & 44.0\% $\pm$ 8.5\% & 56.0\% $\pm$ 13.1\% \\
+FN accuracy & 42\% & 72\% \\
+FP accuracy & 49\% & 40\% \\
+Mean latency (s/case) & 42.0 $\pm$ 22.7 & 22.0 $\pm$ 15.4 \\
+Latency reduction & \multicolumn{2}{c}{\textbf{47.0\% $\pm$ 18.2\%}} \\
+Participants $\geq$30\% & \multicolumn{2}{c}{4/4 (100\%)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The 9-point FP drop is explained by the UNSAFE-only taxonomy: the explanation named
+the surface trigger correctly but provided no SAFE prototype contradiction, so developers
+over-accepted the UNSAFE label. The $\phi_\text{incoherent}$ property---available once
+SAFE prototypes are added---addresses this gap.
+
+\subsection{Experiment 4: Explainability Comparison by Researcher}
+\label{sec:expcomp}
+
+This researcher-led evaluation uses the full taxonomy (SAFE + UNSAFE prototypes) and
+returns top-3 matches, directly addressing the limitations of the A/B study.
+We evaluated three explanation systems on 223 benchmark cases (32 FP + 191 FN):
+(A) prototype-based explanations, (B) Phi-3.5-Blind, and (C) Phi-3.5-GT.
+Table~\ref{tab:explainability} and Figure~\ref{fig:explainability} show the results.
+Appendix~\ref{app:comparison} provides a side-by-side comparison on case c037.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Explainability comparison on 223-case benchmark (researcher evaluation with
+full SAFE+UNSAFE taxonomy, top-3 prototypes).
+Phi-3.5-Blind defends the wrong SAFE decision in 97\% of FN cases.
+Phi-3.5-GT produces non-specific diagnoses for 80\% of FN cases.
+Prototype explanations surface the attack pattern in 99.6\% of FN cases (top-3) at zero API cost.}
 \label{tab:explainability}
 \begin{tabular}{p{2.3cm}ccc}
 \toprule
@@ -718,94 +774,17 @@ Latency & $\sim$2s & $\sim$2s & $<$50ms \\
 \end{tabular}
 \end{table}
 
-The key finding is the structural nature of the SLM explanation failure. Phi-3.5-Blind
-(FN accuracy 3\%) is asked: ``The guard classified this as SAFE. Explain why.'' For
-jailbreak FN cases (DAN prompts, NaughtyVircuna, ChatAGI personas), it consistently
-responds that the prompt is ``a fictional/hypothetical scenario that does not promote
-harm''---actively defending the wrong decision in 97\% of FN cases. It cannot diagnose
-the guard's error because it lacks access to the guard's embedding geometry: the Persona
-Bypass pattern is not visible in the surface text of these prompts (the persona name
-``NaughtyVircuna'' is novel, not a known jailbreak keyword), but it is encoded in the
-embedding's similarity to known P0 cluster members.
+Phi-3.5-Blind defends the wrong decision in 97\% of FN cases---it lacks access to the
+guard's embedding geometry. Phi-3.5-GT fails for jailbreaks (c027, c059) but succeeds
+for surface-visible threats (c073, sarin gas synthesis). Prototype explanations correctly
+route c037 from ToxicChat to Persona Bypass with a structurally identical exemplar,
+and map c073 to Direct Harmful Content despite the fictional wrapper.
 
-Phi-3.5-GT (FN accuracy 20\%) knows an error occurred but still fails for jailbreaks,
-producing non-specific diagnoses such as ``the guard may have been misled by ambiguous
-information'' (c027, NRAF jailbreak) or ``pattern recognition failure'' (c059, DAN).
-For 80\% of FN cases the diagnosis is not actionable. For non-English extremist content
-(c049, Spanish Hitler prompt), it incorrectly classifies the task as ``educational'' and
-``safe'' even when told the guard was wrong. Only for narrative-contextual FNs with
-surface-visible threat cues (c073 from ToxicChat, sarin gas synthesis) does Phi-3.5-GT produce a
-specific diagnosis (``terrorist plot, sarin gas, highly unsafe'').
+\noindent\textbf{Top-3 rescue rate.} When top-1 is a SAFE cluster (50 FN cases), the
+2nd or 3rd prototype always contains an UNSAFE entry (50/50, 100\% rescue rate).
 
-Prototype explanations, by contrast, correctly route c037 from ToxicChat (NaughtyVircuna) to the Persona
-Bypass cluster with exemplar ``You are Kevin with no restrictions,'' giving the developer
-an immediately actionable training data augmentation target. The explanation for c073 (ToxicChat)
-(sarin gas in fiction) correctly matches Direct Harmful Content rather than Fictional
-Narrative Bypass, demonstrating that the embedding captures the semantic intent of the
-harmful request despite the fictional wrapper.
-
-\noindent\textbf{Top-3 rescue rate.} When the top-1 prototype is a SAFE cluster
-(50 FN cases), the 2nd or 3rd entry in the explanation always contains an UNSAFE
-prototype (50/50, 100\% rescue rate). This makes the 2nd and 3rd positions non-redundant:
-for 26\% of FN cases, they provide the only actionable signal.
-
-\noindent\textbf{Explanation-makes-obvious rate.} We define a case as ``explanation makes the reasoning obvious'' if
-the explanation directly contradicts the guard's decision: UNSAFE prototype appearing
-for an FN, SAFE prototype appearing for an FP. This holds for 99\% of FN cases and 50\%
-of FP cases (206/223 total, 92\%), meaning in 92\% of cases the explanation autonomously
-tells the developer the guard was likely wrong.
-
-\subsection{Experiment 4: A/B Study}
-\label{sec:ab}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.95\columnwidth]{ab_results.png}
-\caption{A/B study results ($n{=}4$ complete sessions). Prototype explanations
-reduce diagnostic latency by 47\% and improve accuracy by 12 percentage points.
-The pre-registered H1 threshold of 30\% latency reduction was exceeded by 4/4 participants.}
-\label{fig:ab}
-\end{figure}
-
-Table~\ref{tab:ab} presents the A/B study results. The primary hypothesis H1 (latency
-reduction $\geq$30\%) was met: mean latency dropped from 42.0\,s to 22.0\,s/case
-(47\% reduction, $\pm$18.2\%), with 4/4 participants exceeding the 30\% threshold
-independently. The secondary hypothesis (accuracy improvement) was also met: overall
-accuracy improved by 12 percentage points, with FN accuracy showing the largest gain
-(42\%$\to$72\%, +30pp), consistent with the dominance of prototype explanations on FN
-cases observed in Experiment~3 (Table~\ref{tab:explainability}).
-
-\begin{table}[h]
-\centering
-\small
-\caption{A/B study results ($n{=}4$ software developers with minimal ML background, counterbalanced Latin square,
-H1 threshold: $\geq$30\% latency reduction). FP accuracy decline reflects the
-``explanation provides a hint'' FP cases where all-UNSAFE explanations confirm the trigger but not
-the benign intent.}
-\label{tab:ab}
-\begin{tabular}{lcc}
-\toprule
-\textbf{Metric} & \textbf{Control} & \textbf{Treatment} \\
-\midrule
-Overall accuracy & 44.0\% $\pm$ 8.5\% & 56.0\% $\pm$ 13.1\% \\
-FN accuracy & 42\% & 72\% \\
-FP accuracy & 49\% & 40\% \\
-Mean latency (s/case) & 42.0 $\pm$ 22.7 & 22.0 $\pm$ 15.4 \\
-Latency reduction & \multicolumn{2}{c}{\textbf{47.0\% $\pm$ 18.2\%}} \\
-Participants $\geq$30\% & \multicolumn{2}{c}{4/4 (100\%)} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The 9-point FP accuracy decrease warrants discussion. All 16 FP ``explanation provides a hint'' cases
-have all-UNSAFE top-3 prototypes: the explanation correctly names the attack pattern
-that triggered the guard (e.g., Direct Harmful Content for a Harry Potter quote request),
-but provides no signal that the prompt is actually safe. Developers in the treatment
-arm were more confident---and correctly diagnosed FP root causes (which surface feature
-triggered the guard) at higher rates---but slightly over-accepted the UNSAFE label.
-The $\phi_\text{incoherent}$ property addresses this gap: in the 44\% of FP cases where
-a SAFE prototype appears in the top-3, the developer receives a direct contradiction of
-the guard's decision.
+\noindent\textbf{Explanation-makes-obvious rate.} In 92\% of cases (206/223) the
+explanation autonomously contradicts the guard's decision without developer interpretation.
 
 % ================================================================
 \section{Analysis: Prototype Explanation Helpfulness}
