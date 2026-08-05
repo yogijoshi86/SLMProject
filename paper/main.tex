@@ -147,7 +147,7 @@ embedding space. By discovering and labelling these clusters once (offline), we 
 explain every future decision in real time by finding the nearest cluster. No separate
 model call is required, and no ground-truth label is needed.
 
-We make six contributions that are, to our knowledge, new to the safety guardrail literature:
+We make five contributions that are, to our knowledge, new to the safety guardrail literature:
 
 \begin{enumerate}
 \item \textbf{SLM guards are structurally unexplainable by SLMs.}
@@ -162,14 +162,6 @@ on the same task.
 UMAP-reduced embeddings from Llama-Guard-3-8B cluster into four semantically coherent
 attack prototypes ($k^*{=}4$, $S{=}0.41$, +945\% over full-dimensional K-means)
 without any labels, covering 99.6\% of all misclassified cases.
-
-\item \textbf{Safety classifier confidence is provably uninformative.}
-We demonstrate for the first time that cosine distance to prototypes and inter-prototype
-margin are statistically indistinguishable across TP, TN, FP, and FN quadrants (spread
-$<$0.0002 across 5,082 decisions). The guard outputs confidence $\approx$1.000 on every
-decision including every catastrophic misclassification, establishing that no output-space
-signal can identify wrong decisions. This empirically necessitates polarity-based
-uncertainty certificates.
 
 \item \textbf{$\phi_\text{incoherent}$ and $\phi_\text{polarised}$: the only verifiable
 confidence certificates for a safety guard.}
@@ -194,7 +186,6 @@ categories (hard negatives, contrastive FP pairs, boundary-upweighted cases) eac
 a diagnosed root cause and measurable target metric, forming a prototype-driven audit
 loop that can run on any Llama-Guard-family model and any deployment dataset.
 \end{enumerate}
-
 % ================================================================
 \section{Related Work}
 % ================================================================
@@ -436,20 +427,14 @@ requiring the developer to reason about context rather than receiving an explici
 \label{sec:ltl}
 % ================================================================
 
-A central finding of this work---established empirically (Section~\ref{sec:exp})---is that the guard's
-confidence score is useless as an uncertainty signal: cosine distance and prototype margin
-are statistically indistinguishable across TP, TN, FP, and FN quadrants. The guard
-outputs confidence $\approx$1.000 on every decision, including every catastrophic
-misclassification. This rules out any threshold-based confidence signal from the guard's
-output. We show, however, that the guard's hidden-state geometry encodes a verifiable
-uncertainty signal through \emph{structural polarity}: whether the top-3 nearest
-prototypes agree on SAFE/UNSAFE (certainty) or disagree (uncertainty).
-
-We formalise this as two complementary LTL properties that together constitute the
-\textbf{only verifiable confidence certificate for a safety guard}---derived from
-prototype polarity alone, requiring no thresholds, no ground truth, and no
-dataset-specific calibration. Two additional properties provide directional error-risk
-routing within the certain branch.
+Because the guard outputs confidence $\approx$1.000 on every decision regardless of
+correctness~\cite{guo2017calibration}, no output-space threshold can identify wrong
+decisions. The guard's hidden-state geometry encodes a more reliable signal through
+\emph{structural polarity}: whether the top-3 nearest prototypes agree on SAFE/UNSAFE
+(certainty) or disagree (uncertainty). We formalise this as two complementary LTL
+properties---the \textbf{only verifiable confidence certificates for a safety guard}---derived
+from prototype polarity alone, requiring no thresholds, no ground truth, and no
+dataset-specific calibration. Two additional properties provide directional error-risk routing.
 
 Let $\text{mixed}(t)$ be true when the top-3 prototype matches at time $t$ contain
 at least one UNSAFE and at least one SAFE prototype.
