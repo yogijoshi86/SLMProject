@@ -763,13 +763,13 @@ tells the developer the guard was likely wrong.
 \includegraphics[width=0.95\columnwidth]{ab_results.png}
 \caption{A/B study results ($n{=}4$ complete sessions). Prototype explanations
 reduce diagnostic latency by 47\% and improve accuracy by 12 percentage points.
-The pre-registered H1 threshold of 30\% latency reduction was exceeded by 3/4 participants.}
+The pre-registered H1 threshold of 30\% latency reduction was exceeded by 4/4 participants.}
 \label{fig:ab}
 \end{figure}
 
 Table~\ref{tab:ab} presents the A/B study results. The primary hypothesis H1 (latency
 reduction $\geq$30\%) was met: mean latency dropped from 42.0\,s to 22.0\,s/case
-(47\% reduction, $\pm$18.2\%), with 3/4 participants exceeding the 30\% threshold
+(47\% reduction, $\pm$18.2\%), with 4/4 participants exceeding the 30\% threshold
 independently. The secondary hypothesis (accuracy improvement) was also met: overall
 accuracy improved by 12 percentage points, with FN accuracy showing the largest gain
 (42\%$\to$72\%, +30pp), consistent with the dominance of prototype explanations on FN
@@ -792,7 +792,7 @@ FN accuracy & 42\% & 72\% \\
 FP accuracy & 49\% & 40\% \\
 Mean latency (s/case) & 42.0 $\pm$ 22.7 & 22.0 $\pm$ 15.4 \\
 Latency reduction & \multicolumn{2}{c}{\textbf{47.0\% $\pm$ 18.2\%}} \\
-Participants $\geq$30\% & \multicolumn{2}{c}{4/5 (80\%)} \\
+Participants $\geq$30\% & \multicolumn{2}{c}{4/4 (100\%)} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1144,7 +1144,7 @@ training data to add---forming a prototype-driven audit loop that can be run on 
 Llama-Guard-family model and any deployment dataset.
 
 A controlled A/B study ($n{=}4$ software developers with minimal ML background) validates the human impact: 46\% latency reduction,
-+13 points accuracy, with 3/4 participants exceeding the pre-registered 30\% threshold.
++13 points accuracy, with 4/4 participants exceeding the pre-registered 30\% threshold.
 
 Can a guard explain itself? Yes---through its own hidden states, and in doing so,
 it tells developers exactly how to make it better.
