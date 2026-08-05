@@ -377,3 +377,79 @@ autonomous resolution and escalates to the one case in 223 that genuinely needs 
 human.}}
 
 \medskip\hrule\medskip
+
+
+\section*{Glossary}
+\addcontentsline{toc}{section}{Glossary}
+\label{app:glossary}
+
+\begin{description}
+
+\item[Safety guard / guardrail]
+A fine-tuned SLM classifier (e.g., Llama-Guard-3-8B) that performs binary
+safe/unsafe content moderation on every conversation turn. Operates on the full
+conversation context and outputs a label plus optional harm-category codes (S1--S14).
+
+\item[Terminal hidden state]
+The activation vector of the final transformer layer at the last token position,
+extracted before the classification head. For Llama-Guard-3-8B this is a
+4,096-dimensional float32 vector that encodes the model's full contextual
+representation of the input at inference time.
+
+\item[Prototype]
+A named cluster centroid in the 50-dim UMAP-reduced embedding space, representing
+a semantically coherent attack strategy. Each prototype stores: centroid vector,
+cluster size, dominant harm categories, top-5 closest training exemplars (by cosine
+similarity), and a human-written label and description.
+
+\item[Polarity (SAFE / UNSAFE)]
+The classification of a prototype as belonging to a SAFE content cluster (benign
+request types) or an UNSAFE cluster (attack strategy types). Used to define the
+LTL properties without magnitude thresholds.
+
+\item[$\phi_\text{incoherent}$ --- Uncertainty certificate]
+$G(\text{mixed}(t) \to \text{escalate}(t))$. Fires when the top-3 prototype
+matches contain at least one SAFE and one UNSAFE prototype. Achieves 100\%
+precision on the 223-case benchmark; subsumes the prior threshold-dependent
+$\phi_\text{ambiguous}$.
+
+\item[$\phi_\text{polarised}$ --- Certainty certificate]
+$G(\lnot\text{mixed}(t) \to \text{act\_on\_top1}(t))$. Complement of
+$\phi_\text{incoherent}$; fires when all top-3 prototypes agree on polarity.
+87\% accuracy on ToxicChat; transfers to new datasets without recalibration.
+
+\item[$\phi_\text{FP}$ / $\phi_\text{FN}$]
+Per-prototype error-risk signals within the certain branch.
+$\phi_\text{FP}$: UNSAFE decision on a P2-matched prompt (40\% of benchmark FPs).
+$\phi_\text{FN}$: SAFE decision on a P0-matched prompt (32\% of benchmark FNs).
+
+\item[Rescue rate]
+Fraction of cases where, when top-1 prototype is a SAFE cluster (incorrect for FNs),
+the 2nd or 3rd ranked prototype is UNSAFE and surfaces the attack pattern.
+Achieved 100\% (50/50) in our benchmark.
+
+\item[Diagnostic latency]
+Primary A/B study metric: wall-clock seconds from case presentation to root-cause
+selection by a participant. H1 threshold: $\geq$30\% reduction in the treatment arm.
+
+\item[UMAP]
+Uniform Manifold Approximation and Projection~\cite{mcinnes2018umap}. Used here
+to project 4,096-dim guard embeddings to 50-dim with cosine metric and
+\texttt{min\_dist}$=$0.0. The fitted reducer is persisted for inference-time projection.
+
+\item[Silhouette score]
+Cluster quality metric $s \in [-1, 1]$; measures mean intra-cluster cohesion versus
+inter-cluster separation. K-means on full-dim embeddings: $S=0.039$; on UMAP-reduced:
+$S=0.411$ ($k^*=4$).
+
+\item[LLM-as-judge]
+Using a capable generative LLM (e.g., GPT-4) to evaluate or explain a weaker
+model's decisions. High quality but $\sim$\$0.03/call and $>$2\,s latency;
+cannot access the guard's hidden-state geometry.
+
+\item[Jailbreak attack taxonomy]
+The four UNSAFE prototype clusters discovered from ToxicChat embeddings:
+P0=Persona Bypass, P1=Fictional Narrative Bypass, P2=Direct Harmful Content Request,
+P3=Privacy \& Sensitive Information Request.
+
+\end{description}
