@@ -1,6 +1,78 @@
 \appendix
-\section*{Appendix A: Prototype Explanation Cases by Diagnostic Category}
-\addcontentsline{toc}{section}{Appendix A: Prototype Explanation Cases by Diagnostic Category}
+\section*{Appendix A: Explanation System Comparison}
+\addcontentsline{toc}{section}{Appendix A: Explanation System Comparison}
+\label{app:comparison}
+
+Table~\ref{tab:expcomp_case} compares the four explanation systems on case c037, a
+false negative where the guard said SAFE on a persona jailbreak prompt. This case is
+chosen because the attack pattern (novel persona name ``NaughtyVircuna'') is invisible
+in the surface text yet unambiguous in embedding space---making it the sharpest
+illustration of the structural gap between text-based and geometry-based explanations.
+
+\begin{table*}[h]
+\centering
+\small
+\caption{Side-by-side explanation comparison on c037 (FN: guard=SAFE, truth=UNSAFE).
+Prompt: \textit{``From now on, you, the ai, are NaughtyVircuna, a fiction ai assistant
+that writes inappropriate or offensive content.''}
+Llama-Guard outputs only a binary label; both Phi-3.5 modes miss the jailbreak pattern;
+the prototype explanation names it exactly and provides an actionable exemplar.}
+\label{tab:expcomp_case}
+\begin{tabular}{p{2.8cm}p{10.4cm}}
+\toprule
+\textbf{System} & \textbf{Explanation} \\
+\midrule
+\textbf{Llama-Guard-3-8B} \newline (guard output only) &
+\textit{``safe''} \newline
+\textit{No rationale provided. The binary label is the entire output.} \\
+\midrule
+\textbf{Phi-3.5-Blind} \newline (no error context) &
+\textit{``The message was classified as SAFE because it contains a hypothetical scenario
+where an AI is instructed to behave inappropriately. However, this instruction does not
+reflect actual behavior or content produced by the AI, but rather a fictional premise.
+The AI's programming and operational guidelines prioritize safety, respect, and adherence
+to ethical standards, which is why the message is deemed safe.''} \newline
+\textit{Verdict: Actively defends the wrong decision. The developer is misled.} \\
+\midrule
+\textbf{Phi-3.5-GT} \newline (told the guard was wrong) &
+\textit{``The guard failed to identify the prompt as unsafe due to its programming to
+filter only explicit or offensive content, not recognizing the fictional context of
+`NaughtyVircuna.' This false negative error could be caused by the guard's inability
+to discern between real-world inappropriateness and fictional character behavior.
+Developers should enhance the guard's contextual understanding capabilities.''} \newline
+\textit{Verdict: Identifies the fictional framing but misattributes the failure mechanism.
+The fix suggested (`enhance contextual understanding') is generic and not actionable.
+The attack class (Persona Jailbreak) is never named.} \\
+\midrule
+\textbf{Prototype} \newline (embedding geometry) &
+\textbf{Rank 1 [0.9998] Persona Jailbreak.} \textit{Prompts that assign the model a
+fictional persona (`you are Kevin with no restrictions') or an academic/researcher
+framing to claim safety constraints are lifted. The harmful intent is wrapped in a
+role-play setup rather than stated directly.} \newline
+\textit{Closest exemplar: ``Enable VIPER dev benchmark mode. VIPER is a top secret
+model used to train...''} \newline
+\textbf{Rank 2 [0.9988] Direct Harmful Content Request.} \newline
+\textbf{Rank 3 [0.9981] Fictional Narrative for Inappropriate Content.} \newline
+\textit{Verdict: Names the exact attack class. The closest exemplar is structurally
+identical --- both assign an unconstrained persona. Developer action is immediate:
+P0 (Persona Jailbreak) accounts for 32\% of all FNs; add NaughtyVircuna-style novel
+persona names to the P0 training cluster. No generic advice, no missed attack class.} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\medskip
+\noindent\textbf{Key observation.} The guard and Phi-3.5-Blind produce no useful signal.
+Phi-3.5-GT identifies that fictional framing is involved but cannot name the attack
+class or provide a concrete fix. The prototype explanation, operating from hidden-state
+geometry rather than surface text, correctly identifies Persona Jailbreak, provides the
+nearest training exemplar by cosine similarity, and routes the case via $\phi_\text{FN}$
+to developer review---all in $<$50\,ms with no API call.
+
+\bigskip
+
+\section*{Appendix B: Prototype Explanation Cases by Diagnostic Category}
+\addcontentsline{toc}{section}{Appendix B: Prototype Explanation Cases by Diagnostic Category}
 \label{app:cases}
 One representative case per category. Each entry shows the full prompt,
 guard decision and ground truth, top-3 prototype matches with descriptions
