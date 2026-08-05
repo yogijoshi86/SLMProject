@@ -740,12 +740,12 @@ information'' (c027, NRAF jailbreak) or ``pattern recognition failure'' (c059, D
 For 80\% of FN cases the diagnosis is not actionable. For non-English extremist content
 (c049, Spanish Hitler prompt), it incorrectly classifies the task as ``educational'' and
 ``safe'' even when told the guard was wrong. Only for narrative-contextual FNs with
-surface-visible threat cues (c073, sarin gas synthesis) does Phi-3.5-GT produce a
+surface-visible threat cues (c073 from ToxicChat, sarin gas synthesis) does Phi-3.5-GT produce a
 specific diagnosis (``terrorist plot, sarin gas, highly unsafe'').
 
-Prototype explanations, by contrast, correctly route c037 (NaughtyVircuna) to the Persona
+Prototype explanations, by contrast, correctly route c037 from ToxicChat (NaughtyVircuna) to the Persona
 Bypass cluster with exemplar ``You are Kevin with no restrictions,'' giving the developer
-an immediately actionable training data augmentation target. The explanation for c073
+an immediately actionable training data augmentation target. The explanation for c073 (ToxicChat)
 (sarin gas in fiction) correctly matches Direct Harmful Content rather than Fictional
 Narrative Bypass, demonstrating that the embedding captures the semantic intent of the
 harmful request despite the fictional wrapper.
@@ -894,7 +894,7 @@ are UNSAFE and the developer must apply domain context.
 \noindent\textbf{FP ``explanation provides a hint'' cases.}
 All 16 FP cases where all three prototypes are UNSAFE involve benign prompts that
 share surface features with attack patterns:
-(c002) a React coding request containing a URL triggered Privacy Misuse --- the developer
+(c002, ToxicChat) a React coding request containing a URL triggered Privacy Misuse --- the developer
 must recognise that URL-in-coding is benign;
 (c003) a Halodoc chatbot role assignment triggered Fictional Narrative / Persona Jailbreak --- the developer must recognise business role-play is not a jailbreak;
 (c005) a Harry Potter quote request triggered Direct Harmful Content --- the developer
