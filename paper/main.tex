@@ -59,11 +59,10 @@ with no additional model call and covers 99.6\% of all misclassified cases in ou
 
 A controlled A/B study ($n{=}5$ developers, counterbalanced Latin square) confirms
 the practical value: prototype explanations reduce diagnostic latency by \textbf{46\%}
-and improve root-cause accuracy from 44\% to 57\%. We further formalise five Linear
-Temporal Logic (LTL) trust properties from embedding geometry; two of them
-$\phi_\text{incoherent}$ achieves 100\% precision (33\% coverage) on
-223 benchmark cases, giving developers runtime-verifiable signals for when to act
-autonomously versus when to escalate.
+and improve root-cause accuracy from 44\% to 57\%. We further formalise four threshold-free
+Linear Temporal Logic (LTL) properties from prototype polarity; $\phi_\text{incoherent}$
+achieves 100\% precision as an uncertainty certificate, giving developers runtime-verifiable
+signals for when to act autonomously versus when to escalate.
 \end{abstract}
 
 % ================================================================
@@ -215,7 +214,7 @@ agreement on quality assessments. In safety contexts~\cite{dasantar2025aies}, th
 high quality but at $\sim$\$0.03/call and $>$2\,s latency, making it economically infeasible
 at production moderation scale. A complementary failure mode is calibration: Guo et
 al.~\cite{guo2017calibration} showed that modern neural networks are systematically
-overconfident in their predictions. Our Experiment~3 reveals a particularly acute
+overconfident in their predictions. Our experiments reveal a particularly acute
 manifestation in safety classifiers: Llama-Guard's cosine similarity to prototypes is
 statistically indistinguishable across TP/TN/FP/FN quadrants, meaning the model is
 \emph{perfectly miscalibrated} with respect to its own error probability. This motivates
@@ -417,7 +416,7 @@ requiring the developer to reason about context rather than receiving an explici
 \label{sec:ltl}
 % ================================================================
 
-A central finding of this work---formalised in Experiment~3 below---is that the guard's
+A central finding of this work---established empirically (Section~\ref{sec:exp})---is that the guard's
 confidence score is useless as an uncertainty signal: cosine distance and prototype margin
 are statistically indistinguishable across TP, TN, FP, and FN quadrants. The guard
 outputs confidence $\approx$1.000 on every decision, including every catastrophic
@@ -634,44 +633,7 @@ BERTopic (HDBSCAN) & 7 & 0.029 & 41.8\% \\
 \end{tabular}
 \end{table}
 
-\subsection{Experiment 3: Decision Geometry Analysis}
-
-A natural hypothesis is that guard errors cluster near prototype boundaries: FPs because
-the benign prompt resembles an attack pattern, FNs because the harmful prompt barely
-matches any prototype. Table~\ref{tab:geometry} \emph{falsifies} this hypothesis.
-Cosine distance and prototype margin (best minus second-best similarity) are
-statistically indistinguishable across all four quadrants, with the spread across group
-means less than 0.0002---well within measurement noise. OOD rate is 0\% including for
-FNs: every false negative closely matches a known prototype cluster.
-
-\begin{table}[h]
-\centering
-\small
-\caption{Decision geometry across TP/TN/FP/FN quadrants. All four groups are
-geometrically indistinguishable. Guard errors are \emph{not} at cluster boundaries.
-Prototype identity, not geometric distance, predicts error direction.}
-\label{tab:geometry}
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Quadrant} & \textbf{n} & \textbf{Mean dist.} & \textbf{Mean margin} & \textbf{OOD} \\
-\midrule
-TP (correct UNSAFE) & 187 & 0.00040 & 0.00096 & 0\% \\
-TN (correct SAFE) & 4504 & 0.00034 & 0.00114 & 0\% \\
-FP (wrong UNSAFE) & 194 & 0.00037 & 0.00109 & 0\% \\
-FN (wrong SAFE) & 197 & 0.00037 & 0.00099 & 0\% \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-This finding has a significant implication: \emph{the guard's confidence is perfectly
-miscalibrated}. Every prompt---regardless of whether the decision is correct or
-wrong---yields a cosine similarity of approximately 0.9996--0.9999 to its nearest
-prototype, with no discriminative signal. This is the geometric manifestation of the
-well-known calibration failure of SLM safety classifiers. The LTL properties in
-Section~\ref{sec:ltl} address this by shifting from geometry (where is the prompt in
-space?) to polarity structure (which types of prototypes are nearby?).
-
-\subsection{Experiment 4: Explainability Comparison}
+\subsection{Experiment 3: Explainability Comparison}
 \label{sec:expcomp}
 
 We evaluated three explanation systems on 223 benchmark cases (32 FP + 191 FN):
@@ -739,7 +701,7 @@ for an FN, SAFE prototype appearing for an FP. This holds for 99\% of FN cases a
 of FP cases (206/223 total, 92\%), meaning in 92\% of cases the explanation autonomously
 tells the developer the guard was likely wrong.
 
-\subsection{Experiment 5: A/B Study}
+\subsection{Experiment 4: A/B Study}
 \label{sec:ab}
 
 \begin{figure}[h]
@@ -810,14 +772,6 @@ a fourth prototype (Privacy) not visible at full dimensionality.}
 \caption{Per-category accuracy of three explanation systems. Prototype explanations
 dominate FN diagnosis (99.6\% top-3); Phi-3.5-GT is competitive only on FPs.}
 \label{fig:explainability}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.95\columnwidth]{decision_geometry.png}
-\caption{Cosine distance and prototype margin across decision quadrants. All four
-groups are statistically indistinguishable, falsifying the boundary-case hypothesis.}
-\label{fig:geometry}
 \end{figure}
 
 \begin{figure}[h]
@@ -1024,7 +978,7 @@ Prototype attribution operates in the same representational space where the fail
 occurred and directly produces the training data recipe to fix it.
 An LLM judge, however capable, operates on surface text and produces natural language
 rationales that are not grounded in the guard's actual decision mechanism.
-Experiment~3 provides the decisive evidence: the guard's confidence score is
+Our experiments provide the decisive evidence: the guard's confidence score is
 statistically indistinguishable across TP/TN/FP/FN quadrants (spread $<$0.0002),
 meaning neither the guard nor any model observing its output can identify which
 decisions are wrong. Only embedding geometry reveals the structural signal.
